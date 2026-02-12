@@ -6,6 +6,10 @@ import os
 import models
 from database import engine
 from routers import auth, members, sessions, attendance, statistics, qr_attendance
+from logging_config import setup_logging
+
+# Setup logging before creating app or during startup
+setup_logging()
 
 models.Base.metadata.create_all(bind=engine)
 

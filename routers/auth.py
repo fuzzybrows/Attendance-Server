@@ -4,6 +4,9 @@ import models, schemas
 from database import get_db
 from auth import get_password_hash, verify_password, create_access_token
 from services.twilio import send_sms_verification, send_email_verification, check_verification
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/auth",
@@ -13,12 +16,14 @@ router = APIRouter(
 
 @router.post("/login")
 def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
+    logger.info("Login attempt", extra={"type": "login_attempt", "login": data.login})
     # Find member by email or phone
     member = db.query(models.Member).filter(
         (models.Member.email == data.login) | (models.Member.phone_number == data.login)
     ).first()
     
     if not member or not verify_password(data.password, member.password_hash):
+        logger.warning("Login failed - Invalid credentials", extra={"type": "login_failed", "login": data.login, "reason": "invalid_credentials"})
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Check if verification is needed
@@ -31,9 +36,11 @@ def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
             send_email_verification(member.email)
         else:
             send_sms_verification(member.phone_number)
+        logger.info("User unverified, sent verification code", extra={"type": "verification_sent", "login": data.login, "method": "email" if is_email else "phone"})
         return {"status": "unverified", "method": "email" if is_email else "phone"}
     
     access_token = create_access_token(data={"sub": member.email})
+    logger.info("Login successful", extra={"type": "login_success", "login": data.login, "member_id": member.id})
     return {"access_token": access_token, "token_type": "bearer", "member": member}
 
 @router.post("/verify-otp")

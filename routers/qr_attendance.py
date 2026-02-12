@@ -10,6 +10,9 @@ import models
 from database import get_db
 from auth import create_access_token, SECRET_KEY, ALGORITHM
 from jose import JWTError, jwt
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/attendance/qr",
@@ -24,7 +27,10 @@ def generate_qr_token(session_id: int, db: Session = Depends(get_db)):
     """Generate a short-lived token for QR attendance."""
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not session:
+        logger.warning("QR Token gen failed - Session not found", extra={"type": "qr_token_gen_failed", "session_id": session_id, "reason": "session_not_found"})
         raise HTTPException(status_code=404, detail="Session not found")
+    
+    logger.debug("Generating QR token", extra={"type": "qr_token_gen", "session_id": session_id})
 
     token = create_access_token(
         data={"qr_session_id": session_id, "type": "qr_attendance"},
@@ -48,10 +54,13 @@ def mark_qr_attendance(
     try:
         payload = jwt.decode(qr_token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("type") != "qr_attendance":
+            logger.warning("Invalid QR token type scanned", extra={"type": "qr_scan_invalid_token", "token_type": payload.get("type")})
             raise HTTPException(status_code=400, detail="Invalid QR token type")
         if payload.get("qr_session_id") != session_id:
+            logger.warning("QR token mismatch", extra={"type": "qr_scan_mismatch", "token_session_id": payload.get('qr_session_id'), "current_session_id": session_id})
             raise HTTPException(status_code=400, detail="QR token does not match session")
     except JWTError:
+        logger.warning("Expired or invalid QR token scanned", extra={"type": "qr_scan_error", "reason": "jwt_error"})
         raise HTTPException(status_code=401, detail="QR code has expired. Please scan again.")
 
     # 2. Verify the user's auth token
@@ -96,6 +105,7 @@ def mark_qr_attendance(
     db.commit()
     db.refresh(db_attendance)
 
+    logger.info("QR Attendance marked", extra={"type": "qr_attendance_success", "member_id": member.id, "session_id": session_id})
     return {
         "status": "success",
         "message": f"Attendance marked for {member.firstname} {member.lastname}",

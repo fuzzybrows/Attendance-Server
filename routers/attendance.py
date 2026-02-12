@@ -4,6 +4,9 @@ from typing import List
 from pydantic import BaseModel
 import models, schemas
 from database import get_db
+import logging
+
+logger = logging.getLogger(__name__)
 
 class BulkDeleteRequest(BaseModel):
     ids: List[int]
@@ -16,6 +19,7 @@ router = APIRouter(
 
 @router.post("/", response_model=schemas.Attendance)
 def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db)):
+    logger.info("Marking attendance", extra={"type": "attendance_mark_attempt", "member_id": attendance.member_id, "session_id": attendance.session_id})
     # Verify member and session exist
     member = db.query(models.Member).filter(models.Member.id == attendance.member_id).first()
     if not member:
@@ -31,6 +35,7 @@ def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(
         models.Attendance.session_id == attendance.session_id
     ).first()
     if existing:
+        logger.warning("Duplicate attendance attempt", extra={"type": "attendance_duplicate", "member_id": attendance.member_id, "session_id": attendance.session_id})
         raise HTTPException(status_code=409, detail="Attendance already marked for this session")
 
     db_attendance = models.Attendance(
@@ -74,6 +79,7 @@ def delete_attendance(attendance_id: int, db: Session = Depends(get_db)):
 def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get_db)):
     if not request.ids:
         raise HTTPException(status_code=400, detail="No IDs provided")
+    logger.warning("Bulk deleting attendance records", extra={"type": "attendance_bulk_delete", "ids": request.ids})
     deleted = db.query(models.Attendance).filter(models.Attendance.id.in_(request.ids)).delete(synchronize_session='fetch')
     db.commit()
     return {"status": "deleted", "count": deleted}
