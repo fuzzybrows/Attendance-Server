@@ -1,15 +1,28 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_BASE = 'http://127.0.0.1:8001';
-
 export const fetchSessions = createAsyncThunk('sessions/fetchSessions', async () => {
-    const response = await axios.get(`${API_BASE}/sessions/`);
+    const response = await axios.get('/sessions/');
     return response.data;
 });
 
 export const addSession = createAsyncThunk('sessions/addSession', async (session) => {
-    const response = await axios.post(`${API_BASE}/sessions/`, session);
+    const response = await axios.post('/sessions/', session);
+    return response.data;
+});
+
+export const deleteSession = createAsyncThunk('sessions/deleteSession', async (sessionId) => {
+    await axios.delete(`/sessions/${sessionId}`);
+    return sessionId;
+});
+
+export const bulkDeleteSessions = createAsyncThunk('sessions/bulkDeleteSessions', async (ids) => {
+    await axios.post('/sessions/bulk-delete', { ids });
+    return ids;
+});
+
+export const updateSessionStatus = createAsyncThunk('sessions/updateSessionStatus', async ({ id, status }) => {
+    const response = await axios.patch(`/sessions/${id}`, { status });
     return response.data;
 });
 
@@ -27,7 +40,27 @@ const sessionsSlice = createSlice({
                 state.items = action.payload;
             })
             .addCase(addSession.fulfilled, (state, action) => {
-                state.items.push(action.payload);
+                state.items.unshift(action.payload);
+            })
+            .addCase(deleteSession.fulfilled, (state, action) => {
+                state.items = state.items.filter(s => s.id !== action.payload);
+                if (state.currentSession?.id === action.payload) {
+                    state.currentSession = null;
+                }
+            })
+            .addCase(bulkDeleteSessions.fulfilled, (state, action) => {
+                const deletedIds = new Set(action.payload);
+                state.items = state.items.filter(s => !deletedIds.has(s.id));
+                if (state.currentSession && deletedIds.has(state.currentSession.id)) {
+                    state.currentSession = null;
+                }
+            })
+            .addCase(updateSessionStatus.fulfilled, (state, action) => {
+                const idx = state.items.findIndex(s => s.id === action.payload.id);
+                if (idx !== -1) state.items[idx] = action.payload;
+                if (state.currentSession?.id === action.payload.id) {
+                    state.currentSession = action.payload;
+                }
             });
     },
 });

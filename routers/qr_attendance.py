@@ -1,0 +1,104 @@
+"""
+QR code attendance endpoints.
+Generates short-lived tokens for session QR codes and verifies them
+when members scan and open the link.
+"""
+from fastapi import APIRouter, Depends, HTTPException, Header
+from sqlalchemy.orm import Session
+from datetime import timedelta
+import models
+from database import get_db
+from auth import create_access_token, SECRET_KEY, ALGORITHM
+from jose import JWTError, jwt
+
+router = APIRouter(
+    prefix="/attendance/qr",
+    tags=["qr-attendance"],
+)
+
+QR_TOKEN_EXPIRE_SECONDS = 30
+
+
+@router.get("/token/{session_id}")
+def generate_qr_token(session_id: int, db: Session = Depends(get_db)):
+    """Generate a short-lived token for QR attendance."""
+    session = db.query(models.Session).filter(models.Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    token = create_access_token(
+        data={"qr_session_id": session_id, "type": "qr_attendance"},
+        expires_delta=timedelta(seconds=QR_TOKEN_EXPIRE_SECONDS)
+    )
+    return {"token": token, "expires_in": QR_TOKEN_EXPIRE_SECONDS}
+
+
+@router.post("/mark")
+def mark_qr_attendance(
+    session_id: int,
+    qr_token: str,
+    authorization: str = Header(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Mark attendance via QR code.
+    Requires both the QR token (from scan) and the user's auth token (from login).
+    """
+    # 1. Verify the QR token
+    try:
+        payload = jwt.decode(qr_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "qr_attendance":
+            raise HTTPException(status_code=400, detail="Invalid QR token type")
+        if payload.get("qr_session_id") != session_id:
+            raise HTTPException(status_code=400, detail="QR token does not match session")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="QR code has expired. Please scan again.")
+
+    # 2. Verify the user's auth token
+    try:
+        auth_token = authorization.replace("Bearer ", "")
+        user_payload = jwt.decode(auth_token, SECRET_KEY, algorithms=[ALGORITHM])
+        member_id = user_payload.get("sub")
+        if not member_id:
+            raise HTTPException(status_code=401, detail="Invalid auth token")
+        member_id = int(member_id)
+    except (JWTError, ValueError):
+        raise HTTPException(status_code=401, detail="Please log in first")
+
+    # 3. Check member exists
+    member = db.query(models.Member).filter(models.Member.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    # 4. Check session exists
+    session = db.query(models.Session).filter(models.Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # 5. Check duplicate
+    existing = db.query(models.Attendance).filter(
+        models.Attendance.member_id == member_id,
+        models.Attendance.session_id == session_id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Attendance already marked for this session")
+
+    # 6. Mark attendance
+    db_attendance = models.Attendance(
+        member_id=member_id,
+        session_id=session_id,
+        latitude=None,
+        longitude=None,
+        submission_type="qr",
+        marked_by_id=None
+    )
+    db.add(db_attendance)
+    db.commit()
+    db.refresh(db_attendance)
+
+    return {
+        "status": "success",
+        "message": f"Attendance marked for {member.firstname} {member.lastname}",
+        "member_name": f"{member.firstname} {member.lastname}",
+        "attendance_id": db_attendance.id
+    }

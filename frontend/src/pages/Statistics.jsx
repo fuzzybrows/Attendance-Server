@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchOverallStats, fetchMemberStats } from '../store/statsSlice';
+import { fetchStats, fetchMemberStats } from '../store/statsSlice';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const COLORS = ['#10b981', '#ef4444', '#6366f1', '#f59e0b'];
@@ -11,7 +11,7 @@ const Statistics = () => {
     const [selectedMember, setSelectedMember] = useState(null);
 
     useEffect(() => {
-        dispatch(fetchOverallStats());
+        dispatch(fetchStats());
     }, [dispatch]);
 
     const handleMemberLookup = (memberId) => {

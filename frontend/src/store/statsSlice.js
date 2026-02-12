@@ -1,10 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_BASE = 'http://127.0.0.1:8001';
+const API_BASE = '';
 
-export const fetchOverallStats = createAsyncThunk('stats/fetchOverallStats', async () => {
-    const response = await axios.get(`${API_BASE}/statistics/overall`);
+export const fetchStats = createAsyncThunk('stats/fetchStats', async () => {
+    const response = await axios.get(`${API_BASE}/attendance/stats`);
     return response.data;
 });
 
@@ -22,7 +22,7 @@ const statsSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(fetchOverallStats.fulfilled, (state, action) => {
+            .addCase(fetchStats.fulfilled, (state, action) => {
                 state.overall = action.payload;
             })
             .addCase(fetchMemberStats.fulfilled, (state, action) => {
