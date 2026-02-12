@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import logger from '../utils/logger';
 
 const API_BASE = '';
 
@@ -10,7 +11,9 @@ export const fetchAttendance = createAsyncThunk('attendance/fetchAttendance', as
 });
 
 export const submitAttendance = createAsyncThunk('attendance/submitAttendance', async (data) => {
+    logger.info('Submitting attendance', { type: 'attendance_submit_attempt', member_id: data.member_id, session_id: data.session_id });
     const response = await axios.post(`${API_BASE}/attendance/`, data);
+    logger.info('Attendance submitted', { type: 'attendance_submit_success', attendance_id: response.data.id });
     return response.data;
 });
 
@@ -20,7 +23,9 @@ export const deleteAttendance = createAsyncThunk('attendance/deleteAttendance', 
 });
 
 export const bulkDeleteAttendance = createAsyncThunk('attendance/bulkDeleteAttendance', async (ids) => {
+    logger.warn('Bulk deleting attendance', { type: 'attendance_bulk_delete_attempt', count: ids.length });
     await axios.post(`${API_BASE}/attendance/bulk-delete`, { ids });
+    logger.info('Attendance bulk deleted', { type: 'attendance_bulk_delete_success' });
     return ids;
 });
 

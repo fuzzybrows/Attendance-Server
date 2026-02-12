@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import logger from '../utils/logger';
 
 export const fetchSessions = createAsyncThunk('sessions/fetchSessions', async () => {
     const response = await axios.get('/sessions/');
@@ -7,12 +8,16 @@ export const fetchSessions = createAsyncThunk('sessions/fetchSessions', async ()
 });
 
 export const addSession = createAsyncThunk('sessions/addSession', async (session) => {
+    logger.info('Adding session', { type: 'session_add_attempt', title: session.title });
     const response = await axios.post('/sessions/', session);
+    logger.info('Session added', { type: 'session_add_success', session_id: response.data.id });
     return response.data;
 });
 
 export const deleteSession = createAsyncThunk('sessions/deleteSession', async (sessionId) => {
+    logger.warn('Deleting session', { type: 'session_delete_attempt', session_id: sessionId });
     await axios.delete(`/sessions/${sessionId}`);
+    logger.info('Session deleted', { type: 'session_delete_success', session_id: sessionId });
     return sessionId;
 });
 
@@ -22,6 +27,7 @@ export const bulkDeleteSessions = createAsyncThunk('sessions/bulkDeleteSessions'
 });
 
 export const updateSessionStatus = createAsyncThunk('sessions/updateSessionStatus', async ({ id, status }) => {
+    logger.info('Updating session status', { type: 'session_status_update', session_id: id, status });
     const response = await axios.patch(`/sessions/${id}`, { status });
     return response.data;
 });

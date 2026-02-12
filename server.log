@@ -1,1 +1,4 @@
 {"timestamp": "2026-02-12 11:55:07,791", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 12:00:26,510", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 12:09:10,276", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "admin@choir.com"}
+{"timestamp": "2026-02-12 12:09:10,582", "level": "INFO", "message": "Login successful", "logger": "routers.auth", "type": "login_success", "login": "admin@choir.com", "member_id": 2}

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import logger from '../utils/logger';
 
 export const fetchMembers = createAsyncThunk('members/fetchMembers', async () => {
     const response = await axios.get('/members/');
@@ -7,12 +8,16 @@ export const fetchMembers = createAsyncThunk('members/fetchMembers', async () =>
 });
 
 export const addMember = createAsyncThunk('members/addMember', async (member) => {
+    logger.info('Adding member', { type: 'member_add_attempt', email: member.email });
     const response = await axios.post('/members/', member);
+    logger.info('Member added', { type: 'member_add_success', member_id: response.data.id });
     return response.data;
 });
 
 export const updateMember = createAsyncThunk('members/updateMember', async ({ id, updates }) => {
+    logger.info('Updating member', { type: 'member_update_attempt', member_id: id });
     const response = await axios.put(`/members/${id}`, updates);
+    logger.info('Member updated', { type: 'member_update_success', member_id: id });
     return response.data;
 });
 

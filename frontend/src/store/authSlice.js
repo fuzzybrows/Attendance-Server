@@ -1,20 +1,27 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import logger from '../utils/logger';
 
 export const login = createAsyncThunk('auth/login', async (credentials, { rejectWithValue }) => {
     try {
+        logger.info('Login attempt', { type: 'login_attempt', login: credentials.login });
         const response = await axios.post('/auth/login', credentials);
+        logger.info('Login successful', { type: 'login_success', login: credentials.login });
         return response.data;
     } catch (err) {
+        logger.warn('Login failed', { type: 'login_failed', login: credentials.login, error: err.message });
         return rejectWithValue(err.response?.data || { detail: 'Network error' });
     }
 });
 
 export const verifyOTP = createAsyncThunk('auth/verifyOTP', async (data, { rejectWithValue }) => {
     try {
+        logger.info('Verifying OTP', { type: 'otp_verification_attempt', login: data.login });
         const response = await axios.post('/auth/verify-otp', data);
+        logger.info('OTP Verified', { type: 'otp_verification_success', login: data.login });
         return response.data;
     } catch (err) {
+        logger.warn('OTP Verification failed', { type: 'otp_verification_failed', login: data.login, error: err.message });
         return rejectWithValue(err.response?.data || { detail: 'Network error' });
     }
 });
