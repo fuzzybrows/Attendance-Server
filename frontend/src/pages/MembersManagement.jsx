@@ -13,8 +13,8 @@ function MembersManagement() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingMember, setEditingMember] = useState(null);
     const [newMember, setNewMember] = useState({
-        firstname: '',
-        lastname: '',
+        first_name: '',
+        last_name: '',
         email: '',
         phone_number: '',
         password: '',
@@ -29,16 +29,16 @@ function MembersManagement() {
     }, [dispatch]);
 
     const filteredMembers = members.filter(m =>
-        m.firstname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.lastname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.email.toLowerCase().includes(searchQuery.toLowerCase())
+        (m.first_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.last_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.email || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const handleAddMember = () => {
         dispatch(addMember({
             ...newMember,
-            firstname: newMember.firstname.trim(),
-            lastname: newMember.lastname.trim(),
+            first_name: newMember.first_name.trim(),
+            last_name: newMember.last_name.trim(),
             email: newMember.email.trim(),
             phone_number: newMember.phone_number.trim(),
             nfc_id: newMember.nfc_id.trim(),
@@ -46,8 +46,8 @@ function MembersManagement() {
         }));
         setIsAddModalOpen(false);
         setNewMember({
-            firstname: '',
-            lastname: '',
+            first_name: '',
+            last_name: '',
             email: '',
             phone_number: '',
             password: '',
@@ -59,8 +59,8 @@ function MembersManagement() {
     const openEditModal = (member) => {
         setEditingMember({
             id: member.id,
-            firstname: member.firstname,
-            lastname: member.lastname,
+            first_name: member.first_name,
+            last_name: member.last_name,
             email: member.email,
             phone_number: member.phone_number || '',
             nfc_id: member.nfc_id || '',
@@ -75,8 +75,8 @@ function MembersManagement() {
         dispatch(updateMember({
             id: editingMember.id,
             updates: {
-                firstname: editingMember.firstname.trim(),
-                lastname: editingMember.lastname.trim(),
+                first_name: editingMember.first_name.trim(),
+                last_name: editingMember.last_name.trim(),
                 email: editingMember.email.trim(),
                 phone_number: (editingMember.phone_number || '').trim() || null,
                 nfc_id: (editingMember.nfc_id || '').trim() || null,
@@ -154,7 +154,7 @@ function MembersManagement() {
                     <tbody>
                         {filteredMembers.map(m => (
                             <tr key={m.id}>
-                                <td>{m.firstname} {m.lastname}</td>
+                                <td>{m.first_name} {m.last_name}</td>
                                 <td>{m.email}</td>
                                 <td>{m.phone_number || 'N/A'}</td>
                                 <td>
@@ -181,8 +181,8 @@ function MembersManagement() {
             {/* Add Member Modal */}
             <Modal title="Add New Member" isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSubmit={handleAddMember}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <input placeholder="First Name" value={newMember.firstname} onChange={e => setNewMember({ ...newMember, firstname: e.target.value })} />
-                    <input placeholder="Last Name" value={newMember.lastname} onChange={e => setNewMember({ ...newMember, lastname: e.target.value })} />
+                    <input placeholder="First Name" value={newMember.first_name} onChange={e => setNewMember({ ...newMember, first_name: e.target.value })} />
+                    <input placeholder="Last Name" value={newMember.last_name} onChange={e => setNewMember({ ...newMember, last_name: e.target.value })} />
                 </div>
                 <input placeholder="Email Address" value={newMember.email} onChange={e => setNewMember({ ...newMember, email: e.target.value })} />
                 <input placeholder="Phone (e.g. +1234567890)" value={newMember.phone_number} onChange={e => setNewMember({ ...newMember, phone_number: e.target.value })} />
@@ -215,8 +215,8 @@ function MembersManagement() {
                 {editingMember && (
                     <>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <input placeholder="First Name" value={editingMember.firstname} onChange={e => setEditingMember({ ...editingMember, firstname: e.target.value })} />
-                            <input placeholder="Last Name" value={editingMember.lastname} onChange={e => setEditingMember({ ...editingMember, lastname: e.target.value })} />
+                            <input placeholder="First Name" value={editingMember.first_name} onChange={e => setEditingMember({ ...editingMember, first_name: e.target.value })} />
+                            <input placeholder="Last Name" value={editingMember.last_name} onChange={e => setEditingMember({ ...editingMember, last_name: e.target.value })} />
                         </div>
                         <input placeholder="Email Address" value={editingMember.email} onChange={e => setEditingMember({ ...editingMember, email: e.target.value })} />
                         <input placeholder="Phone (e.g. +1234567890)" value={editingMember.phone_number} onChange={e => setEditingMember({ ...editingMember, phone_number: e.target.value })} />

@@ -12,6 +12,8 @@ attendance.db
 cleanup_orphans.py
 test_db.py
 test_query.py
+server.log
+backend/server.log
 
 # Node.js
 node_modules/

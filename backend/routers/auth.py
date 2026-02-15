@@ -14,7 +14,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.post("/login")
+@router.post("/login", response_model=schemas.Token)
 def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
     logger.info("Login attempt", extra={"type": "login_attempt", "login": data.login})
     # Find member by email or phone
@@ -43,7 +43,7 @@ def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
     logger.info("Login successful", extra={"type": "login_success", "login": data.login, "member_id": member.id})
     return {"access_token": access_token, "token_type": "bearer", "member": member}
 
-@router.post("/verify-otp")
+@router.post("/verify-otp", response_model=schemas.Token)
 def verify_otp(data: schemas.OTPVerification, db: Session = Depends(get_db)):
     # Use Twilio Verify to check the code
     if not check_verification(data.login, data.otp):
@@ -64,7 +64,7 @@ def verify_otp(data: schemas.OTPVerification, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": member.email})
     return {"access_token": access_token, "token_type": "bearer", "member": member}
 
-@router.post("/forgot-password")
+@router.post("/forgot-password", response_model=schemas.StatusResponse)
 def forgot_password(login: str, db: Session = Depends(get_db)):
     member = db.query(models.Member).filter(
         (models.Member.email == login) | (models.Member.phone_number == login)
@@ -80,7 +80,7 @@ def forgot_password(login: str, db: Session = Depends(get_db)):
         send_sms_verification(member.phone_number)
     return {"status": "otp_sent"}
 
-@router.post("/reset-password")
+@router.post("/reset-password", response_model=schemas.StatusResponse)
 def reset_password(data: schemas.OTPVerification, new_password: str, db: Session = Depends(get_db)):
     # Use Twilio Verify to check the code
     if not check_verification(data.login, data.otp):

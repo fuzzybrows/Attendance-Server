@@ -27,7 +27,7 @@ const Navigation = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                    {user?.firstname} {user?.lastname}
+                    {user?.first_name} {user?.last_name}
                 </span>
                 <button
                     className="btn"

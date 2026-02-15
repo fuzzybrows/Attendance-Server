@@ -32,10 +32,6 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_record)
 
 def setup_logging():
-    # Create a custom logger
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-
     # JSON Formatter
     json_formatter = JSONFormatter('%(asctime)s')
 
@@ -43,15 +39,30 @@ def setup_logging():
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(json_formatter)
-    logger.addHandler(console_handler)
 
     # File Handler
     file_handler = RotatingFileHandler('server.log', maxBytes=10*1024*1024, backupCount=5)
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(json_formatter)
-    logger.addHandler(file_handler)
 
-    # Prevent double logging from uvicorn or other libs if they propagate
-    logging.getLogger("uvicorn.access").handlers = []
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
     
-    logger.info("Logging setup complete", extra={"type": "system_startup"})
+    # Clear existing handlers to avoid duplicates
+    if root_logger.handlers:
+        root_logger.handlers = []
+        
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
+
+    # Configure uvicorn loggers to use our JSON format and handlers
+    for logger_name in ["uvicorn", "uvicorn.error", "uvicorn.access"]:
+        uvicorn_logger = logging.getLogger(logger_name)
+        uvicorn_logger.handlers = []  # Remove default handlers
+        uvicorn_logger.addHandler(console_handler)
+        uvicorn_logger.addHandler(file_handler)
+        uvicorn_logger.propagate = False
+
+    # Explicit log to confirm setup
+    root_logger.info("Logging setup complete", extra={"type": "system_startup"})

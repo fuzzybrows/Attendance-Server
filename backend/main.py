@@ -11,7 +11,7 @@ from logging_config import setup_logging
 # Setup logging before creating app or during startup
 setup_logging()
 
-models.Base.metadata.create_all(bind=engine)
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Choir Attendance Server")
 
@@ -44,7 +44,8 @@ app.include_router(statistics.router)
 app.include_router(qr_attendance.router)
 
 # Serve static files from the React build
-frontend_path = os.path.join(os.getcwd(), "frontend", "dist")
+# Adjust path to go up one level from backend directory
+frontend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
 
 if not os.path.exists(frontend_path):
     os.makedirs(frontend_path)
@@ -58,3 +59,18 @@ async def serve_react_app(full_path: str):
     if os.path.exists(file_path) and os.path.isfile(file_path):
         return FileResponse(file_path)
     return FileResponse(os.path.join(frontend_path, "index.html"))
+
+import logging
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+logger = logging.getLogger("main")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}", exc_info=True, extra={"type": "unhandled_exception", "path": request.url.path})
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal Server Error"},
+    )
+

@@ -32,18 +32,21 @@ function Sessions() {
     }, [dispatch]);
 
     // Redirect non-admin
-    if (!isAdmin) {
-        navigate('/');
-        return null;
-    }
+    useEffect(() => {
+        if (!isAdmin) {
+            navigate('/');
+        }
+    }, [isAdmin, navigate]);
+
+    if (!isAdmin) return null;
 
     // Fuzzy search: case-insensitive substring match on title, type, status
     const fuzzyMatch = (session) => {
         if (!searchQuery.trim()) return true;
         const q = searchQuery.toLowerCase();
         return (
-            session.title.toLowerCase().includes(q) ||
-            session.type.toLowerCase().includes(q) ||
+            (session.title || '').toLowerCase().includes(q) ||
+            (session.type || '').toLowerCase().includes(q) ||
             (session.status || 'active').toLowerCase().includes(q)
         );
     };

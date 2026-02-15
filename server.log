@@ -2,3 +2,335 @@
 {"timestamp": "2026-02-12 12:00:26,510", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
 {"timestamp": "2026-02-12 12:09:10,276", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "admin@choir.com"}
 {"timestamp": "2026-02-12 12:09:10,582", "level": "INFO", "message": "Login successful", "logger": "routers.auth", "type": "login_success", "login": "admin@choir.com", "member_id": 2}
+{"timestamp": "2026-02-12 16:04:16,283", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 16:09:45,081", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 16:09:45,092", "level": "INFO", "message": "Started server process [78916]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:09:45,092", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:09:45,092", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:10:02,968", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:10:03,071", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:10:03,071", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:10:03,072", "level": "INFO", "message": "Finished server process [78916]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:10:07,810", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 16:10:07,821", "level": "INFO", "message": "Started server process [79119]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:10:07,821", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:10:07,822", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:10:20,052", "level": "INFO", "message": "192.168.0.15:39014 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:13:37,252", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "admin@choir.com"}
+{"timestamp": "2026-02-12 16:13:37,554", "level": "INFO", "message": "Login successful", "logger": "routers.auth", "type": "login_success", "login": "admin@choir.com", "member_id": 2}
+{"timestamp": "2026-02-12 16:13:37,554", "level": "INFO", "message": "192.168.0.15:42406 - \"POST /auth/login HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:13:37,752", "level": "INFO", "message": "192.168.0.15:42406 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:13:50,727", "level": "INFO", "message": "192.168.0.15:59906 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:14:09,875", "level": "INFO", "message": "192.168.0.15:44332 - \"GET /attendance/stats HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:14:12,627", "level": "INFO", "message": "192.168.0.15:44332 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:14:13,441", "level": "INFO", "message": "192.168.0.15:44332 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:16:58,008", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "admin@choir.com"}
+{"timestamp": "2026-02-12 16:16:58,291", "level": "INFO", "message": "Login successful", "logger": "routers.auth", "type": "login_success", "login": "admin@choir.com", "member_id": 2}
+{"timestamp": "2026-02-12 16:16:58,291", "level": "INFO", "message": "192.168.0.15:36650 - \"POST /auth/login HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:16:58,558", "level": "INFO", "message": "192.168.0.15:36650 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:17:07,045", "level": "INFO", "message": "192.168.0.15:48798 - \"GET /attendance/session/5 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:17:07,082", "level": "INFO", "message": "192.168.0.15:48798 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:17:09,667", "level": "INFO", "message": "192.168.0.15:48798 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:17:10,929", "level": "INFO", "message": "192.168.0.15:48798 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:17:15,213", "level": "INFO", "message": "192.168.0.15:48798 - \"GET /members/3 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:17:19,202", "level": "INFO", "message": "192.168.0.15:48798 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:17:20,419", "level": "INFO", "message": "192.168.0.15:48798 - \"GET /members/2 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:17:59,190", "level": "INFO", "message": "192.168.0.173:60782 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:18:02,959", "level": "INFO", "message": "192.168.0.173:60782 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:18:04,457", "level": "INFO", "message": "192.168.0.173:60782 - \"GET /members/3 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:19:26,944", "level": "INFO", "message": "192.168.0.173:61269 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:19:30,084", "level": "INFO", "message": "192.168.0.173:61269 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:19:31,591", "level": "INFO", "message": "192.168.0.173:61269 - \"GET /members/3/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:21:34,417", "level": "INFO", "message": "192.168.0.173:61940 - \"GET /docs HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:22:08,718", "level": "INFO", "message": "192.168.0.173:62166 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:22:11,515", "level": "INFO", "message": "192.168.0.173:62166 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:22:12,987", "level": "INFO", "message": "192.168.0.173:62166 - \"GET /members/3/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:24:21,309", "level": "INFO", "message": "192.168.0.173:62886 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:24:23,632", "level": "INFO", "message": "192.168.0.173:62886 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:24:25,204", "level": "INFO", "message": "192.168.0.173:62886 - \"GET /members/3/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:30:17,672", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:30:17,776", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:30:17,778", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:30:17,779", "level": "INFO", "message": "Finished server process [79119]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:30:18,429", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 16:30:18,440", "level": "INFO", "message": "Started server process [81511]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:30:18,440", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:30:18,440", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:31:22,023", "level": "INFO", "message": "192.168.0.173:65179 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:31:25,697", "level": "INFO", "message": "192.168.0.173:65179 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:31:27,202", "level": "INFO", "message": "192.168.0.173:65179 - \"GET /members/3/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:32:07,626", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:32:07,728", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:32:07,729", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:32:07,729", "level": "INFO", "message": "Finished server process [81511]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:32:08,381", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 16:32:08,392", "level": "INFO", "message": "Started server process [81600]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:32:08,392", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:32:08,392", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:09,188", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:09,290", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:09,291", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:09,291", "level": "INFO", "message": "Finished server process [81600]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:14,726", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 16:34:14,737", "level": "INFO", "message": "Started server process [81895]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:14,737", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:14,737", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:31,701", "level": "INFO", "message": "192.168.0.173:49835 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:38,819", "level": "INFO", "message": "192.168.0.173:49880 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:34:40,119", "level": "INFO", "message": "192.168.0.173:49880 - \"GET /members/3/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:41:18,601", "level": "INFO", "message": "192.168.0.173:51356 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:41:21,384", "level": "INFO", "message": "192.168.0.173:51356 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:41:22,933", "level": "INFO", "message": "Fetching member details", "logger": "routers.members", "type": "member_read_attempt", "member_id": 3}
+{"timestamp": "2026-02-12 16:41:22,942", "level": "INFO", "message": "192.168.0.173:51356 - \"GET /members/3 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:42:10,368", "level": "INFO", "message": "192.168.0.173:51631 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:42:12,062", "level": "INFO", "message": "Fetching member details", "logger": "routers.members", "type": "member_read_attempt", "member_id": 2}
+{"timestamp": "2026-02-12 16:42:12,063", "level": "INFO", "message": "192.168.0.173:51631 - \"GET /members/2 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:56:27,039", "level": "INFO", "message": "192.168.0.249:49714 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:56:27,039", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:57:47,323", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "admin@choir.com"}
+{"timestamp": "2026-02-12 16:57:47,626", "level": "INFO", "message": "Login successful", "logger": "routers.auth", "type": "login_success", "login": "admin@choir.com", "member_id": 2}
+{"timestamp": "2026-02-12 16:57:47,627", "level": "INFO", "message": "192.168.0.15:56228 - \"POST /auth/login HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:57:47,804", "level": "INFO", "message": "192.168.0.15:56228 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:57:57,282", "level": "INFO", "message": "192.168.0.15:48260 - \"GET /attendance/session/5 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:57:57,314", "level": "INFO", "message": "192.168.0.15:48260 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:58:10,593", "level": "INFO", "message": "Marking attendance", "logger": "routers.attendance", "type": "attendance_mark_attempt", "member_id": 3, "session_id": 5}
+{"timestamp": "2026-02-12 16:58:10,620", "level": "WARNING", "message": "Duplicate attendance attempt", "logger": "routers.attendance", "type": "attendance_duplicate", "member_id": 3, "session_id": 5}
+{"timestamp": "2026-02-12 16:58:10,621", "level": "INFO", "message": "192.168.0.15:33382 - \"POST /attendance/ HTTP/1.1\" 409", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:58:20,044", "level": "INFO", "message": "192.168.0.15:42414 - \"DELETE /attendance/7 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:58:24,111", "level": "INFO", "message": "192.168.0.15:42414 - \"GET /attendance/session/5 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:58:28,746", "level": "INFO", "message": "192.168.0.15:42414 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:58:35,472", "level": "INFO", "message": "192.168.0.15:54876 - \"GET /attendance/session/5 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:58:35,502", "level": "INFO", "message": "192.168.0.15:54876 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:59:11,563", "level": "INFO", "message": "192.168.0.15:43124 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:59:16,694", "level": "INFO", "message": "192.168.0.15:55684 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:59:24,492", "level": "INFO", "message": "192.168.0.15:46730 - \"DELETE /sessions/5 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:59:28,596", "level": "INFO", "message": "192.168.0.15:46730 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:59:48,368", "level": "INFO", "message": "192.168.0.15:41074 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:59:52,797", "level": "INFO", "message": "192.168.0.15:41074 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 16:59:54,330", "level": "INFO", "message": "192.168.0.15:41074 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:00:29,392", "level": "INFO", "message": "Creating session", "logger": "routers.sessions", "type": "session_create_attempt", "title": "Friday Feb 12th 2026", "session_type": "rehearsal"}
+{"timestamp": "2026-02-12 17:00:29,405", "level": "INFO", "message": "Session created successfully", "logger": "routers.sessions", "type": "session_create_success", "session_id": 1}
+{"timestamp": "2026-02-12 17:00:29,406", "level": "INFO", "message": "192.168.0.15:45342 - \"POST /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:00:29,431", "level": "INFO", "message": "192.168.0.15:45342 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:01:02,980", "level": "INFO", "message": "192.168.0.15:38090 - \"GET /attendance/session/1 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:01:03,012", "level": "INFO", "message": "192.168.0.15:38090 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:01:12,410", "level": "INFO", "message": "Marking attendance", "logger": "routers.attendance", "type": "attendance_mark_attempt", "member_id": 3, "session_id": 1}
+{"timestamp": "2026-02-12 17:01:12,417", "level": "INFO", "message": "192.168.0.15:46692 - \"POST /attendance/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:01:16,500", "level": "INFO", "message": "192.168.0.15:46692 - \"GET /attendance/session/1 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:01:24,011", "level": "INFO", "message": "192.168.0.249:40480 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:01:24,012", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:02:18,443", "level": "INFO", "message": "192.168.0.15:44252 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:14:23,044", "level": "INFO", "message": "192.168.0.173:57432 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:14:26,638", "level": "INFO", "message": "192.168.0.173:57432 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:14:29,988", "level": "INFO", "message": "192.168.0.173:57432 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:23:32,839", "level": "INFO", "message": "192.168.0.173:60462 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:23:40,015", "level": "INFO", "message": "192.168.0.173:60510 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:23:42,126", "level": "INFO", "message": "192.168.0.173:60510 - \"GET /attendance/session/1 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:23:42,151", "level": "INFO", "message": "192.168.0.173:60510 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:27:41,532", "level": "INFO", "message": "192.168.0.173:61854 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:28:11,645", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "oreban4u@yahoo.co.uk"}
+{"timestamp": "2026-02-12 17:28:11,911", "level": "INFO", "message": "Login successful", "logger": "routers.auth", "type": "login_success", "login": "oreban4u@yahoo.co.uk", "member_id": 3}
+{"timestamp": "2026-02-12 17:28:11,915", "level": "INFO", "message": "192.168.0.173:62014 - \"POST /auth/login HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:28:12,004", "level": "INFO", "message": "192.168.0.173:62014 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:28:12,004", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:34:20,154", "level": "INFO", "message": "192.168.0.173:64046 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:34:20,155", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:34:44,777", "level": "INFO", "message": "192.168.0.15:51026 - \"GET /attendance/session/1 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:34:44,810", "level": "INFO", "message": "192.168.0.15:51026 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:34:49,790", "level": "INFO", "message": "192.168.0.15:51026 - \"DELETE /attendance/7 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:34:53,961", "level": "INFO", "message": "192.168.0.15:51026 - \"GET /attendance/session/1 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:34:56,643", "level": "INFO", "message": "192.168.0.15:52838 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:03,894", "level": "INFO", "message": "192.168.0.249:38146 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:03,894", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:09,172", "level": "INFO", "message": "192.168.0.15:38872 - \"GET /attendance/session/1 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:09,210", "level": "INFO", "message": "192.168.0.15:38872 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:17,463", "level": "INFO", "message": "Marking attendance", "logger": "routers.attendance", "type": "attendance_mark_attempt", "member_id": 3, "session_id": 1}
+{"timestamp": "2026-02-12 17:35:17,470", "level": "INFO", "message": "192.168.0.15:54090 - \"POST /attendance/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:21,556", "level": "INFO", "message": "192.168.0.15:54090 - \"GET /attendance/session/1 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:22,630", "level": "INFO", "message": "192.168.0.249:41166 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:22,630", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:24,078", "level": "INFO", "message": "192.168.0.249:41180 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:24,079", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:24,913", "level": "INFO", "message": "192.168.0.249:45480 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:24,913", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:42,434", "level": "INFO", "message": "192.168.0.249:47496 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:42,434", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:58,696", "level": "INFO", "message": "192.168.0.249:40510 - \"GET /attendance/member/3 HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:35:58,697", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:36:55,824", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:36:55,927", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:36:55,929", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:36:55,931", "level": "INFO", "message": "Finished server process [81895]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:36:56,585", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 17:36:56,595", "level": "INFO", "message": "Started server process [83928]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:36:56,595", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:36:56,596", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:37:07,096", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:37:07,199", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:37:07,200", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:37:07,200", "level": "INFO", "message": "Finished server process [83928]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:37:07,769", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 17:37:07,778", "level": "INFO", "message": "Started server process [83942]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:37:07,779", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:37:07,779", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:38:26,648", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:38:26,750", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:38:26,750", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 17:38:26,751", "level": "INFO", "message": "Finished server process [83942]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:02:54,374", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 18:07:44,197", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 18:07:44,272", "level": "INFO", "message": "Started server process [86111]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:07:44,272", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:07:44,273", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:12:18,262", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:12:18,367", "level": "INFO", "message": "Finished server process [86111]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:12:32,218", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 18:12:32,302", "level": "INFO", "message": "Started server process [87752]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:12:32,303", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:12:32,303", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:13:01,394", "level": "INFO", "message": "192.168.0.173:59490 - \"GET /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:13:01,431", "level": "INFO", "message": "192.168.0.173:59492 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:13:01,431", "level": "INFO", "message": "192.168.0.173:59494 - \"GET /attendance/session/4 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:13:10,814", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "admin@choir.com"}
+{"timestamp": "2026-02-12 18:13:10,818", "level": "WARNING", "message": "Login failed - Invalid credentials", "logger": "routers.auth", "type": "login_failed", "login": "admin@choir.com", "reason": "invalid_credentials"}
+{"timestamp": "2026-02-12 18:13:10,819", "level": "INFO", "message": "192.168.0.173:59543 - \"POST /auth/login HTTP/1.1\" 401", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:15:25,520", "level": "INFO", "message": "192.168.0.15:40620 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,461", "level": "INFO", "message": "-- BEGIN Twilio API Request --", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,463", "level": "INFO", "message": "POST Request: https://verify.twilio.com/v2/Services/VA2e8e7d183c9ef99d9a41732e1723584a/Verifications", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,463", "level": "INFO", "message": "Headers:", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,463", "level": "INFO", "message": "Content-Type : application/x-www-form-urlencoded", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,463", "level": "INFO", "message": "Accept : application/json", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,464", "level": "INFO", "message": "User-Agent : twilio-python/9.10.1 (Darwin arm64) Python/3.13.3", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,464", "level": "INFO", "message": "X-Twilio-Client : python-9.10.1", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,464", "level": "INFO", "message": "Accept-Charset : utf-8", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,464", "level": "INFO", "message": "-- END Twilio API Request --", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,910", "level": "INFO", "message": "Response Status Code: 201", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,910", "level": "INFO", "message": "Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '695', 'Connection': 'keep-alive', 'Date': 'Fri, 13 Feb 2026 00:16:31 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQb8d15fefd93584ebe59ee5bff62600cb', 'Twilio-Request-Duration': '0.214', 'X-Home-Region': 'us1', 'X-API-Domain': 'verify.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 f31b50b817654a1216e0d0c0a9e1f6f0.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'IAH50-P1', 'X-Amz-Cf-Id': '11Aw9OkdRuUFEeOEVTdOHo3ZyJZlnkTBUTvxEUdc0JGcUucJ1TXwRw==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:16:31,916", "level": "INFO", "message": "192.168.0.15:44058 - \"POST /auth/forgot-password?login=administrator%40thetechlads.info HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:00,734", "level": "INFO", "message": "-- BEGIN Twilio API Request --", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:00,735", "level": "INFO", "message": "POST Request: https://verify.twilio.com/v2/Services/VA2e8e7d183c9ef99d9a41732e1723584a/VerificationCheck", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:00,735", "level": "INFO", "message": "Headers:", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:00,735", "level": "INFO", "message": "Content-Type : application/x-www-form-urlencoded", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:00,735", "level": "INFO", "message": "Accept : application/json", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:00,735", "level": "INFO", "message": "User-Agent : twilio-python/9.10.1 (Darwin arm64) Python/3.13.3", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:00,735", "level": "INFO", "message": "X-Twilio-Client : python-9.10.1", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:00,735", "level": "INFO", "message": "Accept-Charset : utf-8", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:00,735", "level": "INFO", "message": "-- END Twilio API Request --", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:01,312", "level": "INFO", "message": "Response Status Code: 200", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:01,312", "level": "INFO", "message": "Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '359', 'Connection': 'keep-alive', 'Date': 'Fri, 13 Feb 2026 00:22:01 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQ03b7591be27e832ce5949f7cd2b9b1d2', 'Twilio-Request-Duration': '0.064', 'X-Home-Region': 'us1', 'X-API-Domain': 'verify.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 1f052fe5c4bf8b65aa6ee1af2dbda9e8.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'IAH50-P1', 'X-Amz-Cf-Id': 'ydspqAiEpSgNJiIYCPvWxSR5QSru-eKKrKxHUjaGvwWbZChuXVKJyA==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:01,580", "level": "INFO", "message": "192.168.0.15:44680 - \"POST /auth/reset-password?new_password=admin123 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:29,577", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "administrator@thetechlads.info"}
+{"timestamp": "2026-02-12 18:22:29,827", "level": "INFO", "message": "-- BEGIN Twilio API Request --", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:29,827", "level": "INFO", "message": "POST Request: https://verify.twilio.com/v2/Services/VA2e8e7d183c9ef99d9a41732e1723584a/Verifications", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:29,827", "level": "INFO", "message": "Headers:", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:29,827", "level": "INFO", "message": "Content-Type : application/x-www-form-urlencoded", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:29,828", "level": "INFO", "message": "Accept : application/json", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:29,828", "level": "INFO", "message": "User-Agent : twilio-python/9.10.1 (Darwin arm64) Python/3.13.3", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:29,828", "level": "INFO", "message": "X-Twilio-Client : python-9.10.1", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:29,828", "level": "INFO", "message": "Accept-Charset : utf-8", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:29,828", "level": "INFO", "message": "-- END Twilio API Request --", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:30,131", "level": "INFO", "message": "Response Status Code: 201", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:30,131", "level": "INFO", "message": "Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '695', 'Connection': 'keep-alive', 'Date': 'Fri, 13 Feb 2026 00:22:30 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQ46f3c770b3f5e40e096023d7059ed62a', 'Twilio-Request-Duration': '0.136', 'X-Home-Region': 'us1', 'X-API-Domain': 'verify.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 5dd0955fe20fc8a6a28074fa431ff00a.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'IAH50-P1', 'X-Amz-Cf-Id': '9dhdemLe1YhANJ06W3fmFkZBVyA9pWbidYHtpLgZYfJi0S4BjAR3Sw==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:22:30,131", "level": "INFO", "message": "User unverified, sent verification code", "logger": "routers.auth", "type": "verification_sent", "login": "administrator@thetechlads.info", "method": "email"}
+{"timestamp": "2026-02-12 18:22:30,131", "level": "INFO", "message": "192.168.0.15:59546 - \"POST /auth/login HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,172", "level": "INFO", "message": "-- BEGIN Twilio API Request --", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,172", "level": "INFO", "message": "POST Request: https://verify.twilio.com/v2/Services/VA2e8e7d183c9ef99d9a41732e1723584a/VerificationCheck", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,173", "level": "INFO", "message": "Headers:", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,173", "level": "INFO", "message": "Content-Type : application/x-www-form-urlencoded", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,173", "level": "INFO", "message": "Accept : application/json", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,173", "level": "INFO", "message": "User-Agent : twilio-python/9.10.1 (Darwin arm64) Python/3.13.3", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,173", "level": "INFO", "message": "X-Twilio-Client : python-9.10.1", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,173", "level": "INFO", "message": "Accept-Charset : utf-8", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,173", "level": "INFO", "message": "-- END Twilio API Request --", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,391", "level": "INFO", "message": "Response Status Code: 200", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,392", "level": "INFO", "message": "Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '359', 'Connection': 'keep-alive', 'Date': 'Fri, 13 Feb 2026 00:23:04 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQ9df76cc94d0fd2b0e6aed35ba96c3ca3', 'Twilio-Request-Duration': '0.048', 'X-Home-Region': 'us1', 'X-API-Domain': 'verify.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 3b855a6ae22a2464ebe493a34f4daff4.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'IAH50-P1', 'X-Amz-Cf-Id': 'ZLPjbM7VPuqafEIYhaRw24Ksob4OuyQ33xNSGi4A_asiDb3FEDez2A==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}", "logger": "twilio.http_client", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,444", "level": "INFO", "message": "192.168.0.15:35658 - \"POST /auth/verify-otp HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:23:04,819", "level": "INFO", "message": "192.168.0.15:35658 - \"GET /attendance/member/1 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:29:44,383", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "administrator@thetechlads.info"}
+{"timestamp": "2026-02-12 18:29:44,632", "level": "INFO", "message": "Login successful", "logger": "routers.auth", "type": "login_success", "login": "administrator@thetechlads.info", "member_id": 1}
+{"timestamp": "2026-02-12 18:29:44,633", "level": "INFO", "message": "192.168.0.15:47684 - \"POST /auth/login HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:29:44,888", "level": "INFO", "message": "192.168.0.15:47684 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:29:50,425", "level": "INFO", "message": "192.168.0.15:47696 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:29:54,378", "level": "INFO", "message": "192.168.0.15:47696 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:02,482", "level": "INFO", "message": "192.168.0.15:46380 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:10,790", "level": "INFO", "message": "192.168.0.15:50584 - \"GET /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:10,791", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:53,999", "level": "INFO", "message": "Creating member", "logger": "routers.members", "type": "member_create_attempt", "email": "oreban4u@yahoo.co.uk"}
+{"timestamp": "2026-02-12 18:30:54,274", "level": "INFO", "message": "192.168.0.15:53722 - \"POST /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:54,274", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:54,435", "level": "INFO", "message": "192.168.0.15:56150 - \"GET /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:54,435", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:58,379", "level": "INFO", "message": "192.168.0.15:56152 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:59,816", "level": "INFO", "message": "192.168.0.15:56152 - \"GET /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:30:59,817", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:31:01,569", "level": "INFO", "message": "192.168.0.15:56164 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:36:07,305", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:36:07,411", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:36:07,413", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:36:07,413", "level": "INFO", "message": "Finished server process [87752]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:36:08,070", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-12 18:36:08,156", "level": "INFO", "message": "Started server process [88810]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:36:08,156", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:36:08,156", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:37:19,577", "level": "ERROR", "message": "Unhandled exception: 3 validation errors:\n  {'type': 'string_type', 'loc': ('response', 0, 'name'), 'msg': 'Input should be a valid string', 'input': None}\n  {'type': 'list_type', 'loc': ('response', 0, 'roles'), 'msg': 'Input should be a valid list', 'input': None}\n  {'type': 'bool_type', 'loc': ('response', 0, 'phone_number_verified'), 'msg': 'Input should be a valid boolean', 'input': None}\n\n  File \"/Users/oreoluwabanwo/Documents/Projects/Attendance Server/routers/members.py\", line 43, in read_members\n    GET /members/", "logger": "main", "type": "unhandled_exception", "path": "/members/"}
+{"timestamp": "2026-02-12 18:37:19,577", "level": "INFO", "message": "192.168.0.15:48040 - \"GET /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-12 18:37:19,577", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:23:12,597", "level": "INFO", "message": "Login attempt", "logger": "routers.auth", "type": "login_attempt", "login": "administrator@thetechlads.info"}
+{"timestamp": "2026-02-13 07:23:12,951", "level": "INFO", "message": "Login successful", "logger": "routers.auth", "type": "login_success", "login": "administrator@thetechlads.info", "member_id": 1}
+{"timestamp": "2026-02-13 07:23:12,954", "level": "INFO", "message": "192.168.0.173:52347 - \"POST /auth/login HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:23:13,072", "level": "ERROR", "message": "Unhandled exception: 3 validation errors:\n  {'type': 'string_type', 'loc': ('response', 0, 'name'), 'msg': 'Input should be a valid string', 'input': None}\n  {'type': 'list_type', 'loc': ('response', 0, 'roles'), 'msg': 'Input should be a valid list', 'input': None}\n  {'type': 'bool_type', 'loc': ('response', 0, 'phone_number_verified'), 'msg': 'Input should be a valid boolean', 'input': None}\n\n  File \"/Users/oreoluwabanwo/Documents/Projects/Attendance Server/routers/members.py\", line 43, in read_members\n    GET /members/", "logger": "main", "type": "unhandled_exception", "path": "/members/"}
+{"timestamp": "2026-02-13 07:23:13,072", "level": "INFO", "message": "192.168.0.173:52347 - \"GET /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:23:13,072", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:23:13,230", "level": "INFO", "message": "192.168.0.173:52351 - \"GET /attendance/session/4 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:23:13,231", "level": "INFO", "message": "192.168.0.173:52350 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:23:32,214", "level": "WARNING", "message": "QR Token gen failed - Session not found", "logger": "routers.qr_attendance", "type": "qr_token_gen_failed", "session_id": 4, "reason": "session_not_found"}
+{"timestamp": "2026-02-13 07:23:32,223", "level": "INFO", "message": "192.168.0.173:52476 - \"GET /attendance/qr/token/4 HTTP/1.1\" 404", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:23:53,699", "level": "ERROR", "message": "Unhandled exception: 3 validation errors:\n  {'type': 'string_type', 'loc': ('response', 0, 'name'), 'msg': 'Input should be a valid string', 'input': None}\n  {'type': 'list_type', 'loc': ('response', 0, 'roles'), 'msg': 'Input should be a valid list', 'input': None}\n  {'type': 'bool_type', 'loc': ('response', 0, 'phone_number_verified'), 'msg': 'Input should be a valid boolean', 'input': None}\n\n  File \"/Users/oreoluwabanwo/Documents/Projects/Attendance Server/routers/members.py\", line 43, in read_members\n    GET /members/", "logger": "main", "type": "unhandled_exception", "path": "/members/"}
+{"timestamp": "2026-02-13 07:23:53,699", "level": "INFO", "message": "192.168.0.173:52605 - \"GET /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:23:53,700", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:24:00,070", "level": "INFO", "message": "192.168.0.173:52643 - \"GET /sessions/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:24:00,071", "level": "INFO", "message": "192.168.0.173:52644 - \"GET /attendance/session/4 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:24:00,072", "level": "ERROR", "message": "Unhandled exception: 3 validation errors:\n  {'type': 'string_type', 'loc': ('response', 0, 'name'), 'msg': 'Input should be a valid string', 'input': None}\n  {'type': 'list_type', 'loc': ('response', 0, 'roles'), 'msg': 'Input should be a valid list', 'input': None}\n  {'type': 'bool_type', 'loc': ('response', 0, 'phone_number_verified'), 'msg': 'Input should be a valid boolean', 'input': None}\n\n  File \"/Users/oreoluwabanwo/Documents/Projects/Attendance Server/routers/members.py\", line 43, in read_members\n    GET /members/", "logger": "main", "type": "unhandled_exception", "path": "/members/"}
+{"timestamp": "2026-02-13 07:24:00,072", "level": "INFO", "message": "192.168.0.173:52642 - \"GET /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:24:00,072", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:24:08,508", "level": "ERROR", "message": "Unhandled exception: 3 validation errors:\n  {'type': 'string_type', 'loc': ('response', 0, 'name'), 'msg': 'Input should be a valid string', 'input': None}\n  {'type': 'list_type', 'loc': ('response', 0, 'roles'), 'msg': 'Input should be a valid list', 'input': None}\n  {'type': 'bool_type', 'loc': ('response', 0, 'phone_number_verified'), 'msg': 'Input should be a valid boolean', 'input': None}\n\n  File \"/Users/oreoluwabanwo/Documents/Projects/Attendance Server/routers/members.py\", line 43, in read_members\n    GET /members/", "logger": "main", "type": "unhandled_exception", "path": "/members/"}
+{"timestamp": "2026-02-13 07:24:08,508", "level": "INFO", "message": "192.168.0.173:52688 - \"GET /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:24:08,509", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:25:32,880", "level": "INFO", "message": "Creating member", "logger": "routers.members", "type": "member_create_attempt", "email": "member_test@thetechlads.info"}
+{"timestamp": "2026-02-13 07:25:33,208", "level": "INFO", "message": "Member created successfully", "logger": "routers.members", "type": "member_create_success", "member_id": 2, "email": "member_test@thetechlads.info"}
+{"timestamp": "2026-02-13 07:25:33,210", "level": "INFO", "message": "192.168.0.173:53157 - \"POST /members/ HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:25:56,590", "level": "INFO", "message": "Updating member", "logger": "routers.members", "type": "member_update", "member_id": 2}
+{"timestamp": "2026-02-13 07:25:56,625", "level": "INFO", "message": "192.168.0.173:53302 - \"PUT /members/2 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:26:02,266", "level": "INFO", "message": "Updating member", "logger": "routers.members", "type": "member_update", "member_id": 2}
+{"timestamp": "2026-02-13 07:26:02,272", "level": "INFO", "message": "192.168.0.173:53333 - \"PUT /members/2 HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:28:04,220", "level": "INFO", "message": "192.168.0.173:54009 - \"GET /members HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:28:04,302", "level": "INFO", "message": "192.168.0.173:54010 - \"GET /assets/index-9ImvFTal.js HTTP/1.1\" 304", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:28:04,303", "level": "INFO", "message": "192.168.0.173:54009 - \"GET /assets/index-BSmyBkuo.css HTTP/1.1\" 304", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:28:04,684", "level": "ERROR", "message": "Unhandled exception: 2 validation errors:\n  {'type': 'string_type', 'loc': ('response', 0, 'name'), 'msg': 'Input should be a valid string', 'input': None}\n  {'type': 'list_type', 'loc': ('response', 0, 'roles'), 'msg': 'Input should be a valid list', 'input': None}\n\n  File \"/Users/oreoluwabanwo/Documents/Projects/Attendance Server/routers/members.py\", line 43, in read_members\n    GET /members/", "logger": "main", "type": "unhandled_exception", "path": "/members/"}
+{"timestamp": "2026-02-13 07:28:04,684", "level": "INFO", "message": "192.168.0.173:54009 - \"GET /members/ HTTP/1.1\" 500", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:28:04,684", "level": "ERROR", "message": "Exception in ASGI application\n", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 07:28:04,892", "level": "INFO", "message": "192.168.0.173:54010 - \"GET /vite.svg HTTP/1.1\" 200", "logger": "uvicorn.access", "type": "generic_log"}
+{"timestamp": "2026-02-13 11:59:07,154", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 11:59:07,260", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 11:59:07,263", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 11:59:07,265", "level": "INFO", "message": "Finished server process [88810]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:21:22,742", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-13 12:21:22,911", "level": "INFO", "message": "Started server process [99828]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:21:22,911", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:21:22,912", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:24:45,774", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:24:45,887", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:24:45,891", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:24:45,893", "level": "INFO", "message": "Finished server process [99828]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:24:46,547", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-13 12:24:46,556", "level": "INFO", "message": "Started server process [933]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:24:46,556", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:24:46,556", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:40:57,000", "level": "INFO", "message": "Shutting down", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:40:57,109", "level": "INFO", "message": "Waiting for application shutdown.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:40:57,113", "level": "INFO", "message": "Application shutdown complete.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:40:57,113", "level": "INFO", "message": "Finished server process [933]", "logger": "uvicorn.error", "color_message": "Finished server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:40:57,736", "level": "INFO", "message": "Logging setup complete", "logger": "root", "type": "system_startup"}
+{"timestamp": "2026-02-13 12:40:57,745", "level": "INFO", "message": "Started server process [1653]", "logger": "uvicorn.error", "color_message": "Started server process [\u001b[36m%d\u001b[0m]", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:40:57,745", "level": "INFO", "message": "Waiting for application startup.", "logger": "uvicorn.error", "type": "generic_log"}
+{"timestamp": "2026-02-13 12:40:57,746", "level": "INFO", "message": "Application startup complete.", "logger": "uvicorn.error", "type": "generic_log"}

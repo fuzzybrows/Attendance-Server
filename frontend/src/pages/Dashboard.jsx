@@ -23,7 +23,7 @@ function Dashboard() {
     const [isMemberModalOpen, setMemberModalOpen] = useState(false);
     const [isSessionModalOpen, setSessionModalOpen] = useState(false);
 
-    const [newMember, setNewMember] = useState({ name: '', email: '', nfc_id: '' });
+    const [newMember, setNewMember] = useState({ first_name: '', last_name: '', email: '', nfc_id: '' });
     const [newSession, setNewSession] = useState({ title: '', type: 'rehearsal', start_time: new Date() });
 
     // Delete confirmation state
@@ -203,12 +203,13 @@ function Dashboard() {
     const handleAddMember = () => {
         dispatch(addMember({
             ...newMember,
-            name: newMember.name.trim(),
+            first_name: newMember.first_name.trim(),
+            last_name: newMember.last_name.trim(),
             email: newMember.email.trim(),
             nfc_id: newMember.nfc_id.trim()
         }));
         setMemberModalOpen(false);
-        setNewMember({ name: '', email: '', nfc_id: '' });
+        setNewMember({ first_name: '', last_name: '', email: '', nfc_id: '' });
     };
 
     const handleAddSession = () => {
@@ -598,7 +599,7 @@ function Dashboard() {
                                 {Array.isArray(attendance) ? attendance.map(a => {
                                     const member = members.find(m => m.id === a.member_id);
                                     const markedBy = members.find(m => m.id === a.marked_by_id);
-                                    const memberName = member ? `${member.firstname} ${member.lastname}` : 'Unknown';
+                                    const memberName = member ? `${member.first_name} ${member.last_name}` : 'Unknown';
                                     return (
                                         <tr key={a.id} style={{ background: selectedAttendance.has(a.id) ? 'rgba(129, 140, 248, 0.08)' : undefined }}>
                                             {isAdmin && (
@@ -619,7 +620,7 @@ function Dashboard() {
                                             <td>{memberName}</td>
                                             <td>{new Date(a.timestamp).toLocaleTimeString()}</td>
                                             <td><span className={`status-badge status-${a.submission_type}`}>{a.submission_type}</span></td>
-                                            <td>{markedBy ? `${markedBy.firstname} ${markedBy.lastname}` : 'Self'}</td>
+                                            <td>{markedBy ? `${markedBy.first_name} ${markedBy.last_name}` : 'Self'}</td>
                                             <td>{a.latitude ? `${a.latitude.toFixed(4)}, ${a.longitude.toFixed(4)}` : 'N/A'}</td>
                                             {isAdmin && (
                                                 <td>
@@ -655,7 +656,7 @@ function Dashboard() {
                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 {members.filter(m => !attendance.some(a => a.member_id === m.id)).map(m => (
                                     <button key={m.id} className="btn" style={{ background: 'rgba(255,255,255,0.1)' }} onClick={() => handleMarkAttendance(m.id)}>
-                                        {m.firstname} {m.lastname}
+                                        {m.first_name} {m.last_name}
                                     </button>
                                 ))}
                             </div>
@@ -665,7 +666,10 @@ function Dashboard() {
             </div>
 
             <Modal title="Add New Member" isOpen={isMemberModalOpen} onClose={() => setMemberModalOpen(false)} onSubmit={handleAddMember}>
-                <input placeholder="Full Name" value={newMember.name} onChange={e => setNewMember({ ...newMember, name: e.target.value })} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <input placeholder="First Name" value={newMember.first_name} onChange={e => setNewMember({ ...newMember, first_name: e.target.value })} />
+                    <input placeholder="Last Name" value={newMember.last_name} onChange={e => setNewMember({ ...newMember, last_name: e.target.value })} />
+                </div>
                 <input placeholder="Email Address" value={newMember.email} onChange={e => setNewMember({ ...newMember, email: e.target.value })} />
                 <input placeholder="NFC ID (Optional)" value={newMember.nfc_id} onChange={e => setNewMember({ ...newMember, nfc_id: e.target.value })} />
             </Modal>

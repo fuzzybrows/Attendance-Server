@@ -59,12 +59,17 @@ def read_attendance(session_id: int, db: Session = Depends(get_db)):
 
 @router.get("/member/{member_id}", response_model=List[schemas.AttendanceWithSession])
 def get_member_attendance(member_id: int, db: Session = Depends(get_db)):
-    attendance = db.query(models.Attendance)\
-        .options(joinedload(models.Attendance.session))\
-        .filter(models.Attendance.member_id == member_id)\
-        .order_by(models.Attendance.timestamp.desc())\
-        .all()
-    return attendance
+    try:
+        attendance = db.query(models.Attendance)\
+            .join(models.Session)\
+            .options(joinedload(models.Attendance.session))\
+            .filter(models.Attendance.member_id == member_id)\
+            .order_by(models.Attendance.timestamp.desc())\
+            .all()
+        return attendance
+    except Exception as e:
+        logger.error(f"Error fetching member attendance: {str(e)}", exc_info=True, extra={"type": "attendance_read_error", "member_id": member_id})
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.delete("/{attendance_id}")
 def delete_attendance(attendance_id: int, db: Session = Depends(get_db)):
@@ -85,7 +90,7 @@ def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get
     return {"status": "deleted", "count": deleted}
 
 
-@router.get("/stats")
+@router.get("/stats", response_model=List[schemas.AttendanceStats])
 def get_overall_stats(db: Session = Depends(get_db)):
     members = db.query(models.Member).all()
     attendance = db.query(models.Attendance).all()
@@ -109,7 +114,7 @@ def get_overall_stats(db: Session = Depends(get_db)):
 
         stats.append({
             "member_id": member.id,
-            "name": member.name,
+            "name": member.full_name,
             "total_sessions": total,
             "prompt_count": prompt,
             "late_count": late,

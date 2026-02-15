@@ -6,7 +6,7 @@ when members scan and open the link.
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from datetime import timedelta
-import models
+import models, schemas
 from database import get_db
 from auth import create_access_token, SECRET_KEY, ALGORITHM
 from jose import JWTError, jwt
@@ -22,7 +22,7 @@ router = APIRouter(
 QR_TOKEN_EXPIRE_SECONDS = 30
 
 
-@router.get("/token/{session_id}")
+@router.get("/token/{session_id}", response_model=schemas.QRTokenResponse)
 def generate_qr_token(session_id: int, db: Session = Depends(get_db)):
     """Generate a short-lived token for QR attendance."""
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
@@ -39,7 +39,7 @@ def generate_qr_token(session_id: int, db: Session = Depends(get_db)):
     return {"token": token, "expires_in": QR_TOKEN_EXPIRE_SECONDS}
 
 
-@router.post("/mark")
+@router.post("/mark", response_model=schemas.QRMarkResponse)
 def mark_qr_attendance(
     session_id: int,
     qr_token: str,
@@ -108,7 +108,7 @@ def mark_qr_attendance(
     logger.info("QR Attendance marked", extra={"type": "qr_attendance_success", "member_id": member.id, "session_id": session_id})
     return {
         "status": "success",
-        "message": f"Attendance marked for {member.firstname} {member.lastname}",
-        "member_name": f"{member.firstname} {member.lastname}",
+        "message": f"Attendance marked for {member.first_name} {member.last_name}",
+        "member_name": member.full_name,
         "attendance_id": db_attendance.id
     }

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-import models
+import models, schemas
 from database import get_db
 
 router = APIRouter(
@@ -10,7 +10,7 @@ router = APIRouter(
 )
 
 
-@router.get("/member/{member_id}")
+@router.get("/member/{member_id}", response_model=schemas.MemberStatsResponse)
 def get_member_stats(member_id: int, db: Session = Depends(get_db)):
     member = db.query(models.Member).filter(models.Member.id == member_id).first()
     if not member:
@@ -31,6 +31,6 @@ def get_member_stats(member_id: int, db: Session = Depends(get_db)):
         })
 
     return {
-        "member_name": member.name,
+        "member_name": member.full_name,
         "history": history
     }

@@ -9,36 +9,52 @@ class SessionStatus(str, enum.Enum):
     CONCLUDED = "concluded"
     ARCHIVED = "archived"
 
-class Permission(str, enum.Enum):
-    ADMIN = "admin"
-    MEMBER = "member"
-    EDITOR = "editor"
+from sqlalchemy import Table
 
-class Role(str, enum.Enum):
-    SOPRANO = "soprano"
-    ALTO = "alto"
-    TENOR = "tenor"
-    BASS = "bass"
-    BASS_GUITAR = "bass_guitar"
-    KEYBOARD = "keyboard"
-    DRUMS = "drums"
-    ELECTRIC_GUITAR = "electric_guitar"
+# Association Tables
+member_roles = Table(
+    'member_roles', Base.metadata,
+    Column('member_id', Integer, ForeignKey('members.id')),
+    Column('role_id', Integer, ForeignKey('roles.id'))
+)
+
+member_permissions = Table(
+    'member_permissions', Base.metadata,
+    Column('member_id', Integer, ForeignKey('members.id')),
+    Column('permission_id', Integer, ForeignKey('permissions.id'))
+)
+
+class Role(Base):
+    __tablename__ = "roles"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    description = Column(String, nullable=True)
+
+class Permission(Base):
+    __tablename__ = "permissions"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    description = Column(String, nullable=True)
 
 class Member(Base):
     __tablename__ = "members"
 
     id = Column(Integer, primary_key=True, index=True)
-    firstname = Column(String)
-    lastname = Column(String)
-    name = Column(String, index=True) # Kept for backward compatibility/concatenation
+    first_name = Column(String)
+    last_name = Column(String)
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+    # name column removed, computed dynamic property in schema
     email = Column(String, unique=True, index=True)
     phone_number = Column(String, unique=True, index=True, nullable=True)
     password_hash = Column(String, nullable=True)
     nfc_id = Column(String, unique=True, index=True, nullable=True)
     
-    # Roles and Permissions stored as list of strings (JSON)
-    roles = Column(JSON, default=[]) # e.g. ["soprano", "keyboard"]
-    permissions = Column(JSON, default=["member"]) # Every member has "member" perm
+    # Relationships
+    roles = relationship("Role", secondary=member_roles, backref="members")
+    permissions = relationship("Permission", secondary=member_permissions, backref="members")
     
     email_verified = Column(Boolean, default=False)
     phone_number_verified = Column(Boolean, default=False)
