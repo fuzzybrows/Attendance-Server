@@ -14,7 +14,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.post("/login", response_model=schemas.Token)
+@router.post("/login")
 def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
     logger.info("Login attempt", extra={"type": "login_attempt", "login": data.login})
     # Find member by email or phone
@@ -91,6 +91,13 @@ def reset_password(data: schemas.OTPVerification, new_password: str, db: Session
     ).first()
     
     member.password_hash = get_password_hash(new_password)
+    
+    # OTP was verified, so mark the contact method as verified
+    if "@" in data.login:
+        member.email_verified = True
+    else:
+        member.phone_number_verified = True
+    
     db.commit()
     return {"status": "password_reset_success"}
 
