@@ -4,6 +4,7 @@ from typing import List
 from pydantic import BaseModel
 import models, schemas
 from database import get_db
+from auth import get_current_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=schemas.Attendance)
-def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db)):
+def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     logger.info("Marking attendance", extra={"type": "attendance_mark_attempt", "member_id": attendance.member_id, "session_id": attendance.session_id})
     # Verify member and session exist
     member = db.query(models.Member).filter(models.Member.id == attendance.member_id).first()
@@ -52,13 +53,13 @@ def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(
     return db_attendance
 
 @router.get("/session/{session_id}", response_model=List[schemas.Attendance])
-def read_attendance(session_id: int, db: Session = Depends(get_db)):
+def read_attendance(session_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     attendance = db.query(models.Attendance).filter(models.Attendance.session_id == session_id).all()
     attendance = db.query(models.Attendance).filter(models.Attendance.session_id == session_id).all()
     return attendance
 
 @router.get("/member/{member_id}", response_model=List[schemas.AttendanceWithSession])
-def get_member_attendance(member_id: int, db: Session = Depends(get_db)):
+def get_member_attendance(member_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     try:
         attendance = db.query(models.Attendance)\
             .join(models.Session)\
@@ -72,7 +73,7 @@ def get_member_attendance(member_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.delete("/{attendance_id}")
-def delete_attendance(attendance_id: int, db: Session = Depends(get_db)):
+def delete_attendance(attendance_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     attendance = db.query(models.Attendance).filter(models.Attendance.id == attendance_id).first()
     if not attendance:
         raise HTTPException(status_code=404, detail="Attendance record not found")
@@ -81,7 +82,7 @@ def delete_attendance(attendance_id: int, db: Session = Depends(get_db)):
     return {"status": "deleted", "attendance_id": attendance_id}
 
 @router.post("/bulk-delete")
-def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get_db)):
+def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     if not request.ids:
         raise HTTPException(status_code=400, detail="No IDs provided")
     logger.warning("Bulk deleting attendance records", extra={"type": "attendance_bulk_delete", "ids": request.ids})
@@ -91,7 +92,7 @@ def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get
 
 
 @router.get("/stats", response_model=List[schemas.AttendanceStats])
-def get_overall_stats(db: Session = Depends(get_db)):
+def get_overall_stats(db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     members = db.query(models.Member).all()
     attendance = db.query(models.Attendance).all()
     sessions = {s.id: s for s in db.query(models.Session).all()}

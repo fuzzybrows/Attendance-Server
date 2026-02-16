@@ -1,5 +1,5 @@
 # Python
-__pycache__
+__pycache__/
 *.py[cod]
 *.pyc
 *$py.class
@@ -8,12 +8,27 @@ __pycache__
 env/
 venv/
 ENV/
+*.egg-info/
+dist/
+build/
+
+# Database
 attendance.db
+
+# Test / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# One-off scripts
 cleanup_orphans.py
 test_db.py
 test_query.py
-server.log
-app/server.log
+
+# Deploy
 deploy/
 
 # OS

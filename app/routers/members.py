@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
 from database import get_db
-from auth import get_password_hash
+from auth import get_password_hash, get_current_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=schemas.Member)
-def create_member(member: schemas.MemberCreate, db: Session = Depends(get_db)):
+def create_member(member: schemas.MemberCreate, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     logger.info("Creating member", extra={"type": "member_create_attempt", "email": member.email})
     # Check if already exists
     existing = db.query(models.Member).filter(models.Member.email == member.email).first()
@@ -43,12 +43,12 @@ def create_member(member: schemas.MemberCreate, db: Session = Depends(get_db)):
     return db_member
 
 @router.get("/", response_model=List[schemas.Member])
-def read_members(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_members(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     members = db.query(models.Member).offset(skip).limit(limit).all()
     return members
 
 @router.get("/{member_id}", response_model=schemas.Member)
-def read_member(member_id: int, db: Session = Depends(get_db)):
+def read_member(member_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     logger.info("Fetching member details", extra={"type": "member_read_attempt", "member_id": member_id})
     db_member = db.query(models.Member).filter(models.Member.id == member_id).first()
     if db_member is None:
@@ -57,17 +57,26 @@ def read_member(member_id: int, db: Session = Depends(get_db)):
     return db_member
 
 @router.put("/{member_id}", response_model=schemas.Member)
-def update_member(member_id: int, member_update: schemas.MemberUpdate, db: Session = Depends(get_db)):
+def update_member(member_id: int, member_update: schemas.MemberUpdate, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     logger.info("Updating member", extra={"type": "member_update", "member_id": member_id})
     db_member = db.query(models.Member).filter(models.Member.id == member_id).first()
     if not db_member:
         raise HTTPException(status_code=404, detail="Member not found")
     
     update_data = member_update.model_dump(exclude_unset=True)
+    
+    # Handle M2M relationships separately
+    if "roles" in update_data:
+        role_names = update_data.pop("roles")
+        db_member.roles = db.query(models.Role).filter(models.Role.name.in_(role_names)).all()
+    
+    if "permissions" in update_data:
+        perm_names = update_data.pop("permissions")
+        db_member.permissions = db.query(models.Permission).filter(models.Permission.name.in_(perm_names)).all()
+    
+    # Handle remaining scalar fields
     for key, value in update_data.items():
         setattr(db_member, key, value)
-    
-    # Update logic for name removed as name is dynamic
     
     db.commit()
     db.refresh(db_member)

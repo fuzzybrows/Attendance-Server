@@ -14,7 +14,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.post("/login")
+@router.post("/login", response_model=schemas.LoginResponse)
 def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
     logger.info("Login attempt", extra={"type": "login_attempt", "login": data.login})
     # Find member by email or phone

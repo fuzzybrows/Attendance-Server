@@ -40,7 +40,7 @@ from fastapi.testclient import TestClient
 from database import Base, get_db
 from main import app
 import models
-from auth import get_password_hash
+from auth import get_password_hash, get_current_user
 
 
 def _create_test_db():
@@ -108,9 +108,30 @@ def db_session():
     session.close()
 
 
+def _fake_current_user():
+    """Stub for get_current_user — returns a test email."""
+    return "test@example.com"
+
+
 @pytest.fixture
 def client(db_session):
-    """Create a FastAPI test client with overridden DB dependency."""
+    """Create an authenticated FastAPI test client with overridden DB and auth."""
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = _fake_current_user
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def unauth_client(db_session):
+    """Create an unauthenticated test client (no auth override)."""
     def override_get_db():
         try:
             yield db_session
@@ -160,3 +181,4 @@ def created_session(client, sample_session_data):
     response = client.post("/sessions/", json=sample_session_data)
     assert response.status_code == 200
     return response.json()
+

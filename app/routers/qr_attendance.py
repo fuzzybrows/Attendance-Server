@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 import models, schemas
 from database import get_db
-from auth import create_access_token, SECRET_KEY, ALGORITHM
+from auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
 from jose import JWTError, jwt
 import logging
 
@@ -23,7 +23,7 @@ QR_TOKEN_EXPIRE_SECONDS = 30
 
 
 @router.get("/token/{session_id}", response_model=schemas.QRTokenResponse)
-def generate_qr_token(session_id: int, db: Session = Depends(get_db)):
+def generate_qr_token(session_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     """Generate a short-lived token for QR attendance."""
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not session:
@@ -67,15 +67,14 @@ def mark_qr_attendance(
     try:
         auth_token = authorization.replace("Bearer ", "")
         user_payload = jwt.decode(auth_token, SECRET_KEY, algorithms=[ALGORITHM])
-        member_id = user_payload.get("sub")
-        if not member_id:
+        user_email = user_payload.get("sub")
+        if not user_email:
             raise HTTPException(status_code=401, detail="Invalid auth token")
-        member_id = int(member_id)
-    except (JWTError, ValueError):
+    except JWTError:
         raise HTTPException(status_code=401, detail="Please log in first")
 
     # 3. Check member exists
-    member = db.query(models.Member).filter(models.Member.id == member_id).first()
+    member = db.query(models.Member).filter(models.Member.email == user_email).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
@@ -86,7 +85,7 @@ def mark_qr_attendance(
 
     # 5. Check duplicate
     existing = db.query(models.Attendance).filter(
-        models.Attendance.member_id == member_id,
+        models.Attendance.member_id == member.id,
         models.Attendance.session_id == session_id
     ).first()
     if existing:
@@ -94,7 +93,7 @@ def mark_qr_attendance(
 
     # 6. Mark attendance
     db_attendance = models.Attendance(
-        member_id=member_id,
+        member_id=member.id,
         session_id=session_id,
         latitude=None,
         longitude=None,

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import models, schemas
 from database import get_db
+from auth import get_current_user
 
 router = APIRouter(
     prefix="/statistics",
@@ -11,7 +12,7 @@ router = APIRouter(
 
 
 @router.get("/member/{member_id}", response_model=schemas.MemberStatsResponse)
-def get_member_stats(member_id: int, db: Session = Depends(get_db)):
+def get_member_stats(member_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     member = db.query(models.Member).filter(models.Member.id == member_id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")

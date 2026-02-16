@@ -24,8 +24,8 @@ class TestQRMark:
         qr_resp = client.get(f"/attendance/qr/token/{created_session['id']}")
         qr_token = qr_resp.json()["token"]
 
-        # Generate auth token with member ID as sub (QR endpoint does int(sub))
-        auth_token = create_access_token(data={"sub": str(created_member["id"])})
+        # Generate auth token with member email as sub
+        auth_token = create_access_token(data={"sub": created_member["email"]})
 
         response = client.post(
             "/attendance/qr/mark",
@@ -76,7 +76,7 @@ class TestQRMark:
     def test_mark_qr_attendance_duplicate(self, client, created_member, created_session):
         qr_resp = client.get(f"/attendance/qr/token/{created_session['id']}")
         qr_token = qr_resp.json()["token"]
-        auth_token = create_access_token(data={"sub": str(created_member["id"])})
+        auth_token = create_access_token(data={"sub": created_member["email"]})
 
         # First mark
         client.post(
