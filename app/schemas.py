@@ -59,7 +59,6 @@ class MemberCreate(MemberBase):
 
 class Member(MemberBase):
     id: int
-    
     full_name: str
     # name: str # Full name removed
     roles: List[str] = []

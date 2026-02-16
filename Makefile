@@ -2,7 +2,7 @@
 
 SHELL := /bin/bash
 
-.PHONY: install run dev clean migrations migrate
+.PHONY: install run dev clean migrations migrate test coverage
 
 # Default port
 PORT ?= 8001
@@ -41,3 +41,13 @@ migrations:
 # Usage: make migrate [cmd="upgrade head"]
 migrate:
 	cd app && source ../$(VENV)/bin/activate && ../$(VENV)/bin/alembic $(or $(cmd),upgrade head)
+
+# Testing
+
+# Run all tests
+test:
+	cd app && source ../$(VENV)/bin/activate && ../$(VENV)/bin/pytest tests/ -v
+
+# Run tests with coverage report
+coverage:
+	cd app && source ../$(VENV)/bin/activate && ../$(VENV)/bin/pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=html:../htmlcov --cov-config=../pyproject.toml

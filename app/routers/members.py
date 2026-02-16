@@ -22,17 +22,19 @@ def create_member(member: schemas.MemberCreate, db: Session = Depends(get_db)):
     if existing:
         logger.warning("Registration failed - Email exists", extra={"type": "member_create_failed", "email": member.email, "reason": "duplicate_email"})
         raise HTTPException(status_code=400, detail="Email already registered")
-        
+    
+    # Look up default permission object
+    default_perm = db.query(models.Permission).filter_by(name="member").first()
+    
     db_member = models.Member(
         first_name=member.first_name,
         last_name=member.last_name,
-        # name is computed
         email=member.email,
         phone_number=member.phone_number,
         password_hash=get_password_hash(member.password),
         nfc_id=member.nfc_id,
-        roles=["member"], # Default role
-        permissions=["member"] # Default perm
+        roles=[],
+        permissions=[default_perm] if default_perm else [],
     )
     db.add(db_member)
     db.commit()
