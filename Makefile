@@ -19,11 +19,11 @@ install:
 # Run in production mode
 run:
 	@echo "Starting production server on port $(PORT)..."
-	cd app && source ../$(VENV)/bin/activate && ../$(UVICORN) main:app --host 0.0.0.0 --port $(PORT)
+	cd app && source ../$(VENV)/bin/activate && ../$(UVICORN) server:app --host 0.0.0.0 --port $(PORT)
 
 # Start backend in development mode (auto-reload)
 dev:
-	cd app && source ../$(VENV)/bin/activate && ../$(PYTHON) scripts/create_db.py && ../$(UVICORN) main:app --reload --host 0.0.0.0 --port $(PORT)
+	cd app && source ../$(VENV)/bin/activate && ../$(PYTHON) scripts/create_db.py && ../$(UVICORN) server:app --reload --host 0.0.0.0 --port $(PORT)
 
 # Clean up
 clean:

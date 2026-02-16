@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
 import models, schemas
-from database import get_db
-from auth import get_current_user
+from core.database import get_db
+from core.auth import get_current_user
 import logging
 
 logger = logging.getLogger(__name__)

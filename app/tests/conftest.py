@@ -33,14 +33,16 @@ os.environ.update({
     "cors_origins": "",
 })
 
+from server import app
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
-from database import Base, get_db
-from main import app
+from core.database import Base, get_db
 import models
-from auth import get_password_hash, get_current_user
+from services.twilio import send_sms_verification
+from core.auth import get_password_hash, get_current_user
 
 
 def _create_test_db():

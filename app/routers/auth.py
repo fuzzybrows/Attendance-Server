@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import models, schemas
-from database import get_db
-from auth import get_password_hash, verify_password, create_access_token
+from core.database import get_db
+from core.auth import get_password_hash, verify_password, create_access_token
 from services.twilio import send_sms_verification, send_email_verification, check_verification
 import logging
 

@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from datetime import timedelta
 import models, schemas
-from database import get_db
-from auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
+from core.database import get_db
+from core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
 from jose import JWTError, jwt
 import logging
 

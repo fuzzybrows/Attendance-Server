@@ -112,7 +112,7 @@ class TestPhoneAuth:
     def test_login_unverified_phone_sends_sms(self, client, db_session, sample_member_data):
         """Login via phone number with unverified phone sends SMS OTP."""
         import models
-        from auth import get_password_hash
+        from core.auth import get_password_hash
         # Create member with phone number
         db_session.add(models.Member(
             first_name="Phone", last_name="User",
@@ -134,7 +134,7 @@ class TestPhoneAuth:
     def test_verify_otp_by_phone(self, client, db_session):
         """OTP verification via phone marks phone_number_verified."""
         import models
-        from auth import get_password_hash
+        from core.auth import get_password_hash
         db_session.add(models.Member(
             first_name="Phone", last_name="OTP",
             email="phone_otp@test.com",
@@ -157,7 +157,7 @@ class TestPhoneAuth:
     def test_forgot_password_by_phone(self, client, db_session):
         """Forgot password via phone number sends SMS OTP."""
         import models
-        from auth import get_password_hash
+        from core.auth import get_password_hash
         db_session.add(models.Member(
             first_name="Phone", last_name="Reset",
             email="phone_reset@test.com",
@@ -176,7 +176,7 @@ class TestPhoneAuth:
     def test_reset_password_by_phone(self, client, db_session):
         """Password reset via phone marks phone_number_verified."""
         import models
-        from auth import get_password_hash
+        from core.auth import get_password_hash
         db_session.add(models.Member(
             first_name="Phone", last_name="ResetPw",
             email="phone_resetpw@test.com",
