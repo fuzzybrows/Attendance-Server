@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
+from settings import settings as app_settings
 import models
 from database import engine
 from routers import auth, members, sessions, attendance, statistics, qr_attendance
@@ -24,9 +24,11 @@ origins = [
     "http://127.0.0.1:8001",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
-    "https://network.thetechlads.info",
-    "http://network.thetechlads.info",
 ]
+
+# Add any additional origins from environment variable
+if app_settings.cors_origins:
+    origins.extend([o.strip() for o in app_settings.cors_origins.split(",") if o.strip()])
 
 app.add_middleware(
     CORSMiddleware,

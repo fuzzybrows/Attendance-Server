@@ -4,7 +4,7 @@ All environment variables are centralized here.
 """
 from functools import lru_cache
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, List
 
 
 class Settings(BaseSettings):
@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     
     # Database
     database_url: str
+    
+    # CORS
+    cors_origins: str = ""  # Comma-separated additional origins, e.g. "https://example.com,http://example.com"
     
     class Config:
         env_file = [".env", "../.env"]
