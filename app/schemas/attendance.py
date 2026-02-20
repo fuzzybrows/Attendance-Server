@@ -1,6 +1,6 @@
 """Attendance-related Pydantic schemas."""
-from pydantic import BaseModel
-from datetime import datetime
+from pydantic import BaseModel, field_serializer
+from datetime import datetime, timezone
 from typing import Optional
 from schemas.session import Session
 
@@ -28,6 +28,12 @@ class Attendance(AttendanceBase):
 
     class Config:
         from_attributes = True
+
+    @field_serializer('timestamp')
+    def serialize_timestamp(self, dt: datetime, _info):
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 
 class AttendanceWithSession(Attendance):

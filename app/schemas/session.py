@@ -1,6 +1,6 @@
 """Session-related Pydantic schemas."""
-from pydantic import BaseModel
-from datetime import datetime
+from pydantic import BaseModel, field_serializer
+from datetime import datetime, timezone
 from typing import Optional
 
 
@@ -13,6 +13,12 @@ class SessionBase(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     radius: Optional[int] = 50
+
+    @field_serializer('start_time')
+    def serialize_start_time(self, dt: datetime, _info):
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 
 class SessionCreate(SessionBase):
@@ -34,3 +40,9 @@ class Session(SessionBase):
 
     class Config:
         from_attributes = True
+
+    @field_serializer('created_at')
+    def serialize_created_at(self, dt: datetime, _info):
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()

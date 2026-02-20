@@ -1,5 +1,5 @@
 """Session ORM model."""
-import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, Float
 from sqlalchemy.orm import relationship
 from core.database import Base
@@ -14,7 +14,7 @@ class Session(Base):
     status = Column(String, default="active")  # "active", "concluded", "archived"
     start_time = Column(DateTime, nullable=False)  # Scheduled start time
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Location Geofencing
     latitude = Column(Float, nullable=True)
