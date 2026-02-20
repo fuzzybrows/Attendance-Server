@@ -4,7 +4,8 @@ from typing import List
 from pydantic import BaseModel
 import models, schemas
 from core.database import get_db
-from core.auth import get_current_user
+from core.database import get_db
+from core.auth import get_current_user, get_admin_member, get_current_active_member
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,9 +19,17 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+from services.attendance import validate_attendance
+
 @router.post("/", response_model=schemas.Attendance)
-def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
-    logger.info("Marking attendance", extra={"type": "attendance_mark_attempt", "member_id": attendance.member_id, "session_id": attendance.session_id})
+def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+    logger.info("Marking attendance", extra={
+        "type": "attendance_mark_attempt",
+        "member_id": attendance.member_id,
+        "session_id": attendance.session_id,
+        "device_id": attendance.device_id
+    })
+
     # Verify member and session exist
     member = db.query(models.Member).filter(models.Member.id == attendance.member_id).first()
     if not member:
@@ -30,14 +39,16 @@ def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Check for duplicate attendance
-    existing = db.query(models.Attendance).filter(
-        models.Attendance.member_id == attendance.member_id,
-        models.Attendance.session_id == attendance.session_id
-    ).first()
-    if existing:
-        logger.warning("Duplicate attendance attempt", extra={"type": "attendance_duplicate", "member_id": attendance.member_id, "session_id": attendance.session_id})
-        raise HTTPException(status_code=409, detail="Attendance already marked for this session")
+    # Fraud Prevention & Validation
+    validate_attendance(
+        db=db,
+        session=session,
+        member_id=attendance.member_id,
+        device_id=attendance.device_id,
+        latitude=attendance.latitude,
+        longitude=attendance.longitude,
+        marked_by_id=attendance.marked_by_id
+    )
 
     db_attendance = models.Attendance(
         member_id=attendance.member_id,
@@ -45,7 +56,8 @@ def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(
         latitude=attendance.latitude,
         longitude=attendance.longitude,
         submission_type=attendance.submission_type,
-        marked_by_id=attendance.marked_by_id
+        marked_by_id=attendance.marked_by_id,
+        device_id=attendance.device_id
     )
     db.add(db_attendance)
     db.commit()
@@ -53,13 +65,17 @@ def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(
     return db_attendance
 
 @router.get("/session/{session_id}", response_model=List[schemas.Attendance])
-def read_attendance(session_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
-    attendance = db.query(models.Attendance).filter(models.Attendance.session_id == session_id).all()
+def read_attendance(session_id: int, db: Session = Depends(get_db), current_member=Depends(get_current_active_member)):
+    # Allow all authenticated members to view session attendance (for mobile app)
     attendance = db.query(models.Attendance).filter(models.Attendance.session_id == session_id).all()
     return attendance
 
 @router.get("/member/{member_id}", response_model=List[schemas.AttendanceWithSession])
-def get_member_attendance(member_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
+def get_member_attendance(member_id: int, db: Session = Depends(get_db), current_member=Depends(get_current_active_member)):
+    # Allow if accessing own data or if admin
+    is_admin = any(p.name == "admin" for p in current_member.permissions)
+    if current_member.id != member_id and not is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
     try:
         attendance = db.query(models.Attendance)\
             .join(models.Session)\
@@ -73,7 +89,7 @@ def get_member_attendance(member_id: int, db: Session = Depends(get_db), _curren
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.delete("/{attendance_id}")
-def delete_attendance(attendance_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
+def delete_attendance(attendance_id: int, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
     attendance = db.query(models.Attendance).filter(models.Attendance.id == attendance_id).first()
     if not attendance:
         raise HTTPException(status_code=404, detail="Attendance record not found")
@@ -82,7 +98,7 @@ def delete_attendance(attendance_id: int, db: Session = Depends(get_db), _curren
     return {"status": "deleted", "attendance_id": attendance_id}
 
 @router.post("/bulk-delete")
-def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
+def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
     if not request.ids:
         raise HTTPException(status_code=400, detail="No IDs provided")
     logger.warning("Bulk deleting attendance records", extra={"type": "attendance_bulk_delete", "ids": request.ids})
@@ -92,7 +108,7 @@ def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get
 
 
 @router.get("/stats", response_model=List[schemas.AttendanceStats])
-def get_overall_stats(db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
+def get_overall_stats(db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
     members = db.query(models.Member).all()
     attendance = db.query(models.Attendance).all()
     sessions = {s.id: s for s in db.query(models.Session).all()}

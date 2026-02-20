@@ -11,7 +11,11 @@ class AttendanceBase(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     submission_type: str  # "nfc" or "manual"
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    submission_type: str  # "nfc" or "manual"
     marked_by_id: Optional[int] = None
+    device_id: Optional[str] = None
 
 
 class AttendanceCreate(AttendanceBase):

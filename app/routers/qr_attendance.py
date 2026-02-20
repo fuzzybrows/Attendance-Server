@@ -3,12 +3,15 @@ QR code attendance endpoints.
 Generates short-lived tokens for session QR codes and verifies them
 when members scan and open the link.
 """
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Body
 from sqlalchemy.orm import Session
 from datetime import timedelta
+from typing import Optional
+from pydantic import BaseModel
 import models, schemas
 from core.database import get_db
 from core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
+from services.attendance import validate_attendance
 from jose import JWTError, jwt
 import logging
 
@@ -22,7 +25,13 @@ router = APIRouter(
 QR_TOKEN_EXPIRE_SECONDS = 30
 
 
-@router.get("/token/{session_id}", response_model=schemas.QRTokenResponse)
+class QRMarkPayload(BaseModel):
+    device_id: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+@router.get("/token/{session_id}")
 def generate_qr_token(session_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     """Generate a short-lived token for QR attendance."""
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
@@ -43,6 +52,7 @@ def generate_qr_token(session_id: int, db: Session = Depends(get_db), _current_u
 def mark_qr_attendance(
     session_id: int,
     qr_token: str,
+    payload: QRMarkPayload = Body(default=None),
     authorization: str = Header(...),
     db: Session = Depends(get_db)
 ):
@@ -52,12 +62,12 @@ def mark_qr_attendance(
     """
     # 1. Verify the QR token
     try:
-        payload = jwt.decode(qr_token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload.get("type") != "qr_attendance":
-            logger.warning("Invalid QR token type scanned", extra={"type": "qr_scan_invalid_token", "token_type": payload.get("type")})
+        decoded_payload = jwt.decode(qr_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if decoded_payload.get("type") != "qr_attendance":
+            logger.warning("Invalid QR token type scanned", extra={"type": "qr_scan_invalid_token", "token_type": decoded_payload.get("type")})
             raise HTTPException(status_code=400, detail="Invalid QR token type")
-        if payload.get("qr_session_id") != session_id:
-            logger.warning("QR token mismatch", extra={"type": "qr_scan_mismatch", "token_session_id": payload.get('qr_session_id'), "current_session_id": session_id})
+        if decoded_payload.get("qr_session_id") != session_id:
+            logger.warning("QR token mismatch", extra={"type": "qr_scan_mismatch", "token_session_id": decoded_payload.get('qr_session_id'), "current_session_id": session_id})
             raise HTTPException(status_code=400, detail="QR token does not match session")
     except JWTError:
         logger.warning("Expired or invalid QR token scanned", extra={"type": "qr_scan_error", "reason": "jwt_error"})
@@ -83,22 +93,30 @@ def mark_qr_attendance(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # 5. Check duplicate
-    existing = db.query(models.Attendance).filter(
-        models.Attendance.member_id == member.id,
-        models.Attendance.session_id == session_id
-    ).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Attendance already marked for this session")
+    # Fraud Prevention & Validation
+    device_id = payload.device_id if payload else None
+    latitude = payload.latitude if payload else None
+    longitude = payload.longitude if payload else None
 
-    # 6. Mark attendance
+    validate_attendance(
+        db=db,
+        session=session,
+        member_id=member.id,
+        device_id=device_id,
+        latitude=latitude,
+        longitude=longitude,
+        marked_by_id=member.id
+    )
+
+    # 7. Mark attendance
     db_attendance = models.Attendance(
         member_id=member.id,
         session_id=session_id,
-        latitude=None,
-        longitude=None,
+        latitude=latitude,
+        longitude=longitude,
         submission_type="qr",
-        marked_by_id=None
+        marked_by_id=member.id,
+        device_id=device_id
     )
     db.add(db_attendance)
     db.commit()
@@ -111,3 +129,4 @@ def mark_qr_attendance(
         "member_name": member.full_name,
         "attendance_id": db_attendance.id
     }
+

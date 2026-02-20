@@ -113,7 +113,11 @@ class TestAttendanceStats:
         """Test stats with no data."""
         response = client.get("/attendance/stats")
         assert response.status_code == 200
-        assert response.json() == []
+        # Now returns stats for Test Admin
+        stats = response.json()
+        assert len(stats) == 1
+        assert stats[0]["name"] == "Test Admin"
+        assert stats[0]["total_sessions"] == 0
 
     def test_stats_with_data(self, client, created_member, created_session):
         """Test stats calculation."""
@@ -125,9 +129,17 @@ class TestAttendanceStats:
         response = client.get("/attendance/stats")
         assert response.status_code == 200
         stats = response.json()
-        assert len(stats) == 1
-        assert stats[0]["member_id"] == created_member["id"]
-        assert stats[0]["total_sessions"] == 1
+        stats = response.json()
+        # Should be Test Admin + Created Member = 2
+        assert len(stats) == 2
+        
+        # Find stats for created member
+        member_stats = next(s for s in stats if s["member_id"] == created_member["id"])
+        
+        assert member_stats["total_sessions"] == 1
+        # Session is in past (Feb 15) vs Now (Feb 16+), so it should be late
+        assert member_stats["late_count"] == 1
+        assert member_stats["prompt_count"] == 0
 
 
 class TestBulkDeleteAttendance:

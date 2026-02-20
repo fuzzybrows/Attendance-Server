@@ -118,6 +118,22 @@ def _fake_current_user():
 @pytest.fixture
 def client(db_session):
     """Create an authenticated FastAPI test client with overridden DB and auth."""
+    # Create the test user in the DB so get_current_active_member works
+    admin_perm = db_session.query(models.Permission).filter_by(name="admin").first()
+    if not admin_perm:
+        admin_perm = models.Permission(name="admin")
+        db_session.add(admin_perm)
+    
+    test_user = models.Member(
+        first_name="Test",
+        last_name="Admin",
+        email="test@example.com",
+        permissions=[admin_perm]
+    )
+    db_session.add(test_user)
+    db_session.commit() # Commit to get ID and make available to other sessions if needed?
+    # Note: db_session is same session used by override_get_db, so it's visible.
+
     def override_get_db():
         try:
             yield db_session

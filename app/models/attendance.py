@@ -13,6 +13,9 @@ class Attendance(Base):
     session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"))
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
 
+    # Device Fingerprint
+    device_id = Column(String, nullable=True)
+
     # GPS data for manual submission
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)

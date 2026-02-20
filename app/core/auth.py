@@ -6,6 +6,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from settings import settings
+from core.database import get_db
+import models
 
 # JWT Configuration from settings
 SECRET_KEY = settings.secret_key
@@ -46,3 +48,30 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
+def get_current_active_member(
+    current_user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> models.Member:
+    """
+    Fetch the full Member object for the current authenticated user.
+    """
+    member = db.query(models.Member).filter(models.Member.email == current_user_email).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return member
+
+def get_admin_member(
+    member: models.Member = Depends(get_current_active_member)
+) -> models.Member:
+    """
+    Dependency to ensure the user has admin privileges.
+    Checks if the user has a permission named 'admin'.
+    """
+    # Check if 'admin' is in the list of permission names
+    has_admin = any(p.name == "admin" for p in member.permissions)
+    if not has_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges"
+        )
+    return member

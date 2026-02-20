@@ -29,15 +29,22 @@ class TestReadMembers:
         """Test reading members when none exist."""
         response = client.get("/members/")
         assert response.status_code == 200
-        assert response.json() == []
+        # Now returns [Test Admin]
+        members = response.json()
+        assert len(members) == 1
+        assert members[0]["email"] == "test@example.com"
 
     def test_read_members(self, client, created_member):
         """Test reading all members."""
         response = client.get("/members/")
         assert response.status_code == 200
         members = response.json()
-        assert len(members) == 1
-        assert members[0]["email"] == created_member["email"]
+        members = response.json()
+        # Should be Test Admin + Created Member = 2
+        assert len(members) == 2
+        emails = [m["email"] for m in members]
+        assert created_member["email"] in emails
+        assert "test@example.com" in emails
 
     def test_read_member_by_id(self, client, created_member):
         """Test reading a single member by ID."""

@@ -21,7 +21,7 @@ attendance.db
 htmlcov/
 
 # Logs
-*.log
+**/*.log
 
 # One-off scripts
 cleanup_orphans.py
