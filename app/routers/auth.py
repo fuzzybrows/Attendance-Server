@@ -41,7 +41,8 @@ def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
     
     access_token = create_access_token(data={"sub": member.email})
     logger.info("Login successful", extra={"type": "login_success", "login": data.login, "member_id": member.id})
-    return {"access_token": access_token, "token_type": "bearer", "member": member}
+    member_data = schemas.Member.model_validate(member, from_attributes=True)
+    return {"access_token": access_token, "token_type": "bearer", "member": member_data}
 
 @router.post("/verify-otp", response_model=schemas.Token)
 def verify_otp(data: schemas.OTPVerification, db: Session = Depends(get_db)):

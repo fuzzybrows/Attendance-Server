@@ -108,6 +108,9 @@ class Token(BaseModel):
     token_type: str
     member: Member
 
+    class Config:
+        from_attributes = True
+
 class UnverifiedResponse(BaseModel):
     status: str
     method: str
