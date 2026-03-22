@@ -253,7 +253,8 @@ def save_schedule(
 def get_schedule(
     year: int,
     month: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_current_active_member)
 ):
     """
     Get the finalized schedule for a specific month.
@@ -345,20 +346,38 @@ def export_month_schedule_csv(
     }
     return StreamingResponse(output, headers=headers, media_type="text/csv")
 
+@router.post("/sync/token")
+def generate_sync_token(
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_current_active_member)
+):
+    """
+    Generate or regenerate a sync token for the current user.
+    This token is used to authenticate .ics calendar subscription URLs.
+    """
+    import secrets
+    token = secrets.token_urlsafe(32)
+    current_user.sync_token = token
+    db.commit()
+    return {"sync_token": token, "sync_url": f"/calendar/sync/{current_user.id}.ics?key={token}"}
+
 
 @router.get("/sync/{member_id}.ics", response_class=Response)
 def sync_member_calendar(
     member_id: int,
+    key: str,
     db: Session = Depends(get_db)
 ):
     """
     Generate an iCalendar (.ics) feed of assignments for a specific member.
-    This endpoint does not require authentication so that calendar apps can poll it.
+    Authenticated via per-user sync token (query param) so calendar apps can poll it.
     """
-    # Fetch member to ensure they exist
     member = db.query(Member).filter(Member.id == member_id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
+
+    if not member.sync_token or member.sync_token != key:
+        raise HTTPException(status_code=403, detail="Invalid sync token")
 
     # Fetch all future assignments for this member
     now = datetime.now()
