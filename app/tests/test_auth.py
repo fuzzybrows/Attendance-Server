@@ -79,15 +79,16 @@ class TestPasswordReset:
             params={"login": sample_member_data["email"]}
         )
         assert response.status_code == 200
-        assert response.json()["status"] == "otp_sent"
+        assert "account matching" in response.json()["status"]
 
     def test_forgot_password_unknown_user(self, client):
-        """Test forgot password for non-existent user."""
+        """Test forgot password for non-existent user returns same generic response."""
         response = client.post(
             "/auth/forgot-password",
             params={"login": "nobody@example.com"}
         )
-        assert response.status_code == 404
+        assert response.status_code == 200
+        assert "account matching" in response.json()["status"]
 
     def test_reset_password_marks_verified(self, client, db_session, created_member, sample_member_data):
         """Test that password reset marks the user as verified."""
@@ -171,7 +172,7 @@ class TestPhoneAuth:
             params={"login": "+15550001111"}
         )
         assert response.status_code == 200
-        assert response.json()["status"] == "otp_sent"
+        assert "account matching" in response.json()["status"]
 
     def test_reset_password_by_phone(self, client, db_session):
         """Password reset via phone marks phone_number_verified."""
