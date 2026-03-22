@@ -64,8 +64,13 @@ class Member(MemberBase):
     # name: str # Full name removed
     roles: List[str] = []
     permissions: List[str] = ["member"]
-    email_verified: bool = False
-    phone_number_verified: bool = False
+    email_verified: Optional[bool] = False
+    phone_number_verified: Optional[bool] = False
+
+    @field_validator('email_verified', 'phone_number_verified', mode='before')
+    @classmethod
+    def coerce_none_to_false(cls, v):
+        return v if v is not None else False
 
     @field_validator('roles', mode='before')
     @classmethod

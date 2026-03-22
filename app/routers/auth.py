@@ -71,14 +71,14 @@ def forgot_password(login: str, db: Session = Depends(get_db)):
     ).first()
     
     if not member:
-        raise HTTPException(status_code=404, detail="User not found")
+        return {"status": "If an account matching this email or phone number exists, we'll send reset instructions."}
     
     # Use Twilio Verify to send verification code
     if "@" in login:
         send_email_verification(member.email)
     else:
         send_sms_verification(member.phone_number)
-    return {"status": "otp_sent"}
+    return {"status": "If an account matching this email or phone number exists, we'll send reset instructions."}
 
 @router.post("/reset-password", response_model=schemas.StatusResponse)
 def reset_password(data: schemas.OTPVerification, new_password: str, db: Session = Depends(get_db)):
