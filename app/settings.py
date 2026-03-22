@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     twilio_verify_service_sid: str
     twilio_phone_number: str
     
+    # SendGrid
+    sendgrid_api_key: str = "placeholder_sendgrid_key"
+    
+    # Firebase Cloud Messaging
+    firebase_credentials_path: str = "placeholder_firebase_path"
+    
     # Database
     database_url: str
     

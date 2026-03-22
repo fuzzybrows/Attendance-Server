@@ -146,3 +146,49 @@ class QRMarkResponse(BaseModel):
 
 class StatusResponse(BaseModel):
     status: str
+
+class AvailabilityBase(BaseModel):
+    member_id: int
+    session_id: int
+    is_available: bool = True
+
+class AvailabilityCreate(AvailabilityBase):
+    pass
+
+class AvailabilityUpdate(BaseModel):
+    is_available: bool
+
+class AvailabilitySchema(AvailabilityBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class AvailabilityWithDetails(AvailabilitySchema):
+    member: Member
+    session: Session
+
+    class Config:
+        from_attributes = True
+
+class AssignmentBase(BaseModel):
+    session_id: int
+    member_id: int
+    role: str
+
+class AssignmentCreate(AssignmentBase):
+    pass
+
+class AssignmentSchema(AssignmentBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class AssignmentWithDetails(AssignmentSchema):
+    session: Session
+    member: Member
+
+    class Config:
+        from_attributes = True
+

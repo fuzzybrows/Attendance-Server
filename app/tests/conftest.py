@@ -29,9 +29,18 @@ os.environ.update({
     "twilio_auth_token": "placeholder_twilio_token",
     "twilio_verify_service_sid": "placeholder_verify_sid",
     "twilio_phone_number": "+10000000000",
+    "firebase_credentials_path": "placeholder_firebase_path",
     "database_url": TEST_DB_URL,
     "cors_origins": "",
 })
+
+from settings import settings
+settings.twilio_account_sid = "placeholder_twilio_sid"
+settings.twilio_auth_token = "placeholder_twilio_token"
+settings.twilio_verify_service_sid = "placeholder_verify_sid"
+settings.twilio_phone_number = "+10000000000"
+settings.sendgrid_api_key = "placeholder_sendgrid_key"
+settings.firebase_credentials_path = "placeholder_firebase_path"
 
 from server import app
 

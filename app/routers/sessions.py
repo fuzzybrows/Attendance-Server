@@ -22,6 +22,10 @@ router = APIRouter(
 @router.post("/", response_model=schemas.Session)
 def create_session(session: schemas.SessionCreate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
     logger.info("Creating session", extra={"type": "session_create_attempt", "title": session.title, "session_type": session.type})
+    
+    if session.status == "active":
+        db.query(models.Session).filter(models.Session.status == "active").update({"status": "concluded"})
+        
     db_session = models.Session(
         title=session.title, 
         type=session.type,

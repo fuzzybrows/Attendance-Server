@@ -9,6 +9,8 @@ from models.associations import member_roles, member_permissions
 from models.member import Role, Permission, Member
 from models.session import Session
 from models.attendance import Attendance
+from models.availability import Availability
+from models.assignment import Assignment
 
 
 class SessionStatus(str, enum.Enum):
@@ -27,4 +29,6 @@ __all__ = [
     "Member",
     "Session",
     "Attendance",
+    "Availability",
+    "Assignment",
 ]

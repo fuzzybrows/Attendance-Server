@@ -8,6 +8,8 @@ from schemas.attendance import AttendanceBase, AttendanceCreate, Attendance, Att
 from schemas.auth import MemberLogin, Token, UnverifiedResponse, LoginResponse, TokenData, OTPVerification, StatusResponse
 from schemas.stats import AttendanceStats, SessionHistory, MemberStatsResponse
 from schemas.qr import QRTokenResponse, QRMarkResponse
+from schemas.availability import AvailabilityBase, AvailabilityCreate, AvailabilityUpdate, AvailabilitySchema, AvailabilityWithDetails
+from schemas.assignment import AssignmentBase, AssignmentCreate, AssignmentSchema, AssignmentWithDetails
 
 __all__ = [
     # Member
@@ -23,4 +25,8 @@ __all__ = [
     "AttendanceStats", "SessionHistory", "MemberStatsResponse",
     # QR
     "QRTokenResponse", "QRMarkResponse",
+    # Availability
+    "AvailabilityBase", "AvailabilityCreate", "AvailabilityUpdate", "AvailabilitySchema", "AvailabilityWithDetails",
+    # Assignment
+    "AssignmentBase", "AssignmentCreate", "AssignmentSchema", "AssignmentWithDetails",
 ]

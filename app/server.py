@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from settings import settings as app_settings
 import models
 from core.database import engine
-from routers import auth, members, sessions, attendance, statistics, qr_attendance
+from routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar
 from core.logging_config import setup_logging
 
 # Setup logging before creating app or during startup
@@ -11,7 +11,20 @@ setup_logging()
 
 # models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Choir Attendance Server")
+from contextlib import asynccontextmanager
+from core.scheduler import start_scheduler, stop_scheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Starting background services...")
+    start_scheduler()
+    yield
+    # Shutdown
+    logger.info("Shutting down background services...")
+    stop_scheduler()
+
+app = FastAPI(title="Choir Attendance Server", lifespan=lifespan)
 
 origins = [
     "http://localhost",
@@ -44,6 +57,7 @@ app.include_router(sessions.router)
 app.include_router(attendance.router)
 app.include_router(statistics.router)
 app.include_router(qr_attendance.router)
+app.include_router(calendar.router)
 
 # Static files serving removed - frontend is now separate
 
