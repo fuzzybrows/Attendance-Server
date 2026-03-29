@@ -12,6 +12,7 @@ from models.member import Member, Role
 from models.session import Session as SessionModel
 from models.availability import Availability
 from models.assignment import Assignment
+from models.day_off import DayOff
 from schemas.availability import AvailabilityUpdate, AvailabilitySchema
 from schemas.assignment import AssignmentCreate, AssignmentSchema
 from pydantic import BaseModel
@@ -83,6 +84,93 @@ def update_availability(
     return availability
 
 
+class DayAvailabilityRequest(BaseModel):
+    date: str  # ISO date string, e.g. "2026-03-29"
+    is_available: bool = False
+
+
+@router.post("/availability/day")
+def update_day_availability(
+    request: DayAvailabilityRequest,
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_current_active_member)
+):
+    """
+    Mark a day as available/unavailable for the current user.
+    Stores a DayOff record (works even without sessions) and also
+    updates availability for any sessions that already exist on that day.
+    """
+    try:
+        target_date = datetime.fromisoformat(request.date).date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+    # Upsert the DayOff record (day-level, independent of sessions)
+    day_off = db.query(DayOff).filter(
+        DayOff.member_id == current_user.id,
+        DayOff.date == target_date
+    ).first()
+    if day_off:
+        day_off.is_available = request.is_available
+    else:
+        day_off = DayOff(
+            member_id=current_user.id,
+            date=target_date,
+            is_available=request.is_available
+        )
+        db.add(day_off)
+
+    # Also update any existing sessions on that day
+    sessions = db.query(SessionModel).filter(
+        extract('year', SessionModel.start_time) == target_date.year,
+        extract('month', SessionModel.start_time) == target_date.month,
+        extract('day', SessionModel.start_time) == target_date.day,
+    ).all()
+
+    updated = []
+    for session in sessions:
+        availability = db.query(Availability).filter(
+            Availability.member_id == current_user.id,
+            Availability.session_id == session.id
+        ).first()
+        if availability:
+            availability.is_available = request.is_available
+        else:
+            availability = Availability(
+                member_id=current_user.id,
+                session_id=session.id,
+                is_available=request.is_available
+            )
+            db.add(availability)
+        updated.append(session.id)
+
+    db.commit()
+    return {"date": str(target_date), "updated_sessions": updated, "is_available": request.is_available}
+
+
+@router.get("/availability/days/{year}/{month}")
+def get_unavailable_days(
+    year: int,
+    month: int,
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_current_active_member)
+):
+    """
+    Get all dates in a specific month that the current user has explicitly marked as unavailable.
+    Returns a list of ISO date strings (e.g. ['2026-03-29']).
+    """
+    day_offs = db.query(DayOff).filter(
+        DayOff.member_id == current_user.id,
+        extract('year', DayOff.date) == year,
+        extract('month', DayOff.date) == month,
+        DayOff.is_available == False
+    ).all()
+
+    return {
+        "unavailable_days": [str(d.date) for d in day_offs]
+    }
+
+
 @router.get("/availability/{year}/{month}")
 def get_month_availability(
     year: int,
@@ -120,7 +208,7 @@ def get_month_availability(
             {
                 "id": s.id,
                 "title": s.title,
-                "start_time": s.start_time.isoformat(),
+                "start_time": s.start_time.isoformat() + "Z",
                 "opted_out_member_ids": opt_outs_by_session[s.id]
             }
             for s in sessions
@@ -162,6 +250,17 @@ def generate_schedule(
         if not av.is_available:
             opt_outs_by_session[av.session_id].add(av.member_id)
 
+    # 2.1 Get all DayOff records for the month (unavailability)
+    day_offs = db.query(DayOff).filter(
+        extract('year', DayOff.date) == request.year,
+        extract('month', DayOff.date) == request.month,
+        DayOff.is_available == False
+    ).all()
+    
+    day_offs_by_date = defaultdict(set)
+    for do in day_offs:
+        day_offs_by_date[do.date].add(do.member_id)
+
     # 3. Get all members and their roles
     # We only care about members who have at least one of the REQUIRED_ROLES
     members = db.query(Member).all()
@@ -182,7 +281,9 @@ def generate_schedule(
     draft_sessions = []
 
     for session in sessions:
-        unavailable_members = opt_outs_by_session[session.id]
+        # Combine per-session opt-outs with day-level unavailability
+        session_date = session.start_time.date()
+        unavailable_members = opt_outs_by_session[session.id].union(day_offs_by_date[session_date])
         
         # Keep track of who is already scheduled in THIS session
         scheduled_in_session = set()
@@ -215,7 +316,7 @@ def generate_schedule(
         draft_sessions.append(DraftSessionSchedule(
             session_id=session.id,
             session_title=session.title,
-            session_date=session.start_time.isoformat(),
+            session_date=session.start_time.isoformat() + "Z",
             assignments=session_assignments
         ))
 
@@ -288,7 +389,7 @@ def get_schedule(
         draft_sessions.append(DraftSessionSchedule(
             session_id=session.id,
             session_title=session.title,
-            session_date=session.start_time.isoformat(),
+            session_date=session.start_time.isoformat() + "Z",
             assignments=session_assignments
         ))
 

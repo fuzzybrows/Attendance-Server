@@ -11,6 +11,7 @@ from models.session import Session
 from models.attendance import Attendance
 from models.availability import Availability
 from models.assignment import Assignment
+from models.day_off import DayOff
 
 
 class SessionStatus(str, enum.Enum):
@@ -31,4 +32,5 @@ __all__ = [
     "Attendance",
     "Availability",
     "Assignment",
+    "DayOff",
 ]

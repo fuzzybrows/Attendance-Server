@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
 import models, schemas
+from datetime import timezone
 from core.database import get_db
 from core.database import get_db
 from core.auth import get_current_user, get_admin_member
@@ -26,11 +27,15 @@ def create_session(session: schemas.SessionCreate, db: Session = Depends(get_db)
     if session.status == "active":
         db.query(models.Session).filter(models.Session.status == "active").update({"status": "concluded"})
         
+    start_time = session.start_time
+    if start_time and start_time.tzinfo is not None:
+        start_time = start_time.astimezone(timezone.utc).replace(tzinfo=None)
+
     db_session = models.Session(
         title=session.title, 
         type=session.type,
         status=session.status,
-        start_time=session.start_time,
+        start_time=start_time,
         latitude=session.latitude,
         longitude=session.longitude,
         radius=session.radius
@@ -52,7 +57,10 @@ def update_session(session_id: int, update: schemas.SessionUpdate, db: Session =
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    for field, value in update.dict(exclude_unset=True).items():
+    for field, value in update.model_dump(exclude_unset=True).items():
+        if field == "start_time" and value.tzinfo is not None:
+            # Force naive UTC to prevent SQLAlchemy/SQLite implicit offset shifts
+            value = value.astimezone(timezone.utc).replace(tzinfo=None)
         setattr(session, field, value)
     db.commit()
     db.refresh(session)

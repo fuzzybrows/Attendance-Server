@@ -29,6 +29,7 @@ class SessionUpdate(BaseModel):
     title: Optional[str] = None
     type: Optional[str] = None
     status: Optional[str] = None
+    start_time: Optional[datetime] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     radius: Optional[int] = None
