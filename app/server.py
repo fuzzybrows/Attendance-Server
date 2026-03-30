@@ -57,7 +57,9 @@ app.include_router(sessions.router)
 app.include_router(attendance.router)
 app.include_router(statistics.router)
 app.include_router(qr_attendance.router)
+from routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar, google_auth
 app.include_router(calendar.router)
+app.include_router(google_auth.router)
 
 # Static files serving removed - frontend is now separate
 

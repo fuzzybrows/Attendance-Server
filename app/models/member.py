@@ -45,3 +45,4 @@ class Member(Base):
     attendance = relationship("Attendance", back_populates="member", foreign_keys="[Attendance.member_id]")
 
     sync_token = Column(String, unique=True, index=True, nullable=True)
+    google_refresh_token = Column(String, nullable=True)

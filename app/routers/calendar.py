@@ -509,6 +509,17 @@ def sync_member_calendar(
         event.add('uid', f"session_{session.id}_member_{member_id}@choirattendance.com")
         event.add('description', f"You are scheduled to serve as {assignment.role.replace('_', ' ').title()} for {session.title}.")
         
+        # Add color coding based on session type
+        if session.type.lower() == 'event':
+            event.add('color', '#9C27B0') # Purple
+            event.add('categories', 'Event')
+        elif session.type.lower() == 'rehearsal':
+            event.add('color', '#FF9800') # Orange
+            event.add('categories', 'Rehearsal')
+        else:
+            event.add('color', '#2196F3') # Blue
+            event.add('categories', 'Service')
+        
         cal.add_component(event)
 
     return Response(

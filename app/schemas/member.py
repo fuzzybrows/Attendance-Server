@@ -13,6 +13,8 @@ class MemberBase(BaseModel):
 
 class MemberCreate(MemberBase):
     password: str
+    roles: List[str] = []
+    permissions: List[str] = ["member"]
 
 
 class Member(MemberBase):

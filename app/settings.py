@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = ""  # Comma-separated additional origins, e.g. "https://example.com,http://example.com"
     
+    # Google OAuth
+    google_client_id: Optional[str] = None
+    google_client_secret: Optional[str] = None
+    google_redirect_uri: Optional[str] = None
+    
     class Config:
         env_file = [".env", "../.env"]
         env_file_encoding = "utf-8"
