@@ -21,7 +21,10 @@ fastapi==0.128.3
 firebase_admin==7.1.0
 frozenlist==1.8.0
 google-api-core==2.30.0
+google-api-python-client==2.124.0
 google-auth==2.48.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.0
 google-cloud-core==2.5.0
 google-cloud-firestore==2.23.0
 google-cloud-storage==3.9.0
@@ -34,6 +37,7 @@ h11==0.16.0
 h2==4.3.0
 hpack==4.1.0
 httpcore==1.0.9
+httplib2==0.31.2
 httpx==0.28.1
 hyperframe==6.1.0
 icalendar==7.0.1
@@ -43,8 +47,10 @@ Mako==1.3.10
 MarkupSafe==3.0.3
 msgpack==1.1.2
 multidict==6.7.1
+oauthlib==3.3.1
 packaging==26.0
 passlib==1.7.4
+pillow==12.1.1
 pluggy==1.6.0
 propcache==0.4.1
 proto-plus==1.27.1
@@ -58,6 +64,7 @@ pydantic-settings==2.12.0
 pydantic_core==2.41.5
 Pygments==2.19.2
 PyJWT==2.11.0
+pyparsing==3.3.2
 pytest==9.0.2
 pytest-cov==7.0.0
 python-dateutil==2.9.0.post0
@@ -65,7 +72,9 @@ python-dotenv==1.2.1
 python-http-client==3.3.7
 python-jose==3.5.0
 python-multipart==0.0.22
+reportlab==4.4.10
 requests==2.32.5
+requests-oauthlib==2.0.0
 rsa==4.9.1
 sendgrid==6.12.5
 six==1.17.0
@@ -76,11 +85,8 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 tzdata==2025.3
 tzlocal==5.3.1
+uritemplate==4.2.0
 urllib3==2.6.3
 uvicorn==0.40.0
 Werkzeug==3.1.5
 yarl==1.22.0
-
-google-api-python-client==2.124.0
-google-auth-httplib2==0.2.0
-google-auth-oauthlib==1.2.0

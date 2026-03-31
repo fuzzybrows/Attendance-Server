@@ -19,8 +19,14 @@ from pydantic import BaseModel
 from fastapi.responses import StreamingResponse, Response
 import io
 import csv
+import calendar
 from icalendar import Calendar, Event, vText
 from datetime import timedelta
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from reportlab.lib.units import inch
 
 class DraftScheduleRequest(BaseModel):
     year: int
@@ -508,6 +514,87 @@ def export_month_schedule_csv(
         'Content-Disposition': f'attachment; filename="choir_schedule_{year}_{month}.csv"'
     }
     return StreamingResponse(output, headers=headers, media_type="text/csv")
+
+
+@router.get("/schedule/export_pdf", response_class=StreamingResponse)
+def export_month_schedule_pdf(
+    year: int,
+    month: int,
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_admin_member)
+):
+    """
+    Export the monthly schedule as a PDF document.
+    (Accessible by admins only)
+    """
+    sessions = db.query(SessionModel).filter(
+        extract('year', SessionModel.start_time) == year,
+        extract('month', SessionModel.start_time) == month
+    ).order_by(SessionModel.start_time).all()
+
+    if not sessions:
+        raise HTTPException(status_code=404, detail="No sessions found for this month.")
+
+    session_ids = [s.id for s in sessions]
+    assignments = db.query(Assignment).filter(Assignment.session_id.in_(session_ids)).all()
+
+    assignments_by_session = defaultdict(lambda: defaultdict(str))
+    for a in assignments:
+        assignments_by_session[a.session_id][a.role] = f"{a.member.first_name} {a.member.last_name}"
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    title_style = styles['Heading1']
+    title_style.alignment = 1  # Center
+
+    month_name = calendar.month_name[month]
+    elements.append(Paragraph(f"Choir Schedule - {month_name} {year}", title_style))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Table data header
+    data = [["Date", "Session Title", "Lead Singer", "Soprano", "Alto", "Tenor"]]
+    
+    for session in sessions:
+        role_map = assignments_by_session[session.id]
+        # Format date as "Wed, April 24 2026"
+        date_str = session.start_time.strftime("%a, %B %d %Y")
+        data.append([
+            date_str,
+            session.title,
+            role_map.get("lead_singer", "-"),
+            role_map.get("soprano", "-"),
+            role_map.get("alto", "-"),
+            role_map.get("tenor", "-")
+        ])
+
+    # Table styling
+    # Landscape letter is 11 inches wide. Left/right margin 0.5 each = 10 inches usable.
+    t = Table(data, repeatRows=1, colWidths=[1.8*inch, 2.2*inch, 1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#475569')), # Slate 600
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8fafc')), # Slate 50
+        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.HexColor('#f1f5f9')]) # Alternate rows
+    ]))
+    
+    elements.append(t)
+    doc.build(elements)
+    
+    buffer.seek(0)
+    
+    headers = {
+        'Content-Disposition': f'attachment; filename="choir_schedule_{year}_{month}.pdf"'
+    }
+    return StreamingResponse(buffer, headers=headers, media_type="application/pdf")
 
 @router.post("/sync/token")
 def generate_sync_token(
