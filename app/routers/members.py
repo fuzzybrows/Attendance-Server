@@ -54,6 +54,17 @@ def create_member(member: schemas.MemberCreate, db: Session = Depends(get_db), c
     logger.info("Member created successfully", extra={"type": "member_create_success", "member_id": db_member.id, "email": db_member.email})
     return db_member
 
+@router.get("/metadata", response_model=schemas.MemberMetadata)
+def get_member_metadata(db: Session = Depends(get_db)):
+    """Returns all available roles and permissions from the database."""
+    roles = db.query(models.Role).all()
+    permissions = db.query(models.Permission).all()
+    return {
+        "roles": [r.name for r in roles],
+        "permissions": [p.name for p in permissions]
+    }
+
+
 @router.get("/", response_model=List[schemas.Member])
 def read_members(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_member=Depends(get_current_active_member)):
     # Accessible to all authenticated members (needed for mobile app name resolution)

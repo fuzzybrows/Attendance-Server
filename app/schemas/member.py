@@ -10,6 +10,11 @@ class MemberBase(BaseModel):
     phone_number: Optional[str] = None
     nfc_id: Optional[str] = None
 
+    @field_validator('phone_number', 'nfc_id', mode='before')
+    @classmethod
+    def convert_empty_to_none(cls, v):
+        return None if (v == "" or str(v).strip() == "") else v
+
 
 class MemberCreate(MemberBase):
     password: str
@@ -56,3 +61,8 @@ class MemberUpdate(BaseModel):
     nfc_id: Optional[str] = None
     roles: Optional[List[str]] = None
     permissions: Optional[List[str]] = None
+
+
+class MemberMetadata(BaseModel):
+    roles: List[str]
+    permissions: List[str]

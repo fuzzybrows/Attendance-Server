@@ -2,8 +2,8 @@
 Schemas package — re-exports all Pydantic schemas for convenient import.
 Usage: `import schemas` continues to work as before.
 """
-from schemas.member import MemberBase, MemberCreate, Member, MemberUpdate
-from schemas.session import SessionBase, SessionCreate, SessionUpdate, Session
+from schemas.member import MemberBase, MemberCreate, Member, MemberUpdate, MemberMetadata
+from schemas.session import SessionBase, SessionCreate, SessionUpdate, Session, SessionMetadata
 from schemas.attendance import AttendanceBase, AttendanceCreate, Attendance, AttendanceWithSession
 from schemas.auth import MemberLogin, Token, UnverifiedResponse, LoginResponse, TokenData, OTPVerification, StatusResponse
 from schemas.stats import AttendanceStats, SessionHistory, MemberStatsResponse
@@ -13,9 +13,9 @@ from schemas.assignment import AssignmentBase, AssignmentCreate, AssignmentSchem
 
 __all__ = [
     # Member
-    "MemberBase", "MemberCreate", "Member", "MemberUpdate",
+    "MemberBase", "MemberCreate", "Member", "MemberUpdate", "MemberMetadata",
     # Session
-    "SessionBase", "SessionCreate", "SessionUpdate", "Session",
+    "SessionBase", "SessionCreate", "SessionUpdate", "Session", "SessionMetadata",
     # Attendance
     "AttendanceBase", "AttendanceCreate", "Attendance", "AttendanceWithSession",
     # Auth

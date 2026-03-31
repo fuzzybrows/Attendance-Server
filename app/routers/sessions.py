@@ -20,6 +20,16 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+@router.get("/metadata", response_model=schemas.SessionMetadata)
+def get_session_metadata(current_member=Depends(get_admin_member)):
+    """
+    Get all available session types and statuses from the Enums.
+    """
+    return {
+        "types": [t.value for t in schemas.session.SessionType],
+        "statuses": [s.value for s in schemas.session.SessionStatus]
+    }
+
 @router.post("/", response_model=schemas.Session)
 def create_session(session: schemas.SessionCreate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
     logger.info("Creating session", extra={"type": "session_create_attempt", "title": session.title, "session_type": session.type})

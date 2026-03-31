@@ -15,6 +15,7 @@ from models.day_off import DayOff
 
 
 class SessionStatus(str, enum.Enum):
+    SCHEDULED = "scheduled"
     ACTIVE = "active"
     CONCLUDED = "concluded"
     ARCHIVED = "archived"

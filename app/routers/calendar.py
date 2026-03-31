@@ -233,7 +233,7 @@ def generate_schedule(
         extract('year', SessionModel.start_time) == request.year,
         extract('month', SessionModel.start_time) == request.month,
         SessionModel.type != 'rehearsal',
-        SessionModel.status == 'active'
+        SessionModel.status.in_(['active', 'scheduled'])
     ).order_by(SessionModel.start_time).all()
 
     session_ids = [s.id for s in sessions]
@@ -411,7 +411,7 @@ def export_month_schedule_csv(
         extract('year', SessionModel.start_time) == year,
         extract('month', SessionModel.start_time) == month,
         SessionModel.type != 'rehearsal',
-        SessionModel.status == 'active'
+        SessionModel.status.in_(['active', 'scheduled'])
     ).order_by(SessionModel.start_time).all()
 
     session_ids = [s.id for s in sessions]
@@ -485,7 +485,7 @@ def sync_member_calendar(
     assignments = db.query(Assignment).join(SessionModel).filter(
         Assignment.member_id == member_id,
         SessionModel.start_time >= now,
-        SessionModel.status == 'active'
+        SessionModel.status.in_(['active', 'scheduled'])
     ).all()
 
     cal = Calendar()
