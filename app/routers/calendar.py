@@ -350,6 +350,37 @@ def save_schedule(
     return {"status": "success", "message": "Schedule saved successfully"}
 
 
+@router.get("/schedule/session/{session_id}", response_model=DraftSessionSchedule)
+def get_session_schedule(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_current_active_member)
+):
+    """
+    Get the finalized schedule/assignments for a specific session.
+    """
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    assignments = db.query(Assignment).filter(Assignment.session_id == session_id).all()
+
+    session_assignments = []
+    for a in assignments:
+        session_assignments.append(DraftAssignment(
+            member_id=a.member_id,
+            member_name=f"{a.member.first_name} {a.member.last_name}",
+            role=a.role
+        ))
+
+    return DraftSessionSchedule(
+        session_id=session.id,
+        session_title=session.title,
+        session_date=session.start_time.isoformat() + "Z",
+        assignments=session_assignments
+    )
+
+
 @router.get("/schedule/{year}/{month}", response_model=DraftScheduleResponse)
 def get_schedule(
     year: int,
