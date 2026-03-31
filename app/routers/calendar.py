@@ -43,6 +43,18 @@ class DraftScheduleResponse(BaseModel):
 class SaveScheduleRequest(BaseModel):
     sessions: List[DraftSessionSchedule]
 
+def is_month_locked(db: Session, year: int, month: int) -> bool:
+    """
+    Check if any assignments exist for sessions in the given month.
+    If assignments exist, the month is considered 'locked' for availability changes.
+    """
+    locked = db.query(Assignment).join(SessionModel).filter(
+        extract('year', SessionModel.start_time) == year,
+        extract('month', SessionModel.start_time) == month
+    ).first()
+    return locked is not None
+
+
 router = APIRouter(
     prefix="/calendar",
     tags=["calendar"],
@@ -62,6 +74,16 @@ def update_availability(
     db_session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
     if not db_session:
         raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Lock Check: Non-admins cannot change availability if month is locked
+    is_admin = current_user.permissions and 'admin' in current_user.permissions
+    if not is_admin:
+        session_date = db_session.start_time
+        if is_month_locked(db, session_date.year, session_date.month):
+            raise HTTPException(
+                status_code=400, 
+                detail="Availability is locked for this month because the schedule has been finalized."
+            )
     
     # Check if an availability record already exists
     availability = db.query(Availability).filter(
@@ -104,6 +126,15 @@ def update_day_availability(
         target_date = datetime.fromisoformat(request.date).date()
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+    # Lock Check: Non-admins cannot change availability if month is locked
+    is_admin = current_user.permissions and 'admin' in current_user.permissions
+    if not is_admin:
+        if is_month_locked(db, target_date.year, target_date.month):
+            raise HTTPException(
+                status_code=400, 
+                detail="Availability is locked for this month because the schedule has been finalized."
+            )
 
     # Upsert the DayOff record (day-level, independent of sessions)
     day_off = db.query(DayOff).filter(
