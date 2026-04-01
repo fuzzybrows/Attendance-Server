@@ -10,6 +10,7 @@ class Role(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     description = Column(String, nullable=True)
+    is_choir_role = Column(Boolean, default=False, comment="Flag to identify roles used for choir scheduling slots (e.g. Soprano, Alto).")
 
 
 class Permission(Base):

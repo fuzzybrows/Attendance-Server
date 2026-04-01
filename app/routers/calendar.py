@@ -263,7 +263,11 @@ def generate_schedule(
     (Admin only)
     Roles: lead_singer, soprano, alto, tenor
     """
-    REQUIRED_ROLES = ["lead_singer", "soprano", "alto", "tenor"]
+    choir_roles = db.query(models.Role).filter(models.Role.is_choir_role == True).all()
+    REQUIRED_ROLES = [r.name for r in choir_roles]
+    if not REQUIRED_ROLES:
+        # Fallback to defaults if none marked to avoid empty schedule
+        REQUIRED_ROLES = ["lead_singer", "soprano", "alto", "tenor"]
 
     # 1. Get all non-rehearsal active sessions in that month
     sessions = db.query(SessionModel).filter(

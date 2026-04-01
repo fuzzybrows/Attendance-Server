@@ -61,7 +61,8 @@ def get_member_metadata(db: Session = Depends(get_db)):
     permissions = db.query(models.Permission).all()
     return {
         "roles": [r.name for r in roles],
-        "permissions": [p.name for p in permissions]
+        "permissions": [p.name for p in permissions],
+        "choir_roles": [r.name for r in roles if r.is_choir_role]
     }
 
 

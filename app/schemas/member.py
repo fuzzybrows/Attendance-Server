@@ -1,6 +1,6 @@
 """Member-related Pydantic schemas."""
-from pydantic import BaseModel, field_validator
-from typing import Optional, List
+from pydantic import BaseModel, field_validator, Field
+from typing import Optional, List, Dict
 
 
 class MemberBase(BaseModel):
@@ -53,6 +53,15 @@ class Member(MemberBase):
         from_attributes = True
 
 
+class RoleSchema(BaseModel):
+    name: str
+    description: Optional[str] = None
+    is_choir_role: bool = Field(default=False, description="Flag to identify roles used for choir scheduling slots (e.g. Soprano, Alto).")
+    
+    class Config:
+        from_attributes = True
+
+
 class MemberUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -66,3 +75,4 @@ class MemberUpdate(BaseModel):
 class MemberMetadata(BaseModel):
     roles: List[str]
     permissions: List[str]
+    choir_roles: List[str]
