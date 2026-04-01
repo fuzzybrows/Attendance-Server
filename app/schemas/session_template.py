@@ -11,7 +11,7 @@ class SessionTemplateBase(BaseModel):
     frequency: Literal["daily", "weekly", "bi-weekly", "monthly"] = "weekly"
     reference_start_date: Optional[date] = None
     start_time: time
-    duration_minutes: int = 120
+    end_time: time
     
     # Geofencing defaults
     latitude: Optional[float] = None
@@ -30,7 +30,7 @@ class SessionTemplateUpdate(BaseModel):
     frequency: Optional[Literal["daily", "weekly", "bi-weekly", "monthly"]] = None
     reference_start_date: Optional[date] = None
     start_time: Optional[time] = None
-    duration_minutes: Optional[int] = None
+    end_time: Optional[time] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     radius: Optional[int] = None

@@ -46,6 +46,7 @@ def create_session(session: schemas.SessionCreate, db: Session = Depends(get_db)
         type=session.type,
         status=session.status,
         start_time=start_time,
+        end_time=session.end_time,
         latitude=session.latitude,
         longitude=session.longitude,
         radius=session.radius

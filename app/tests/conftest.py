@@ -197,8 +197,9 @@ def sample_session_data():
     return {
         "title": "Sunday Rehearsal",
         "type": "rehearsal",
-        "status": "active",
         "start_time": "2026-02-15T10:00:00",
+        "end_time": "2026-02-15T12:00:00",
+        "status": "active",
     }
 
 
@@ -208,4 +209,3 @@ def created_session(client, sample_session_data):
     response = client.post("/sessions/", json=sample_session_data)
     assert response.status_code == 200
     return response.json()
-

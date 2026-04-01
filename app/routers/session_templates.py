@@ -116,6 +116,11 @@ def generate_sessions(request: schemas.session_template.SessionGenerationRequest
                     
         for d in valid_dates:
             start_time = datetime.combine(d, t.start_time)
+            
+            end_time = datetime.combine(d, t.end_time)
+            if t.end_time < t.start_time:
+                end_time += timedelta(days=1)
+                
             existing = db.query(models.Session).filter(
                 models.Session.start_time == start_time,
                 models.Session.title == t.title
@@ -127,6 +132,7 @@ def generate_sessions(request: schemas.session_template.SessionGenerationRequest
                     type=t.type,
                     status="scheduled",
                     start_time=start_time,
+                    end_time=end_time,
                     latitude=t.latitude,
                     longitude=t.longitude,
                     radius=t.radius

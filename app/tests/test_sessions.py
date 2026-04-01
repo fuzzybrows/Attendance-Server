@@ -74,6 +74,7 @@ class TestDeleteSession:
                 "type": "rehearsal",
                 "status": "active",
                 "start_time": "2026-02-15T10:00:00",
+                "end_time": "2026-02-15T12:00:00",
             })
 
         sessions = client.get("/sessions/").json()

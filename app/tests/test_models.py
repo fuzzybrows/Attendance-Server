@@ -52,6 +52,7 @@ class TestSessionSchema:
             title="Rehearsal",
             type="rehearsal",
             start_time="2026-02-15T10:00:00",
+            end_time="2026-02-15T12:00:00",
         )
         assert session.title == "Rehearsal"
         assert session.status == "scheduled"  # default

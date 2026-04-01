@@ -69,9 +69,11 @@ class TestFraudPrevention:
         # Create a session WITH location
         session_data = {
             "title": "Geo Session",
-            "type": "rehearsal",
+            "type": "program",
             "start_time": "2026-02-15T12:00:00",
-            "latitude": 40.7128,  # NYC
+            "end_time": "2026-02-15T14:00:00",
+            "status": "active",
+            "latitude": 40.7128,
             "longitude": -74.0060,
             "radius": 100 # meters
         }

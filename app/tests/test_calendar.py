@@ -8,8 +8,9 @@ def test_export_pdf(client, db_session):
     session = SessionModel(
         title="Test Music Service",
         type="program",
-        status="active",
-        start_time=datetime(2026, 4, 12, 10, 0, 0)
+        start_time=datetime(2026, 4, 12, 10, 0, 0),
+        end_time=datetime(2026, 4, 12, 12, 0, 0),
+        status="scheduled"
     )
     db_session.add(session)
     db_session.commit()
@@ -46,8 +47,9 @@ def test_sync_ics(client, db_session):
     session = SessionModel(
         title="Sync Test Session",
         type="rehearsal",
-        status="active",
-        start_time=datetime.now() + timedelta(days=1)
+        start_time=datetime.now() + timedelta(days=1),
+        end_time=datetime.now() + timedelta(days=1, hours=2),
+        status="scheduled"
     )
     db_session.add(session)
     db_session.commit()
@@ -68,8 +70,9 @@ def test_save_schedule(client, db_session):
     session = SessionModel(
         title="Target Session",
         type="program",
-        status="active",
-        start_time=datetime(2026, 5, 20, 18, 0)
+        start_time=datetime(2026, 5, 20, 18, 0),
+        end_time=datetime(2026, 5, 20, 20, 0),
+        status="scheduled"
     )
     db_session.add(session)
     db_session.commit()

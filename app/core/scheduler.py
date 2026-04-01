@@ -77,6 +77,51 @@ def dispatch_24hr_reminders():
     finally:
         db.close()
 
+def update_session_statuses():
+    """
+    Job that runs every 5 minutes to sweep all sessions and update their 
+    statuses to active, concluded, or archived based on their start_time and end_time.
+    """
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    db = SessionLocal()
+    try:
+        # Mark Active: 30 mins before start_time
+        active_threshold = now + timedelta(minutes=30)
+        scheduled_sessions = db.query(Session).filter(
+            Session.status == SessionStatus.SCHEDULED.value,
+            Session.start_time <= active_threshold
+        ).all()
+        for session in scheduled_sessions:
+            session.status = SessionStatus.ACTIVE.value
+            logger.info(f"Auto-marked session {session.id} as ACTIVE")
+
+        # Mark Concluded: when now >= end_time
+        active_sessions = db.query(Session).filter(
+            Session.status == SessionStatus.ACTIVE.value,
+            Session.end_time <= now
+        ).all()
+        for session in active_sessions:
+            session.status = SessionStatus.CONCLUDED.value
+            logger.info(f"Auto-marked session {session.id} as CONCLUDED")
+
+        # Mark Archived: 7 days after start_time date at midnight
+        concluded_sessions = db.query(Session).filter(
+            Session.status == SessionStatus.CONCLUDED.value
+        ).all()
+        
+        for session in concluded_sessions:
+            import datetime as dt
+            archive_threshold = datetime.combine(session.start_time.date() + timedelta(days=7), dt.time.min)
+            if now >= archive_threshold:
+                session.status = SessionStatus.ARCHIVED.value
+                logger.info(f"Auto-marked session {session.id} as ARCHIVED")
+                
+        db.commit()
+    except Exception as e:
+        logger.error(f"Error in update_session_statuses: {e}", exc_info=True)
+    finally:
+        db.close()
+
 def start_scheduler():
     """Starts the APScheduler background tasks."""
     if not scheduler.running:
@@ -88,6 +133,16 @@ def start_scheduler():
             name="Dispatch 24-hour reminders",
             replace_existing=True
         )
+        
+        # Run every 5 minutes to sweep statuses
+        scheduler.add_job(
+            update_session_statuses,
+            trigger=IntervalTrigger(minutes=5),
+            id="update_statuses_job",
+            name="Update session statuses",
+            replace_existing=True
+        )
+        
         scheduler.start()
         logger.info("Background scheduler started.")
 

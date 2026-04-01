@@ -149,8 +149,9 @@ class TestBulkDeleteAttendance:
         session2 = client.post("/sessions/", json={
             "title": "Another Session",
             "type": "rehearsal",
-            "status": "active",
             "start_time": "2026-02-16T10:00:00",
+            "end_time": "2026-02-16T12:00:00",
+            "status": "active",
         }).json()
 
         r1 = client.post("/attendance/", json={

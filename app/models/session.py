@@ -13,6 +13,7 @@ class Session(Base):
     type = Column(String)  # "rehearsal" or "program"
     status = Column(String, default="active")  # "active", "concluded", "archived"
     start_time = Column(DateTime, nullable=False)  # Scheduled start time
+    end_time = Column(DateTime, nullable=True)  # Scheduled end time
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
