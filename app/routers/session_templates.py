@@ -1,0 +1,142 @@
+"""SessionTemplate API router."""
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
+from datetime import datetime, date, timedelta, time
+import models, schemas
+from core.database import get_db
+from core.auth import get_admin_member
+import logging
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(
+    prefix="/session-templates",
+    tags=["session_templates"],
+)
+
+@router.get("/", response_model=List[schemas.session_template.SessionTemplate])
+def read_templates(db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+    return db.query(models.SessionTemplate).all()
+
+@router.post("/", response_model=schemas.session_template.SessionTemplate)
+def create_template(template: schemas.session_template.SessionTemplateCreate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+    db_template = models.SessionTemplate(**template.model_dump())
+    db.add(db_template)
+    db.commit()
+    db.refresh(db_template)
+    return db_template
+
+@router.delete("/{template_id}")
+def delete_template(template_id: int, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+    db_template = db.query(models.SessionTemplate).filter(models.SessionTemplate.id == template_id).first()
+    if not db_template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    db.delete(db_template)
+    db.commit()
+    return {"status": "success"}
+
+@router.post("/generate", response_model=List[schemas.Session])
+def generate_sessions(request: schemas.session_template.SessionGenerationRequest, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+    """
+    Generate sessions for a date range based on active templates.
+    """
+    try:
+        start_date = datetime.strptime(request.start_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(request.end_date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    templates = db.query(models.SessionTemplate).filter(models.SessionTemplate.is_active == True).all()
+    
+    generated_sessions = []
+    
+    for t in templates:
+        frequency = getattr(t, 'frequency', 'weekly')
+        valid_dates = []
+        
+        if frequency == 'daily':
+            curr = start_date
+            while curr <= end_date:
+                valid_dates.append(curr)
+                curr += timedelta(days=1)
+                
+        elif frequency == 'weekly':
+            curr = start_date
+            while curr <= end_date:
+                if curr.weekday() == t.day_of_week:
+                    valid_dates.append(curr)
+                curr += timedelta(days=1)
+                
+        elif frequency == 'bi-weekly':
+            ref_date = t.reference_start_date or start_date
+            anchor = ref_date
+            while anchor.weekday() != t.day_of_week:
+                anchor += timedelta(days=1)
+                
+            curr = anchor
+            if curr > start_date:
+                while curr - timedelta(days=14) >= start_date:
+                    curr -= timedelta(days=14)
+            else:
+                while curr < start_date:
+                    curr += timedelta(days=14)
+                    
+            while curr <= end_date:
+                if curr >= start_date:
+                    valid_dates.append(curr)
+                curr += timedelta(days=14)
+                
+        elif frequency == 'monthly':
+            ref_date = t.reference_start_date or start_date
+            anchor = ref_date
+            while anchor.weekday() != t.day_of_week:
+                anchor += timedelta(days=1)
+            week_of_month = (anchor.day - 1) // 7 + 1
+            
+            curr_year = start_date.year
+            curr_month = start_date.month
+            end_year = end_date.year
+            end_month = end_date.month
+            
+            while (curr_year, curr_month) <= (end_year, end_month):
+                first_day_of_month = date(curr_year, curr_month, 1)
+                days_to_add = (t.day_of_week - first_day_of_month.weekday()) % 7
+                first_target_day = first_day_of_month + timedelta(days=days_to_add)
+                target_day = first_target_day + timedelta(days=7 * (week_of_month - 1))
+                
+                if target_day.month == curr_month and start_date <= target_day <= end_date:
+                    valid_dates.append(target_day)
+                    
+                if curr_month == 12:
+                    curr_month = 1
+                    curr_year += 1
+                else:
+                    curr_month += 1
+                    
+        for d in valid_dates:
+            start_time = datetime.combine(d, t.start_time)
+            existing = db.query(models.Session).filter(
+                models.Session.start_time == start_time,
+                models.Session.title == t.title
+            ).first()
+            
+            if not existing:
+                db_session = models.Session(
+                    title=t.title,
+                    type=t.type,
+                    status="scheduled",
+                    start_time=start_time,
+                    latitude=t.latitude,
+                    longitude=t.longitude,
+                    radius=t.radius
+                )
+                db.add(db_session)
+                generated_sessions.append(db_session)
+    
+    db.commit()
+    for s in generated_sessions:
+        db.refresh(s)
+    
+    logger.info(f"Generated {len(generated_sessions)} sessions from templates", extra={"type": "sessions_generated", "count": len(generated_sessions)})
+    return generated_sessions

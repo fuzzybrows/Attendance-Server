@@ -10,6 +10,7 @@ from schemas.stats import AttendanceStats, SessionHistory, MemberStatsResponse
 from schemas.qr import QRTokenResponse, QRMarkResponse
 from schemas.availability import AvailabilityBase, AvailabilityCreate, AvailabilityUpdate, AvailabilitySchema, AvailabilityWithDetails
 from schemas.assignment import AssignmentBase, AssignmentCreate, AssignmentSchema, AssignmentWithDetails
+from schemas import session_template
 
 __all__ = [
     # Member
@@ -29,4 +30,5 @@ __all__ = [
     "AvailabilityBase", "AvailabilityCreate", "AvailabilityUpdate", "AvailabilitySchema", "AvailabilityWithDetails",
     # Assignment
     "AssignmentBase", "AssignmentCreate", "AssignmentSchema", "AssignmentWithDetails",
+    "session_template",
 ]
