@@ -40,7 +40,7 @@ class DraftAssignment(BaseModel):
 class DraftSessionSchedule(BaseModel):
     session_id: int
     session_title: str
-    session_date: str
+    start_time: str
     assignments: List[DraftAssignment]
 
 class DraftScheduleResponse(BaseModel):
@@ -263,7 +263,7 @@ def generate_schedule(
     (Admin only)
     Roles: lead_singer, soprano, alto, tenor
     """
-    choir_roles = db.query(models.Role).filter(models.Role.is_choir_role == True).all()
+    choir_roles = db.query(Role).filter(Role.is_choir_role == True).all()
     REQUIRED_ROLES = [r.name for r in choir_roles]
     if not REQUIRED_ROLES:
         # Fallback to defaults if none marked to avoid empty schedule
@@ -357,7 +357,7 @@ def generate_schedule(
         draft_sessions.append(DraftSessionSchedule(
             session_id=session.id,
             session_title=session.title,
-            session_date=session.start_time.isoformat() + "Z",
+            start_time=session.start_time.isoformat() + "Z",
             assignments=session_assignments
         ))
 
@@ -417,7 +417,7 @@ def get_session_schedule(
     return DraftSessionSchedule(
         session_id=session.id,
         session_title=session.title,
-        session_date=session.start_time.isoformat() + "Z",
+        start_time=session.start_time.isoformat() + "Z",
         assignments=session_assignments
     )
 
@@ -461,7 +461,7 @@ def get_schedule(
         draft_sessions.append(DraftSessionSchedule(
             session_id=session.id,
             session_title=session.title,
-            session_date=session.start_time.isoformat() + "Z",
+            start_time=session.start_time.isoformat() + "Z",
             assignments=session_assignments
         ))
 
