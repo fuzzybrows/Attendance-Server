@@ -57,8 +57,33 @@ def create_session(session: schemas.SessionCreate, db: Session = Depends(get_db)
     return db_session
 
 @router.get("/", response_model=List[schemas.Session])
-def read_sessions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
-    sessions = db.query(models.Session).order_by(models.Session.start_time.desc()).offset(skip).limit(limit).all()
+def read_sessions(
+    skip: int = 0, 
+    limit: int = 100, 
+    start_date: str = None,
+    end_date: str = None,
+    db: Session = Depends(get_db), 
+    _current_user: str = Depends(get_current_user)
+):
+    query = db.query(models.Session)
+    
+    if start_date:
+        try:
+            from datetime import datetime
+            sd = datetime.fromisoformat(start_date.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
+            query = query.filter(models.Session.start_time >= sd)
+        except ValueError:
+            pass
+            
+    if end_date:
+        try:
+            from datetime import datetime
+            ed = datetime.fromisoformat(end_date.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
+            query = query.filter(models.Session.start_time <= ed)
+        except ValueError:
+            pass
+
+    sessions = query.order_by(models.Session.start_time.desc()).offset(skip).limit(limit).all()
     return sessions
 
 @router.patch("/{session_id}", response_model=schemas.Session)
