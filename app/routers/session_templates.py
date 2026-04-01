@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime, date, timedelta, time
+from datetime import datetime, date, timedelta, time, timezone
 import models, schemas
 from core.database import get_db
 from core.auth import get_admin_member
@@ -114,12 +114,17 @@ def generate_sessions(request: schemas.session_template.SessionGenerationRequest
                 else:
                     curr_month += 1
                     
+        from zoneinfo import ZoneInfo
+        LOCAL_TZ = ZoneInfo("America/Chicago")
+        
         for d in valid_dates:
-            start_time = datetime.combine(d, t.start_time)
+            local_start = datetime.combine(d, t.start_time).replace(tzinfo=LOCAL_TZ)
+            start_time = local_start.astimezone(timezone.utc).replace(tzinfo=None)
             
-            end_time = datetime.combine(d, t.end_time)
+            local_end = datetime.combine(d, t.end_time).replace(tzinfo=LOCAL_TZ)
             if t.end_time < t.start_time:
-                end_time += timedelta(days=1)
+                local_end += timedelta(days=1)
+            end_time = local_end.astimezone(timezone.utc).replace(tzinfo=None)
                 
             existing = db.query(models.Session).filter(
                 models.Session.start_time == start_time,
