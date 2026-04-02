@@ -7,7 +7,14 @@ import random
 from collections import defaultdict
 
 from core.database import get_db
-from core.auth import get_current_active_member, get_admin_member
+from core.auth import (
+    get_current_active_member, 
+    get_admin_member, 
+    get_schedule_read_manager, 
+    get_assignments_edit_manager,
+    get_schedule_generate_manager,
+    get_schedule_export_manager
+)
 from models.member import Member, Role
 from models.session import Session as SessionModel
 from models.availability import Availability
@@ -81,9 +88,9 @@ def update_availability(
     if not db_session:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    # Lock Check: Non-admins cannot change availability if month is locked
-    is_admin = current_user.permissions and 'admin' in current_user.permissions
-    if not is_admin:
+    # Lock Check: Non-admins/managers cannot change availability if month is locked
+    is_admin_or_manager = any(p.name in ['admin', 'schedule_read', 'schedule_generate'] for p in current_user.permissions)
+    if not is_admin_or_manager:
         session_date = db_session.start_time
         if is_month_locked(db, session_date.year, session_date.month):
             raise HTTPException(
@@ -133,9 +140,9 @@ def update_day_availability(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
 
-    # Lock Check: Non-admins cannot change availability if month is locked
-    is_admin = current_user.permissions and 'admin' in current_user.permissions
-    if not is_admin:
+    # Lock Check: Non-admins/managers cannot change availability if month is locked
+    is_admin_or_manager = any(p.name in ['admin', 'schedule_read', 'schedule_generate'] for p in current_user.permissions)
+    if not is_admin_or_manager:
         if is_month_locked(db, target_date.year, target_date.month):
             raise HTTPException(
                 status_code=400, 
@@ -213,7 +220,7 @@ def get_month_availability(
     year: int,
     month: int,
     db: Session = Depends(get_db),
-    admin: Member = Depends(get_admin_member)
+    admin: Member = Depends(get_schedule_read_manager)
 ):
     """
     Get a matrix of all member availabilities for a specific month.
@@ -256,7 +263,7 @@ def get_month_availability(
 def generate_schedule(
     request: DraftScheduleRequest,
     db: Session = Depends(get_db),
-    admin: Member = Depends(get_admin_member)
+    admin: Member = Depends(get_schedule_generate_manager)
 ):
     """
     Run algorithm to auto-schedule members to roles for non-rehearsal sessions in the specified month.
@@ -368,7 +375,7 @@ def generate_schedule(
 def save_schedule(
     request: SaveScheduleRequest,
     db: Session = Depends(get_db),
-    admin: Member = Depends(get_admin_member)
+    admin: Member = Depends(get_assignments_edit_manager)
 ):
     """
     Save or overwrite assignments for the specific sessions.
@@ -473,7 +480,7 @@ def export_month_schedule_csv(
     year: int,
     month: int,
     db: Session = Depends(get_db),
-    admin: Member = Depends(get_admin_member)
+    admin: Member = Depends(get_schedule_export_manager)
 ):
     """
     Export the finalized schedule for a month to CSV.
@@ -525,7 +532,7 @@ def export_month_schedule_pdf(
     year: int,
     month: int,
     db: Session = Depends(get_db),
-    current_user: Member = Depends(get_admin_member)
+    current_user: Member = Depends(get_schedule_export_manager)
 ):
     """
     Export the monthly schedule as a PDF document.

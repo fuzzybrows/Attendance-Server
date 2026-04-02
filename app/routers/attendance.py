@@ -5,7 +5,14 @@ from pydantic import BaseModel
 import models, schemas
 from core.database import get_db
 from core.database import get_db
-from core.auth import get_current_user, get_admin_member, get_current_active_member
+from core.auth import (
+    get_current_user, 
+    get_admin_member, 
+    get_current_active_member,
+    get_attendance_read_manager,
+    get_attendance_write_manager,
+    get_attendance_delete_manager
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,7 +29,7 @@ router = APIRouter(
 from services.attendance import validate_attendance
 
 @router.post("/", response_model=schemas.Attendance)
-def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db), current_member=Depends(get_attendance_write_manager)):
     logger.info("Marking attendance", extra={
         "type": "attendance_mark_attempt",
         "member_id": attendance.member_id,
@@ -66,6 +73,9 @@ def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(
 
 @router.get("/session/{session_id}", response_model=List[schemas.Attendance])
 def read_attendance(session_id: int, db: Session = Depends(get_db), current_member=Depends(get_current_active_member)):
+    # Note: Keep get_current_active_member to allow mobile users to resolve names for their own session.
+    # However, for administrative lists, we should use get_attendance_read_manager.
+    # For now, we'll keep this as-is for mobile app compatibility but update the stats route below.
     # Allow all authenticated members to view session attendance (for mobile app)
     attendance = db.query(models.Attendance).filter(models.Attendance.session_id == session_id).all()
     return attendance
@@ -89,7 +99,7 @@ def get_member_attendance(member_id: int, db: Session = Depends(get_db), current
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.delete("/{attendance_id}")
-def delete_attendance(attendance_id: int, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def delete_attendance(attendance_id: int, db: Session = Depends(get_db), current_member=Depends(get_attendance_delete_manager)):
     attendance = db.query(models.Attendance).filter(models.Attendance.id == attendance_id).first()
     if not attendance:
         raise HTTPException(status_code=404, detail="Attendance record not found")
@@ -98,7 +108,7 @@ def delete_attendance(attendance_id: int, db: Session = Depends(get_db), current
     return {"status": "deleted", "attendance_id": attendance_id}
 
 @router.post("/bulk-delete")
-def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get_db), current_member=Depends(get_attendance_delete_manager)):
     if not request.ids:
         raise HTTPException(status_code=400, detail="No IDs provided")
     logger.warning("Bulk deleting attendance records", extra={"type": "attendance_bulk_delete", "ids": request.ids})
@@ -108,7 +118,7 @@ def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get
 
 
 @router.get("/stats", response_model=List[schemas.AttendanceStats])
-def get_overall_stats(db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def get_overall_stats(db: Session = Depends(get_db), current_member=Depends(get_attendance_read_manager)):
     members = db.query(models.Member).all()
     attendance = db.query(models.Attendance).all()
     sessions = {s.id: s for s in db.query(models.Session).all()}

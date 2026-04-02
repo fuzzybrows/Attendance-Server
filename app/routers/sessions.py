@@ -6,7 +6,14 @@ import models, schemas
 from datetime import timezone
 from core.database import get_db
 from core.database import get_db
-from core.auth import get_current_user, get_admin_member
+from core.auth import (
+    get_current_user, 
+    get_admin_member, 
+    get_sessions_read_manager, 
+    get_sessions_create_manager, 
+    get_sessions_edit_manager, 
+    get_sessions_delete_manager
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,7 +28,7 @@ router = APIRouter(
 )
 
 @router.get("/metadata", response_model=schemas.SessionMetadata)
-def get_session_metadata(current_member=Depends(get_admin_member)):
+def get_session_metadata(current_member=Depends(get_sessions_read_manager)):
     """
     Get all available session types and statuses from the Enums.
     """
@@ -31,7 +38,7 @@ def get_session_metadata(current_member=Depends(get_admin_member)):
     }
 
 @router.post("/", response_model=schemas.Session)
-def create_session(session: schemas.SessionCreate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def create_session(session: schemas.SessionCreate, db: Session = Depends(get_db), current_member=Depends(get_sessions_create_manager)):
     logger.info("Creating session", extra={"type": "session_create_attempt", "title": session.title, "session_type": session.type})
     
     if session.status == "active":
@@ -64,7 +71,7 @@ def read_sessions(
     start_date: str = None,
     end_date: str = None,
     db: Session = Depends(get_db), 
-    _current_user: str = Depends(get_current_user)
+    _current_user: models.Member = Depends(get_sessions_read_manager)
 ):
     query = db.query(models.Session)
     
@@ -88,7 +95,7 @@ def read_sessions(
     return sessions
 
 @router.patch("/{session_id}", response_model=schemas.Session)
-def update_session(session_id: int, update: schemas.SessionUpdate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def update_session(session_id: int, update: schemas.SessionUpdate, db: Session = Depends(get_db), current_member=Depends(get_sessions_edit_manager)):
     logger.info("Updating session", extra={"type": "session_update", "session_id": session_id, "admin": current_member.email})
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not session:
@@ -103,7 +110,7 @@ def update_session(session_id: int, update: schemas.SessionUpdate, db: Session =
     return session
 
 @router.delete("/{session_id}")
-def delete_session(session_id: int, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def delete_session(session_id: int, db: Session = Depends(get_db), current_member=Depends(get_sessions_delete_manager)):
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -112,7 +119,7 @@ def delete_session(session_id: int, db: Session = Depends(get_db), current_membe
     return {"status": "deleted", "session_id": session_id}
 
 @router.post("/bulk-delete")
-def bulk_delete_sessions(request: BulkDeleteRequest, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def bulk_delete_sessions(request: BulkDeleteRequest, db: Session = Depends(get_db), current_member=Depends(get_sessions_delete_manager)):
     if not request.ids:
         raise HTTPException(status_code=400, detail="No IDs provided")
     logger.warning("Bulk deleting sessions", extra={"type": "session_bulk_delete", "ids": request.ids})

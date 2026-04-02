@@ -5,7 +5,11 @@ from typing import List
 from datetime import datetime, date, timedelta, time, timezone
 import models, schemas
 from core.database import get_db
-from core.auth import get_admin_member
+from core.auth import (
+    get_admin_member, 
+    get_templates_manager,
+    get_schedule_generate_manager
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,11 +20,11 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=List[schemas.session_template.SessionTemplate])
-def read_templates(db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def read_templates(db: Session = Depends(get_db), current_member=Depends(get_templates_manager)):
     return db.query(models.SessionTemplate).all()
 
 @router.post("/", response_model=schemas.session_template.SessionTemplate)
-def create_template(template: schemas.session_template.SessionTemplateCreate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def create_template(template: schemas.session_template.SessionTemplateCreate, db: Session = Depends(get_db), current_member=Depends(get_templates_manager)):
     db_template = models.SessionTemplate(**template.model_dump())
     db.add(db_template)
     db.commit()
@@ -28,7 +32,7 @@ def create_template(template: schemas.session_template.SessionTemplateCreate, db
     return db_template
 
 @router.delete("/{template_id}")
-def delete_template(template_id: int, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def delete_template(template_id: int, db: Session = Depends(get_db), current_member=Depends(get_templates_manager)):
     db_template = db.query(models.SessionTemplate).filter(models.SessionTemplate.id == template_id).first()
     if not db_template:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -37,7 +41,7 @@ def delete_template(template_id: int, db: Session = Depends(get_db), current_mem
     return {"status": "success"}
 
 @router.post("/generate", response_model=List[schemas.Session])
-def generate_sessions(request: schemas.session_template.SessionGenerationRequest, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def generate_sessions(request: schemas.session_template.SessionGenerationRequest, db: Session = Depends(get_db), current_member=Depends(get_schedule_generate_manager)):
     """
     Generate sessions for a date range based on active templates.
     """

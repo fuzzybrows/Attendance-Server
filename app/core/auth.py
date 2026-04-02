@@ -1,6 +1,6 @@
 import bcrypt
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, List
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -60,18 +60,100 @@ def get_current_active_member(
         raise HTTPException(status_code=404, detail="Member not found")
     return member
 
+def _has_any_permission(member: models.Member, required_perms: List[str]) -> bool:
+    """Helper to check if a member has 'admin' or any of the required permissions."""
+    return any(p.name in (["admin"] + required_perms) for p in member.permissions)
+
 def get_admin_member(
     member: models.Member = Depends(get_current_active_member)
 ) -> models.Member:
-    """
-    Dependency to ensure the user has admin privileges.
-    Checks if the user has a permission named 'admin'.
-    """
-    # Check if 'admin' is in the list of permission names
-    has_admin = any(p.name == "admin" for p in member.permissions)
-    if not has_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges"
-        )
+    """Dependency to ensure the user has admin privileges."""
+    if not _has_any_permission(member, []): # Only admin
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
+    return member
+
+def get_schedule_read_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    """Permission to read the complete schedule/availability matrix."""
+    if not _has_any_permission(member, ["schedule_read"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Schedule Read permission required")
+    return member
+
+def get_assignments_edit_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    """Permission to save or modify draft schedule assignments."""
+    if not _has_any_permission(member, ["assignments_edit"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Assignments Edit permission required")
+    return member
+
+# Granular Session Permissions
+def get_sessions_read_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["sessions_read"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sessions Read permission required")
+    return member
+
+def get_sessions_create_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["sessions_create"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sessions Create permission required")
+    return member
+
+def get_sessions_edit_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["sessions_edit"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sessions Edit permission required")
+    return member
+
+def get_sessions_delete_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["sessions_delete"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sessions Delete permission required")
+    return member
+
+# Granular Attendance Permissions
+def get_attendance_read_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["attendance_read"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Attendance Read permission required")
+    return member
+
+def get_attendance_write_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["attendance_write"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Attendance Write permission required")
+    return member
+
+def get_attendance_delete_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["attendance_delete"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Attendance Delete permission required")
+    return member
+
+# Granular Member Permissions
+def get_members_read_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["members_read"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Members Read permission required")
+    return member
+
+def get_members_create_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["members_create"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Members Create permission required")
+    return member
+
+def get_members_edit_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["members_edit"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Members Edit permission required")
+    return member
+
+def get_members_delete_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["members_delete"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Members Delete permission required")
+    return member
+
+# Granular Scheduling Permissions
+def get_templates_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["templates_manage"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Templates Manage permission required")
+    return member
+
+def get_schedule_generate_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["schedule_generate"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Schedule Generate permission required")
+    return member
+
+def get_schedule_export_manager(member: models.Member = Depends(get_current_active_member)) -> models.Member:
+    if not _has_any_permission(member, ["schedule_export"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Schedule Export permission required")
     return member

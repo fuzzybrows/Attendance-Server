@@ -3,7 +3,16 @@ from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
 from core.database import get_db
-from core.auth import get_password_hash, get_current_user, get_admin_member, get_current_active_member
+from core.auth import (
+    get_password_hash, 
+    get_current_user, 
+    get_admin_member, 
+    get_current_active_member,
+    get_members_read_manager,
+    get_members_create_manager,
+    get_members_edit_manager,
+    get_members_delete_manager
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,7 +24,7 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=schemas.Member)
-def create_member(member: schemas.MemberCreate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def create_member(member: schemas.MemberCreate, db: Session = Depends(get_db), current_member=Depends(get_members_create_manager)):
     logger.info("Creating member", extra={"type": "member_create_attempt", "email": member.email, "admin": current_member.email})
     # Check if already exists
     existing = db.query(models.Member).filter(models.Member.email == member.email).first()
@@ -67,14 +76,14 @@ def get_member_metadata(db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[schemas.Member])
-def read_members(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_member=Depends(get_current_active_member)):
+def read_members(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_member=Depends(get_members_read_manager)):
     # Accessible to all authenticated members (needed for mobile app name resolution)
     # TODO: In future, return a limited "PublicMember" schema for non-admins to hide PII.
     members = db.query(models.Member).offset(skip).limit(limit).all()
     return members
 
 @router.get("/{member_id}", response_model=schemas.Member)
-def read_member(member_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
+def read_member(member_id: int, db: Session = Depends(get_db), current_member=Depends(get_members_read_manager)):
     logger.info("Fetching member details", extra={"type": "member_read_attempt", "member_id": member_id})
     db_member = db.query(models.Member).filter(models.Member.id == member_id).first()
     if db_member is None:
@@ -83,7 +92,7 @@ def read_member(member_id: int, db: Session = Depends(get_db), _current_user: st
     return db_member
 
 @router.put("/{member_id}", response_model=schemas.Member)
-def update_member(member_id: int, member_update: schemas.MemberUpdate, db: Session = Depends(get_db), current_member=Depends(get_admin_member)):
+def update_member(member_id: int, member_update: schemas.MemberUpdate, db: Session = Depends(get_db), current_member=Depends(get_members_edit_manager)):
     logger.info("Updating member", extra={"type": "member_update", "member_id": member_id, "admin": current_member.email})
     db_member = db.query(models.Member).filter(models.Member.id == member_id).first()
     if not db_member:
@@ -107,3 +116,13 @@ def update_member(member_id: int, member_update: schemas.MemberUpdate, db: Sessi
     db.commit()
     db.refresh(db_member)
     return db_member
+
+@router.delete("/{member_id}")
+def delete_member(member_id: int, db: Session = Depends(get_db), current_member=Depends(get_members_delete_manager)):
+    logger.info("Deleting member", extra={"type": "member_delete", "member_id": member_id, "admin": current_member.email})
+    db_member = db.query(models.Member).filter(models.Member.id == member_id).first()
+    if not db_member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    db.delete(db_member)
+    db.commit()
+    return {"status": "deleted", "member_id": member_id}
