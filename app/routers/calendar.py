@@ -39,15 +39,19 @@ class DraftScheduleRequest(BaseModel):
     year: int
     month: int
 
+from pydantic import BaseModel, Field, AliasChoices
+from typing import Optional, List, Dict
+
 class DraftAssignment(BaseModel):
     member_id: int
-    member_name: str
+    member_name: Optional[str] = None
     role: str
 
 class DraftSessionSchedule(BaseModel):
-    session_id: int
-    session_title: str
+    id: int = Field(validation_alias=AliasChoices('id', 'session_id'))
+    title: str = Field(validation_alias=AliasChoices('title', 'session_title'))
     start_time: str
+    type: str
     assignments: List[DraftAssignment]
 
 class DraftScheduleResponse(BaseModel):
@@ -362,8 +366,9 @@ def generate_schedule(
             ))
 
         draft_sessions.append(DraftSessionSchedule(
-            session_id=session.id,
-            session_title=session.title,
+            id=session.id,
+            title=session.title,
+            type=session.type,
             start_time=session.start_time.isoformat() + "Z",
             assignments=session_assignments
         ))
@@ -383,12 +388,12 @@ def save_schedule(
     """
     for session_data in request.sessions:
         # First, delete existing assignments for the specific session
-        db.query(Assignment).filter(Assignment.session_id == session_data.session_id).delete()
+        db.query(Assignment).filter(Assignment.session_id == session_data.id).delete()
         
         # Insert new ones
         for assignment_data in session_data.assignments:
             assignment = Assignment(
-                session_id=session_data.session_id,
+                session_id=session_data.id,
                 member_id=assignment_data.member_id,
                 role=assignment_data.role
             )
@@ -422,8 +427,9 @@ def get_session_schedule(
         ))
 
     return DraftSessionSchedule(
-        session_id=session.id,
-        session_title=session.title,
+        id=session.id,
+        title=session.title,
+        type=session.type,
         start_time=session.start_time.isoformat() + "Z",
         assignments=session_assignments
     )
@@ -466,8 +472,9 @@ def get_schedule(
             ))
         
         draft_sessions.append(DraftSessionSchedule(
-            session_id=session.id,
-            session_title=session.title,
+            id=session.id,
+            title=session.title,
+            type=session.type,
             start_time=session.start_time.isoformat() + "Z",
             assignments=session_assignments
         ))

@@ -14,6 +14,3 @@ class Assignment(Base):
     session = relationship("Session")
     member = relationship("Member")
 
-    __table_args__ = (
-        UniqueConstraint('session_id', 'role', name='uq_session_role_assignment'),
-    )
