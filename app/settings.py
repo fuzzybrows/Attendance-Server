@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     google_client_secret: Optional[str] = None
     google_redirect_uri: Optional[str] = None
     
+    # Recaptcha
+    recaptcha_secret_key: Optional[str] = None
+    recaptcha_enabled: bool = True
+    
     class Config:
         env_file = [".env", "../.env"]
         env_file_encoding = "utf-8"

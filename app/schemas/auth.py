@@ -7,6 +7,11 @@ from schemas.member import Member
 class MemberLogin(BaseModel):
     login: str  # email or phone_number
     password: str
+    recaptcha_token: Optional[str] = None
+
+class ForgotPasswordRequest(BaseModel):
+    login: str
+    recaptcha_token: Optional[str] = None
 
 
 class Token(BaseModel):

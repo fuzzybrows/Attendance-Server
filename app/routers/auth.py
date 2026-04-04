@@ -4,6 +4,7 @@ import models, schemas
 from core.database import get_db
 from core.auth import get_password_hash, verify_password, create_access_token
 from services.twilio import send_sms_verification, send_email_verification, check_verification
+from services.recaptcha import verify_recaptcha
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,11 @@ router = APIRouter(
 @router.post("/login", response_model=schemas.LoginResponse)
 def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
     logger.info("Login attempt", extra={"type": "login_attempt", "login": data.login})
+    
+    # Verify reCAPTCHA token
+    if not verify_recaptcha(data.recaptcha_token):
+        raise HTTPException(status_code=400, detail="reCAPTCHA verification failed. Please complete the captcha.")
+        
     # Find member by email or phone
     member = db.query(models.Member).filter(
         (models.Member.email == data.login) | (models.Member.phone_number == data.login)
@@ -66,16 +72,20 @@ def verify_otp(data: schemas.OTPVerification, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer", "member": member}
 
 @router.post("/forgot-password", response_model=schemas.StatusResponse)
-def forgot_password(login: str, db: Session = Depends(get_db)):
+def forgot_password(data: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    # Verify reCAPTCHA token
+    if not verify_recaptcha(data.recaptcha_token):
+        raise HTTPException(status_code=400, detail="reCAPTCHA verification failed. Please complete the captcha.")
+
     member = db.query(models.Member).filter(
-        (models.Member.email == login) | (models.Member.phone_number == login)
+        (models.Member.email == data.login) | (models.Member.phone_number == data.login)
     ).first()
     
     if not member:
         return {"status": "If an account matching this email or phone number exists, we'll send reset instructions."}
     
     # Use Twilio Verify to send verification code
-    if "@" in login:
+    if "@" in data.login:
         send_email_verification(member.email)
     else:
         send_sms_verification(member.phone_number)
