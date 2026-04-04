@@ -126,3 +126,20 @@ def delete_member(member_id: int, db: Session = Depends(get_db), current_member=
     db.delete(db_member)
     db.commit()
     return {"status": "deleted", "member_id": member_id}
+
+@router.post("/{member_id}/reset-password")
+def reset_member_password(
+    member_id: int, 
+    payload: schemas.member.PasswordResetRequest, 
+    db: Session = Depends(get_db), 
+    current_member=Depends(get_members_edit_manager)
+):
+    logger.info("Resetting member password", extra={"type": "member_password_reset", "member_id": member_id, "admin": current_member.email})
+    db_member = db.query(models.Member).filter(models.Member.id == member_id).first()
+    if not db_member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    db_member.hashed_password = get_password_hash(payload.new_password)
+    db.commit()
+    db.refresh(db_member)
+    return {"status": "success", "message": "Password successfully reset"}

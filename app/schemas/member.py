@@ -71,6 +71,9 @@ class MemberUpdate(BaseModel):
     roles: Optional[List[str]] = None
     permissions: Optional[List[str]] = None
 
+class PasswordResetRequest(BaseModel):
+    new_password: str
+
 
 class MemberMetadata(BaseModel):
     roles: List[str]
