@@ -64,7 +64,7 @@ app.include_router(session_templates.router)
 
 from fastapi.responses import PlainTextResponse
 
-@app.get("/health", response_class=PlainTextResponse, status_code=200)
+@app.api_route("/health", methods=["GET", "HEAD"], response_class=PlainTextResponse, status_code=200)
 def health_check():
     return "OK"
 
