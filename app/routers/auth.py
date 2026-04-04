@@ -101,6 +101,13 @@ def reset_password(data: schemas.OTPVerification, new_password: str, db: Session
         (models.Member.email == data.login) | (models.Member.phone_number == data.login)
     ).first()
     
+    import re
+    if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$", new_password):
+        raise HTTPException(
+            status_code=400, 
+            detail="Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character."
+        )
+    
     member.password_hash = get_password_hash(new_password)
     
     # OTP was verified, so mark the contact method as verified
