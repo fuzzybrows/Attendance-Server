@@ -28,9 +28,9 @@ def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
         (models.Member.email == data.login) | (models.Member.phone_number == data.login)
     ).first()
     
-    if not member or not verify_password(data.password, member.password_hash):
-        logger.warning("Login failed - Invalid credentials", extra={"type": "login_failed", "login": data.login, "reason": "invalid_credentials"})
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not member or not verify_password(data.password, member.password_hash) or not member.is_active:
+        logger.warning("Login failed - Invalid credentials or disabled", extra={"type": "login_failed", "login": data.login, "reason": "invalid_credentials_or_disabled"})
+        raise HTTPException(status_code=401, detail="Invalid credentials or account disabled")
     
     # Check if verification is needed
     is_email = "@" in data.login

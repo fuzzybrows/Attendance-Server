@@ -9,6 +9,7 @@ class MemberBase(BaseModel):
     email: str
     phone_number: Optional[str] = None
     nfc_id: Optional[str] = None
+    is_active: bool = True
 
     @field_validator('phone_number', 'nfc_id', mode='before')
     @classmethod
@@ -70,6 +71,7 @@ class MemberUpdate(BaseModel):
     nfc_id: Optional[str] = None
     roles: Optional[List[str]] = None
     permissions: Optional[List[str]] = None
+    is_active: Optional[bool] = None
 
 class PasswordResetRequest(BaseModel):
     new_password: str

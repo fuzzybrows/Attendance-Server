@@ -343,6 +343,10 @@ def generate_schedule(
 
         for role in REQUIRED_ROLES:
             pool = members_by_role[role]
+            
+            if role == "lead_singer" and session_date.weekday() == 6:
+                pool = [m for m in pool if any(r.name == 'Sunday Lead Singer' for r in m.roles)]
+                
             # Filter pool: must not be opted out, must not be scheduled already this session
             valid_pool = [m for m in pool if m.id not in unavailable_members and m.id not in scheduled_in_session]
 

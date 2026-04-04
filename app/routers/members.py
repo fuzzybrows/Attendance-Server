@@ -56,6 +56,7 @@ def create_member(member: schemas.MemberCreate, db: Session = Depends(get_db), c
         nfc_id=member.nfc_id,
         roles=db_roles,
         permissions=db_perms,
+        is_active=member.is_active,
     )
     db.add(db_member)
     db.commit()

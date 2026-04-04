@@ -47,3 +47,4 @@ class Member(Base):
 
     sync_token = Column(String, unique=True, index=True, nullable=True)
     google_refresh_token = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
