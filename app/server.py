@@ -62,6 +62,12 @@ app.include_router(calendar.router)
 app.include_router(google_auth.router)
 app.include_router(session_templates.router)
 
+from fastapi.responses import PlainTextResponse
+
+@app.get("/health", response_class=PlainTextResponse, status_code=200)
+def health_check():
+    return "OK"
+
 # Static files serving removed - frontend is now separate
 
 import logging
