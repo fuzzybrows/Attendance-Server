@@ -8,6 +8,7 @@ class TestLogin:
         response = client.post("/auth/login", json={
             "login": sample_member_data["email"],
             "password": sample_member_data["password"],
+            "recaptcha_token": "test-token"
         })
         assert response.status_code == 200
         data = response.json()
@@ -20,15 +21,32 @@ class TestLogin:
         response = client.post("/auth/login", json={
             "login": "john@example.com",
             "password": "wrongpassword",
+            "recaptcha_token": "test-token"
         })
         assert response.status_code == 401
-        assert response.json()["detail"] == "Invalid credentials"
+        assert response.json()["detail"] == "Invalid credentials or account disabled"
+
+    def test_login_disabled_account(self, client, db_session, created_member, sample_member_data):
+        """Test login for a disabled account returns the generic error message."""
+        import models
+        member = db_session.query(models.Member).filter_by(email=sample_member_data["email"]).first()
+        member.is_active = False
+        db_session.commit()
+
+        response = client.post("/auth/login", json={
+            "login": sample_member_data["email"],
+            "password": sample_member_data["password"],
+            "recaptcha_token": "test-token"
+        })
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Invalid credentials or account disabled"
 
     def test_login_nonexistent_user(self, client):
         """Test login with non-existent user."""
         response = client.post("/auth/login", json={
             "login": "nobody@example.com",
             "password": "password",
+            "recaptcha_token": "test-token"
         })
         assert response.status_code == 401
 
@@ -42,6 +60,7 @@ class TestLogin:
         response = client.post("/auth/login", json={
             "login": sample_member_data["email"],
             "password": sample_member_data["password"],
+            "recaptcha_token": "test-token"
         })
         assert response.status_code == 200
         data = response.json()
@@ -76,7 +95,7 @@ class TestPasswordReset:
         """Test forgot password initiates OTP."""
         response = client.post(
             "/auth/forgot-password",
-            params={"login": sample_member_data["email"]}
+            json={"login": sample_member_data["email"], "recaptcha_token": "test-token"}
         )
         assert response.status_code == 200
         assert "account matching" in response.json()["status"]
@@ -85,7 +104,7 @@ class TestPasswordReset:
         """Test forgot password for non-existent user returns same generic response."""
         response = client.post(
             "/auth/forgot-password",
-            params={"login": "nobody@example.com"}
+            json={"login": "nobody@example.com", "recaptcha_token": "test-token"}
         )
         assert response.status_code == 200
         assert "account matching" in response.json()["status"]
@@ -96,7 +115,7 @@ class TestPasswordReset:
         response = client.post(
             "/auth/reset-password",
             json={"login": sample_member_data["email"], "otp": "123456"},
-            params={"new_password": "newpassword123"},
+            params={"new_password": "NewPassword123!"},
         )
         assert response.status_code == 200
         assert response.json()["status"] == "password_reset_success"
@@ -126,6 +145,7 @@ class TestPhoneAuth:
         response = client.post("/auth/login", json={
             "login": "+15551234567",
             "password": "pass123",
+            "recaptcha_token": "test-token"
         })
         assert response.status_code == 200
         data = response.json()
@@ -169,7 +189,7 @@ class TestPhoneAuth:
 
         response = client.post(
             "/auth/forgot-password",
-            params={"login": "+15550001111"}
+            json={"login": "+15550001111", "recaptcha_token": "test-token"}
         )
         assert response.status_code == 200
         assert "account matching" in response.json()["status"]
@@ -189,7 +209,7 @@ class TestPhoneAuth:
         response = client.post(
             "/auth/reset-password",
             json={"login": "+15550002222", "otp": "123456"},
-            params={"new_password": "newpass456"},
+            params={"new_password": "NewPass456!"},
         )
         assert response.status_code == 200
 

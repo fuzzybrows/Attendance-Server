@@ -82,9 +82,10 @@ def test_save_schedule(client, db_session):
     save_data = {
         "sessions": [
             {
-                "session_id": session.id,
-                "session_title": "Target Session",
-                "session_date": "2026-05-20",
+                "id": session.id,
+                "title": "Target Session",
+                "type": "program",
+                "start_time": "2026-05-20T18:00:00Z",
                 "assignments": [
                     {
                         "member_id": admin.id,
@@ -103,3 +104,59 @@ def test_save_schedule(client, db_session):
     updated_assignment = db_session.query(Assignment).filter(Assignment.session_id == session.id).first()
     assert updated_assignment is not None
     assert updated_assignment.role == "alto"
+
+def test_generate_schedule_sunday_role_enforcement(client, db_session):
+    """Test that only members with 'Sunday Lead Singer' role are assigned as lead on Sundays."""
+    import models
+    # 1. Setup Roles
+    lead_role = models.Role(name="lead_singer", is_choir_role=True)
+    sunday_lead_role = models.Role(name="Sunday Lead Singer", is_choir_role=False)
+    db_session.add_all([lead_role, sunday_lead_role])
+    db_session.commit()
+
+    # 2. Setup Members
+    # Member A: Has choir role lead_singer but NOT Sunday Lead Singer
+    member_a = models.Member(
+        first_name="Regular", last_name="Lead",
+        email="regular@test.com", password_hash="hash",
+        roles=[lead_role]
+    )
+    # Member B: Has BOTH roles
+    member_b = models.Member(
+        first_name="Sunday", last_name="Pro",
+        email="sunday@test.com", password_hash="hash",
+        roles=[lead_role, sunday_lead_role]
+    )
+    db_session.add_all([member_a, member_b])
+    db_session.commit()
+
+    # 3. Setup Sessions for a Sunday
+    # Sunday, April 12, 2026
+    sunday_session = SessionModel(
+        title="Sunday Service",
+        type="program",
+        start_time=datetime(2026, 4, 12, 10, 0),
+        end_time=datetime(2026, 4, 12, 12, 0),
+        status="scheduled"
+    )
+    db_session.add(sunday_session)
+    db_session.commit()
+
+    # Call generate-schedule (Correct route is /calendar/schedule/generate)
+    response = client.post("/calendar/schedule/generate", json={
+        "year": 2026,
+        "month": 4
+    })
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Find our Sunday session in the response
+    session_data = next((s for s in data["sessions"] if s["id"] == sunday_session.id), None)
+    assert session_data is not None
+    
+    # Find lead_singer assignment
+    lead_assignment = next((a for a in session_data["assignments"] if a["role"] == "lead_singer"), None)
+    assert lead_assignment is not None
+    # Must be Member B
+    assert lead_assignment["member_id"] == member_b.id
+    assert "Sunday" in lead_assignment["member_name"]

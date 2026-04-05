@@ -12,6 +12,14 @@ class TestCreateMember:
         assert data["last_name"] == sample_member_data["last_name"]
         assert "id" in data
 
+    def test_create_member_inactive(self, client, sample_member_data):
+        """Test creating a member with is_active=False."""
+        data = sample_member_data.copy()
+        data["is_active"] = False
+        response = client.post("/members/", json=data)
+        assert response.status_code == 200
+        assert response.json()["is_active"] is False
+
     def test_create_member_duplicate_email(self, client, created_member, sample_member_data):
         """Test creating a member with duplicate email fails."""
         response = client.post("/members/", json=sample_member_data)
@@ -67,6 +75,22 @@ class TestUpdateMember:
         assert response.status_code == 200
         assert response.json()["first_name"] == "Jane"
         assert response.json()["last_name"] == created_member["last_name"]
+
+    def test_update_member_is_active(self, client, created_member):
+        """Test updating a member's is_active status."""
+        # Deactivate
+        response = client.put(f"/members/{created_member['id']}", json={
+            "is_active": False,
+        })
+        assert response.status_code == 200
+        assert response.json()["is_active"] is False
+
+        # Reactivate
+        response = client.put(f"/members/{created_member['id']}", json={
+            "is_active": True,
+        })
+        assert response.status_code == 200
+        assert response.json()["is_active"] is True
 
     def test_update_member_not_found(self, client):
         """Test updating a non-existent member."""

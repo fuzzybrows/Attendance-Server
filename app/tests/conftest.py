@@ -32,6 +32,7 @@ os.environ.update({
     "firebase_credentials_path": "placeholder_firebase_path",
     "database_url": TEST_DB_URL,
     "cors_origins": "",
+    "recaptcha_enabled": "false",
 })
 
 from settings import settings
