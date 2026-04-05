@@ -3,7 +3,7 @@ Application settings using Pydantic BaseSettings.
 All environment variables are centralized here.
 """
 from functools import lru_cache
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional, List
 
 
@@ -50,10 +50,11 @@ class Settings(BaseSettings):
     recaptcha_secret_key: Optional[str] = None
     recaptcha_enabled: bool = True
     
-    class Config:
-        env_file = [".env", "../.env"]
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file=[".env", "../.env"],
+        env_file_encoding="utf-8",
+        case_sensitive=False
+    )
 
 
 @lru_cache()

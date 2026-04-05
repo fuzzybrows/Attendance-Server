@@ -1,5 +1,5 @@
 """SessionTemplate Pydantic schemas."""
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import time, date
 from typing import Optional, List, Literal
 from .session import SessionType
@@ -39,8 +39,7 @@ class SessionTemplateUpdate(BaseModel):
 class SessionTemplate(SessionTemplateBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes = True)
 
 class SessionGenerationRequest(BaseModel):
     start_date: str  # YYYY-MM-DD

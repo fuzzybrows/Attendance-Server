@@ -1,5 +1,5 @@
 """Attendance-related Pydantic schemas."""
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, field_serializer, ConfigDict
 from datetime import datetime, timezone
 from typing import Optional
 from schemas.session import Session
@@ -26,8 +26,7 @@ class Attendance(AttendanceBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes = True)
 
     @field_serializer('timestamp')
     def serialize_timestamp(self, dt: datetime, _info):
@@ -39,5 +38,4 @@ class Attendance(AttendanceBase):
 class AttendanceWithSession(Attendance):
     session: Session
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes = True)
