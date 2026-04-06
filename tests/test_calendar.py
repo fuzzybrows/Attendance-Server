@@ -5,7 +5,7 @@ from app.models.assignment import Assignment
 from app.models.member import Member, Role
 import io
 
-def test_export_pdf(client, db_session):
+def test_calendar_export_as_pdf_returns_valid_pdf_response(client, db_session):
     # Setup: Create a session and an assignment
     session = SessionModel(
         title="Test Music Service",
@@ -32,13 +32,13 @@ def test_export_pdf(client, db_session):
     assert response.headers["content-type"] == "application/pdf"
     assert "filename=\"choir_schedule_2026_4.pdf\"" in response.headers["content-disposition"]
 
-def test_get_sync_token(client):
+def test_calendar_sync_token_generation_returns_valid_token_and_url(client):
     response = client.post("/calendar/sync/token")
     assert response.status_code == 200
     assert "sync_token" in response.json()
     assert "sync_url" in response.json()
 
-def test_sync_ics(client, db_session):
+def test_calendar_ics_sync_endpoint_returns_valid_vcalendar_data(client, db_session):
     # Get token
     res_token = client.post("/calendar/sync/token").json()
     sync_token = res_token["sync_token"]
@@ -67,7 +67,7 @@ def test_sync_ics(client, db_session):
     assert b"BEGIN:VCALENDAR" in response.content
     assert b"Sync Test Session" in response.content
 
-def test_save_schedule(client, db_session):
+def test_calendar_save_schedule_updates_assignments_correctly_in_database(client, db_session):
     # Setup: Create a session
     session = SessionModel(
         title="Target Session",
@@ -107,7 +107,7 @@ def test_save_schedule(client, db_session):
     assert updated_assignment is not None
     assert updated_assignment.role == "alto"
 
-    """Test that only members with 'Sunday Lead Singer' role are assigned as lead on Sundays."""
+def test_generate_schedule_enforces_sunday_lead_singer_role_restriction_on_sundays(client, db_session):
     # 1. Setup Roles
     lead_role = Role(name="lead_singer", is_choir_role=True)
     sunday_lead_role = Role(name="Sunday Lead Singer", is_choir_role=False)

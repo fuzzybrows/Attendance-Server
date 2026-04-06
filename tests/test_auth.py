@@ -5,8 +5,7 @@ from app.core.auth import get_password_hash
 
 
 class TestLogin:
-    def test_login_success(self, client, created_member, sample_member_data):
-        """Test successful login with valid credentials."""
+    def test_login_succeeds_with_valid_credentials_and_returns_unverified_status(self, client, created_member, sample_member_data):
         response = client.post("/auth/login", json={
             "login": sample_member_data["email"],
             "password": sample_member_data["password"],
@@ -18,8 +17,7 @@ class TestLogin:
         assert data["status"] == "unverified"
         assert data["method"] == "email"
 
-    def test_login_invalid_credentials(self, client, created_member):
-        """Test login with wrong password."""
+    def test_login_fails_and_returns_401_with_wrong_password(self, client, created_member):
         response = client.post("/auth/login", json={
             "login": "john@example.com",
             "password": "wrongpassword",
@@ -28,8 +26,7 @@ class TestLogin:
         assert response.status_code == 401
         assert response.json()["detail"] == "Invalid credentials or account disabled"
 
-    def test_login_disabled_account(self, client, db_session, created_member, sample_member_data):
-        """Test login for a disabled account returns the generic error message."""
+    def test_login_fails_and_returns_401_for_disabled_account(self, client, db_session, created_member, sample_member_data):
         member = db_session.query(Member).filter_by(email=sample_member_data["email"]).first()
         member.is_active = False
         db_session.commit()
@@ -42,8 +39,7 @@ class TestLogin:
         assert response.status_code == 401
         assert response.json()["detail"] == "Invalid credentials or account disabled"
 
-    def test_login_nonexistent_user(self, client):
-        """Test login with non-existent user."""
+    def test_login_fails_and_returns_401_for_nonexistent_user(self, client):
         response = client.post("/auth/login", json={
             "login": "nobody@example.com",
             "password": "password",
@@ -51,8 +47,7 @@ class TestLogin:
         })
         assert response.status_code == 401
 
-    def test_login_verified_user_gets_token(self, client, db_session, created_member, sample_member_data):
-        """Test that a verified user gets an access token."""
+    def test_login_succeeds_and_returns_token_for_verified_user(self, client, db_session, created_member, sample_member_data):
         member = db_session.query(Member).filter_by(email=sample_member_data["email"]).first()
         member.email_verified = True
         db_session.commit()
@@ -70,8 +65,7 @@ class TestLogin:
 
 
 class TestVerifyOTP:
-    def test_verify_otp_success(self, client, created_member, sample_member_data):
-        """Test successful OTP verification (uses placeholder Twilio)."""
+    def test_verify_otp_succeeds_with_valid_code_and_returns_token(self, client, created_member, sample_member_data):
         response = client.post("/auth/verify-otp", json={
             "login": sample_member_data["email"],
             "otp": "123456",
@@ -81,8 +75,7 @@ class TestVerifyOTP:
         assert "access_token" in data
         assert data["member"]["email"] == sample_member_data["email"]
 
-    def test_verify_otp_invalid(self, client, created_member, sample_member_data):
-        """Test OTP verification with invalid code."""
+    def test_verify_otp_fails_and_returns_400_with_invalid_code_format(self, client, created_member, sample_member_data):
         response = client.post("/auth/verify-otp", json={
             "login": sample_member_data["email"],
             "otp": "abc",  # Not 6 digits
@@ -91,8 +84,7 @@ class TestVerifyOTP:
 
 
 class TestPasswordReset:
-    def test_forgot_password_sends_otp(self, client, created_member, sample_member_data):
-        """Test forgot password initiates OTP."""
+    def test_forgot_password_successfully_initiates_otp_delivery(self, client, created_member, sample_member_data):
         response = client.post(
             "/auth/forgot-password",
             json={"login": sample_member_data["email"], "recaptcha_token": "test-token"}
@@ -100,8 +92,7 @@ class TestPasswordReset:
         assert response.status_code == 200
         assert "account matching" in response.json()["status"]
 
-    def test_forgot_password_unknown_user(self, client):
-        """Test forgot password for non-existent user returns same generic response."""
+    def test_forgot_password_returns_generic_success_even_for_unknown_user(self, client):
         response = client.post(
             "/auth/forgot-password",
             json={"login": "nobody@example.com", "recaptcha_token": "test-token"}
@@ -109,8 +100,7 @@ class TestPasswordReset:
         assert response.status_code == 200
         assert "account matching" in response.json()["status"]
 
-    def test_reset_password_marks_verified(self, client, db_session, created_member, sample_member_data):
-        """Test that password reset marks the user as verified."""
+    def test_reset_password_succeeds_and_marks_member_as_verified(self, client, db_session, created_member, sample_member_data):
         response = client.post(
             "/auth/reset-password",
             json={
@@ -131,8 +121,7 @@ class TestPasswordReset:
 class TestPhoneAuth:
     """Tests for phone-number-based auth paths (covers SMS branches)."""
 
-    def test_login_unverified_phone_sends_sms(self, client, db_session, sample_member_data):
-        """Login via phone number with unverified phone sends SMS OTP."""
+    def test_login_with_unverified_phone_number_triggers_sms_otp_delivery(self, client, db_session, sample_member_data):
         # Create member with phone number
         db_session.add(Member(
             first_name="Phone", last_name="User",
@@ -152,8 +141,7 @@ class TestPhoneAuth:
         assert data["status"] == "unverified"
         assert data["method"] == "phone"
 
-    def test_verify_otp_by_phone(self, client, db_session):
-        """OTP verification via phone marks phone_number_verified."""
+    def test_verify_otp_via_phone_number_successfully_marks_phone_as_verified(self, client, db_session):
         db_session.add(Member(
             first_name="Phone", last_name="OTP",
             email="phone_otp@test.com",
@@ -173,8 +161,7 @@ class TestPhoneAuth:
         member = db_session.query(Member).filter_by(phone_number="+15559876543").first()
         assert member.phone_number_verified is True
 
-    def test_forgot_password_by_phone(self, client, db_session):
-        """Forgot password via phone number sends SMS OTP."""
+    def test_forgot_password_request_via_phone_number_triggers_sms_otp(self, client, db_session):
         db_session.add(Member(
             first_name="Phone", last_name="Reset",
             email="phone_reset@test.com",
@@ -190,8 +177,7 @@ class TestPhoneAuth:
         assert response.status_code == 200
         assert "account matching" in response.json()["status"]
 
-    def test_reset_password_by_phone(self, client, db_session):
-        """Password reset via phone marks phone_number_verified."""
+    def test_reset_password_via_phone_number_successfully_marks_phone_as_verified(self, client, db_session):
         db_session.add(Member(
             first_name="Phone", last_name="ResetPw",
             email="phone_resetpw@test.com",

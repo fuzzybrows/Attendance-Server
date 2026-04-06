@@ -6,11 +6,7 @@ import pytest
 
 class TestFraudPrevention:
 
-    def test_device_lock_enforcement(self, client, created_member, created_session):
-        """
-        Verify that multiple members cannot check in from the same device_id
-        in the same session (Anti-Buddy Punching).
-        """
+    def test_device_lock_blocks_multiple_members_from_same_device_in_same_session(self, client, created_member, created_session):
         session_id = created_session["id"]
         
         # Create a second member
@@ -62,10 +58,7 @@ class TestFraudPrevention:
         )
         assert r3.status_code == 200
 
-    def test_geofencing_enforcement(self, client, created_member):
-        """
-        Verify that attendance is blocked if user is outside session radius.
-        """
+    def test_geofencing_blocks_attendance_when_member_is_outside_session_radius(self, client, created_member):
         # Create a session WITH location
         session_data = {
             "title": "Geo Session",
@@ -120,10 +113,7 @@ class TestFraudPrevention:
         )
         assert r3.status_code == 200
 
-    def test_admin_override_device_lock(self, client, created_member, created_session):
-        """
-        Verify that MANUAL/ADMIN marking (POST /attendance/) SKIPS device lock check.
-        """
+    def test_admin_manual_marking_successfully_overrides_and_skips_device_lock_check(self, client, created_member, created_session):
         session_id = created_session["id"]
         
         # Create Member 2

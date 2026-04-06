@@ -309,6 +309,15 @@ make coverage   # run with coverage report
 
 If a bug is found that would have been caught by an automated test, a new regression test must be added to the `tests/` directory (e.g., `tests/test_password_reset.py`).
 
+### Rule: No docstrings in tests
+
+Tests must use descriptive, self-documenting names instead of docstrings. This ensures the test output is clear and that the code remains concise.
+
+### Rule: Descriptive Test Naming
+
+Test names should follow the pattern:
+`test_[feature]_[scenario]_[expected_result]` (e.g., `test_login_succeeds_with_valid_credentials_and_returns_unverified_status`).
+
 ---
 
 ## Alembic `env.py` Template

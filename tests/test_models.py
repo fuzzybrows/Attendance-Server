@@ -9,8 +9,7 @@ import pytest
 
 
 class TestMemberSchema:
-    def test_member_create_valid(self):
-        """Test valid MemberCreate schema."""
+    def test_member_create_schema_successfully_validates_complete_data(self):
         member = MemberCreate(
             first_name="John",
             last_name="Doe",
@@ -20,8 +19,7 @@ class TestMemberSchema:
         assert member.first_name == "John"
         assert member.email == "john@example.com"
 
-    def test_member_create_missing_password(self):
-        """Test MemberCreate requires password."""
+    def test_member_create_schema_raises_validation_error_when_password_is_missing(self):
         with pytest.raises(ValidationError):
             MemberCreate(
                 first_name="John",
@@ -29,21 +27,18 @@ class TestMemberSchema:
                 email="john@example.com",
             )
 
-    def test_member_update_partial(self):
-        """Test MemberUpdate allows partial updates."""
+    def test_member_update_schema_allows_and_correctly_handles_partial_field_updates(self):
         update = MemberUpdate(first_name="Jane")
         assert update.first_name == "Jane"
         assert update.last_name is None
 
-    def test_member_update_empty(self):
-        """Test MemberUpdate with no fields is valid."""
+    def test_member_update_schema_is_valid_when_instantiated_with_no_fields(self):
         update = MemberUpdate()
         assert update.first_name is None
 
 
 class TestSessionSchema:
-    def test_session_create_valid(self):
-        """Test valid SessionCreate schema."""
+    def test_session_create_schema_successfully_validates_complete_data_with_defaults(self):
         session = SessionCreate(
             title="Rehearsal",
             type="rehearsal",
@@ -53,29 +48,25 @@ class TestSessionSchema:
         assert session.title == "Rehearsal"
         assert session.status == "scheduled"  # default
 
-    def test_session_update_partial(self):
-        """Test SessionUpdate allows partial updates."""
+    def test_session_update_schema_allows_and_correctly_handles_partial_field_updates(self):
         update = SessionUpdate(title="Updated")
         assert update.title == "Updated"
         assert update.type is None
 
 
 class TestLoginResponseUnion:
-    def test_unverified_response(self):
-        """Test UnverifiedResponse model."""
+    def test_unverified_response_schema_correctly_holds_status_and_method_fields(self):
         resp = UnverifiedResponse(status="unverified", method="email")
         assert resp.status == "unverified"
         assert resp.method == "email"
 
-    def test_unverified_response_missing_field(self):
-        """Test UnverifiedResponse requires both fields."""
+    def test_unverified_response_schema_raises_validation_error_when_required_fields_are_missing(self):
         with pytest.raises(ValidationError):
             UnverifiedResponse(status="unverified")
 
 
 class TestAttendanceSchema:
-    def test_attendance_create(self):
-        """Test AttendanceCreate schema."""
+    def test_attendance_create_schema_successfully_validates_minimal_required_data(self):
         att = AttendanceCreate(
             member_id=1,
             session_id=1,
@@ -84,8 +75,7 @@ class TestAttendanceSchema:
         assert att.member_id == 1
         assert att.latitude is None  # optional
 
-    def test_attendance_create_with_gps(self):
-        """Test AttendanceCreate with GPS data."""
+    def test_attendance_create_schema_correctly_validates_and_stores_optional_gps_coordinates(self):
         att = AttendanceCreate(
             member_id=1,
             session_id=1,

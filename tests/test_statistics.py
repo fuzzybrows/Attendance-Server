@@ -5,18 +5,18 @@ Covers: /statistics/member/{member_id}
 
 
 class TestMemberStats:
-    def test_member_stats_not_found(self, client):
+    def test_member_statistics_raises_404_when_member_id_is_nonexistent(self, client):
         response = client.get("/statistics/member/9999")
         assert response.status_code == 404
 
-    def test_member_stats_no_attendance(self, client, created_member):
+    def test_member_statistics_returns_empty_history_for_member_with_no_attendance_records(self, client, created_member):
         response = client.get(f"/statistics/member/{created_member['id']}")
         assert response.status_code == 200
         data = response.json()
         assert data["member_name"] == created_member["full_name"]
         assert data["history"] == []
 
-    def test_member_stats_with_attendance(self, client, created_member, created_session):
+    def test_member_statistics_returns_correct_history_and_session_details_with_attendance_records(self, client, created_member, created_session):
         # Mark attendance (timestamp will be after start_time, so "late")
         client.post("/attendance/", json={
             "member_id": created_member["id"],

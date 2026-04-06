@@ -23,8 +23,7 @@ class TestUnauthenticatedAccess:
         response = unauth_client.get("/statistics/member/1")
         assert response.status_code == 401
 
-    def test_auth_login_is_public(self, unauth_client):
-        """Auth endpoints should remain accessible without a token."""
+    def test_auth_login_endpoint_is_accessible_without_authentication_token(self, unauth_client):
         response = unauth_client.post("/auth/login", json={"login": "x", "password": "y"})
         # 401 from bad creds, but NOT from missing token
         assert response.status_code != 401 or "Invalid or expired token" not in response.text

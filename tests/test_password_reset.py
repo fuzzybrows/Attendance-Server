@@ -5,8 +5,7 @@ from app.core.auth import verify_password
 from app.models.member import Member
 
 class TestPasswordReset:
-    def test_admin_reset_member_password_updates_db(self, client, db_session, created_member):
-        """Test that an admin resetting a member's password correctly updates the database."""
+    def test_admin_password_reset_successfully_updates_member_password_in_database(self, client, db_session, created_member):
         new_password = "NewSecurePassword123!"
         member_id = created_member["id"]
         
@@ -29,8 +28,7 @@ class TestPasswordReset:
         assert verify_password(new_password, member_after.password_hash)
 
     @patch("app.routers.auth.check_verification")
-    def test_public_reset_password_updates_db(self, mock_check, unauth_client, db_session, created_member):
-        """Test that the public OTP-based password reset correctly updates the database and expects a body."""
+    def test_public_otp_based_password_reset_successfully_updates_database_when_valid_body_is_provided(self, mock_check, unauth_client, db_session, created_member):
         mock_check.return_value = True
         new_password = "AnotherNewPassword123!"
         login = created_member["email"]
@@ -71,8 +69,7 @@ class TestPasswordReset:
         assert "access_token" in login_response.json()
 
     @patch("app.routers.auth.check_verification")
-    def test_public_reset_password_invalid_otp(self, mock_check, unauth_client, created_member):
-        """Test that an invalid OTP prevents password reset."""
+    def test_public_password_reset_fails_and_returns_400_when_otp_is_invalid_or_expired(self, mock_check, unauth_client, created_member):
         mock_check.return_value = False
         
         response = unauth_client.post(
