@@ -7,8 +7,9 @@ from app.models.member import Member
 from app.models.session import Session as SessionModel
 from app.schemas.attendance import (
     Attendance as AttendanceSchema, AttendanceCreate, 
-    AttendanceWithSession, BulkDeleteRequest
+    AttendanceWithSession
 )
+from app.schemas.common import BulkDeleteRequest
 from app.schemas.stats import AttendanceStats
 from app.core.database import get_db
 from app.core.database import get_db

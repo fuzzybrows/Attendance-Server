@@ -6,8 +6,9 @@ from app.models.member import Member
 from app.models.session import Session as SessionModel
 from app.schemas.session import (
     Session as SessionSchema, SessionCreate, SessionUpdate, 
-    SessionMetadata, SessionType, SessionStatus, BulkDeleteRequest
+    SessionMetadata, SessionType, SessionStatus
 )
+from app.schemas.common import BulkDeleteRequest
 from datetime import timezone
 from app.core.database import get_db
 from app.core.database import get_db

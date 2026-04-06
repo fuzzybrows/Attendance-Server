@@ -72,5 +72,3 @@ class SessionMetadata(BaseModel):
     statuses: List[str]
 
 
-class BulkDeleteRequest(BaseModel):
-    ids: List[int]
