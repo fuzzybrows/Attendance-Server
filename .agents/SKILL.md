@@ -310,6 +310,9 @@ GOOGLE_CLIENT_SECRET=... # dangerous — can be exposed in the bundle
 
 ## Alembic Migrations
 
+### Rule: Prefix migration files with sequential 3-digit number
+All migration files must be prefixed with a 3-digit sequential number (e.g., `020_b5e13ade1ebe_slug.py`) to ensure they sort chronologically in the file tree. When creating a new migration, check the `alembic/versions` directory for the highest prefix and rename the generated file to use the next sequential number.
+
 Run from **project root** with the root-level `alembic.ini`:
 
 ```bash

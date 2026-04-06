@@ -59,12 +59,23 @@ def run_migrations_offline() -> None:
 
     """
     url = config.get_main_option("sqlalchemy.url")
+    
+    def process_revision_directives(context, revision, directives):
+        if config.cmd_opts.autogenerate:
+            script = directives[0]
+            from alembic.script import ScriptDirectory
+            script_dir = ScriptDirectory.from_config(context.config)
+            revs = list(script_dir.walk_revisions())
+            seq = len(revs) + 1
+            script.rev_id = f"{seq:03d}_{script.rev_id}"
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         render_as_batch=True,
+        process_revision_directives=process_revision_directives,
     )
 
     with context.begin_transaction():
@@ -84,11 +95,21 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
 
+    def process_revision_directives(context, revision, directives):
+        if getattr(config.cmd_opts, 'autogenerate', False):
+            script = directives[0]
+            from alembic.script import ScriptDirectory
+            script_dir = ScriptDirectory.from_config(context.config)
+            revs = list(script_dir.walk_revisions())
+            seq = len(revs) + 1
+            script.rev_id = f"{seq:03d}_{script.rev_id}"
+
     with connectable.connect() as connection:
         context.configure(
             connection=connection, 
             target_metadata=target_metadata,
-            render_as_batch=True
+            render_as_batch=True,
+            process_revision_directives=process_revision_directives,
         )
 
         with context.begin_transaction():
