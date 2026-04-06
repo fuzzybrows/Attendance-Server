@@ -37,5 +37,11 @@ class OTPVerification(BaseModel):
     otp: str
 
 
+class ResetPasswordRequest(BaseModel):
+    login: str
+    otp: str
+    new_password: str
+
+
 class StatusResponse(BaseModel):
     status: str

@@ -114,8 +114,11 @@ class TestPasswordReset:
         import app.models as models
         response = client.post(
             "/auth/reset-password",
-            json={"login": sample_member_data["email"], "otp": "123456"},
-            params={"new_password": "NewPassword123!"},
+            json={
+                "login": sample_member_data["email"],
+                "otp": "123456",
+                "new_password": "NewPassword123!"
+            }
         )
         assert response.status_code == 200
         assert response.json()["status"] == "password_reset_success"
@@ -208,8 +211,11 @@ class TestPhoneAuth:
 
         response = client.post(
             "/auth/reset-password",
-            json={"login": "+15550002222", "otp": "123456"},
-            params={"new_password": "NewPass456!"},
+            json={
+                "login": "+15550002222",
+                "otp": "123456",
+                "new_password": "NewPass456!"
+            },
         )
         assert response.status_code == 200
 

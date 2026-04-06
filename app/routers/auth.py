@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.models import Member
-from app.schemas import MemberLogin, LoginResponse, Member as MemberSchema, OTPVerification, StatusResponse, Token, ForgotPasswordRequest
+from app.schemas import MemberLogin, LoginResponse, Member as MemberSchema, OTPVerification, StatusResponse, Token, ForgotPasswordRequest, ResetPasswordRequest
 from app.core.database import get_db
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from app.services.twilio import send_sms_verification, send_email_verification, check_verification
@@ -93,7 +93,7 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     return {"status": "If an account matching this email or phone number exists, we'll send reset instructions."}
 
 @router.post("/reset-password", response_model=StatusResponse)
-def reset_password(data: OTPVerification, new_password: str, db: Session = Depends(get_db)):
+def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     # Use Twilio Verify to check the code
     if not check_verification(data.login, data.otp):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
@@ -102,14 +102,17 @@ def reset_password(data: OTPVerification, new_password: str, db: Session = Depen
         (Member.email == data.login) | (Member.phone_number == data.login)
     ).first()
     
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
     import re
-    if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$", new_password):
+    if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$", data.new_password):
         raise HTTPException(
             status_code=400, 
             detail="Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character."
         )
     
-    member.password_hash = get_password_hash(new_password)
+    member.password_hash = get_password_hash(data.new_password)
     
     # OTP was verified, so mark the contact method as verified
     if "@" in data.login:

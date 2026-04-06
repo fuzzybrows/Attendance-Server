@@ -5,7 +5,7 @@ Usage: `import schemas` continues to work as before.
 from app.schemas.member import MemberBase, MemberCreate, Member, MemberUpdate, MemberMetadata
 from app.schemas.session import SessionBase, SessionCreate, SessionUpdate, Session, SessionMetadata
 from app.schemas.attendance import AttendanceBase, AttendanceCreate, Attendance, AttendanceWithSession
-from app.schemas.auth import MemberLogin, Token, UnverifiedResponse, LoginResponse, TokenData, OTPVerification, StatusResponse, ForgotPasswordRequest
+from app.schemas.auth import MemberLogin, Token, UnverifiedResponse, LoginResponse, TokenData, OTPVerification, StatusResponse, ForgotPasswordRequest, ResetPasswordRequest
 from app.schemas.stats import AttendanceStats, SessionHistory, MemberStatsResponse
 from app.schemas.qr import QRTokenResponse, QRMarkResponse
 from app.schemas.availability import AvailabilityBase, AvailabilityCreate, AvailabilityUpdate, AvailabilitySchema, AvailabilityWithDetails
@@ -21,7 +21,7 @@ __all__ = [
     "AttendanceBase", "AttendanceCreate", "Attendance", "AttendanceWithSession",
     # Auth
     "MemberLogin", "Token", "UnverifiedResponse", "LoginResponse",
-    "TokenData", "OTPVerification", "StatusResponse", "ForgotPasswordRequest",
+    "TokenData", "OTPVerification", "StatusResponse", "ForgotPasswordRequest", "ResetPasswordRequest",
     # Stats
     "AttendanceStats", "SessionHistory", "MemberStatsResponse",
     # QR

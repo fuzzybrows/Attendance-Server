@@ -142,7 +142,7 @@ def reset_member_password(
     if not db_member:
         raise HTTPException(status_code=404, detail="Member not found")
     
-    db_member.hashed_password = get_password_hash(payload.new_password)
+    db_member.password_hash = get_password_hash(payload.new_password)
     db.commit()
     db.refresh(db_member)
     return {"status": "success", "message": "Password successfully reset"}
