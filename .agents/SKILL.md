@@ -224,6 +224,41 @@ FRONTEND_URL = "https://network.thetechlads.info"  # hardcoded
 
 ---
 
+## Timezone & Datetime Standards
+
+### Rule: Always use Timezone-Aware Datetimes (UTC)
+
+The project strictly uses **timezone-aware** datetimes set to UTC. Naive datetimes (datetimes without timezone information) are prohibited as they cause ambiguity during serialization and database storage.
+
+**Model Definition:**
+Always use `DateTime(timezone=True)` for SQLAlchemy columns.
+```python
+# ✅ Correct
+created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+# ❌ Wrong
+created_at = Column(DateTime, default=datetime.utcnow) # Naive
+```
+
+**Datetime Creation:**
+Always provide `timezone.utc` when creating or fetching current time.
+```python
+# ✅ Correct
+now = datetime.now(timezone.utc)
+
+# ❌ Wrong
+now = datetime.now() # Naive
+now = datetime.utcnow() # Deprecated and Naive
+```
+
+**Manual Conversions:**
+Never use `.replace(tzinfo=None)` to strip timezones before saving to the database. The database is configured to handle `TIMESTAMP WITH TIME ZONE`.
+
+**API Serialization:**
+Data returned to the UI must be aware ISO-8601 strings (e.g., `2026-04-12T10:00:00+00:00`). Pydantic handles this automatically for aware objects. Manual `+ "Z"` string concatenation is discouraged.
+
+---
+
 ## Google OAuth Standards
 
 ### Architecture

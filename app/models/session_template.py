@@ -11,8 +11,8 @@ class SessionTemplate(Base):
     day_of_week = Column(Integer, nullable=False)  # 0=Monday, 6=Sunday
     frequency = Column(String, nullable=False, default="weekly")  # "daily", "weekly", "bi-weekly", "monthly"
     reference_start_date = Column(Date, nullable=True)  # Used for bi-weekly/monthly calculations
-    start_time = Column(Time, nullable=False)
-    end_time = Column(Time, nullable=True)
+    start_time = Column(Time(timezone=True), nullable=False)
+    end_time = Column(Time(timezone=True), nullable=True)
     
     # Geofencing defaults
     latitude = Column(Float, nullable=True)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import random
 import secrets
 from collections import defaultdict
@@ -32,7 +32,6 @@ import io
 import csv
 import calendar
 from icalendar import Calendar, Event, vText
-from datetime import timedelta
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -233,7 +232,7 @@ def get_month_availability(
             {
                 "id": s.id,
                 "title": s.title,
-                "start_time": s.start_time.isoformat() + "Z",
+                "start_time": s.start_time.isoformat(),
                 "opted_out_member_ids": opt_outs_by_session[s.id]
             }
             for s in sessions
@@ -350,7 +349,7 @@ def generate_schedule(
             id=session.id,
             title=session.title,
             type=session.type,
-            start_time=session.start_time.isoformat() + "Z",
+            start_time=session.start_time.isoformat(),
             assignments=session_assignments
         ))
 
@@ -411,7 +410,7 @@ def get_session_schedule(
         id=session.id,
         title=session.title,
         type=session.type,
-        start_time=session.start_time.isoformat() + "Z",
+        start_time=session.start_time.isoformat(),
         assignments=session_assignments
     )
 
@@ -456,7 +455,7 @@ def get_schedule(
             id=session.id,
             title=session.title,
             type=session.type,
-            start_time=session.start_time.isoformat() + "Z",
+            start_time=session.start_time.isoformat(),
             assignments=session_assignments
         ))
 
@@ -628,7 +627,7 @@ def sync_member_calendar(
         raise HTTPException(status_code=403, detail="Invalid sync token")
 
     # Fetch all future assignments for this member
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     assignments = db.query(Assignment).join(SessionModel).filter(
         Assignment.member_id == member_id,
         SessionModel.start_time >= now,
@@ -647,12 +646,14 @@ def sync_member_calendar(
         
         # Assume sessions are ~3 hours long for calendar blocking
         duration = timedelta(hours=3)
-        end_time = session.start_time + duration
+        # Session start_time is now aware
+        start_utc = session.start_time
+        end_utc = start_utc + duration
         
         event.add('summary', f"Serving as {assignment.role.replace('_', ' ').title()} - {session.title}")
-        event.add('dtstart', session.start_time)
-        event.add('dtend', end_time)
-        event.add('dtstamp', datetime.now())
+        event.add('dtstart', start_utc)
+        event.add('dtend', end_utc)
+        event.add('dtstamp', datetime.now(timezone.utc))
         event.add('uid', f"session_{session.id}_member_{member_id}@choirattendance.com")
         event.add('description', f"You are scheduled to serve as {assignment.role.replace('_', ' ').title()} for {session.title}.")
         

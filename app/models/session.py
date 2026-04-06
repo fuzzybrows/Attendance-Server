@@ -12,10 +12,10 @@ class Session(Base):
     title = Column(String)  # e.g., "Saturday Rehearsal", "Sunday Service"
     type = Column(String)  # "rehearsal" or "program"
     status = Column(String, default="active")  # "active", "concluded", "archived"
-    start_time = Column(DateTime, nullable=False)  # Scheduled start time
-    end_time = Column(DateTime, nullable=True)  # Scheduled end time
+    start_time = Column(DateTime(timezone=True), nullable=False)  # Scheduled start time
+    end_time = Column(DateTime(timezone=True), nullable=True)  # Scheduled end time
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Location Geofencing
     latitude = Column(Float, nullable=True)

@@ -49,8 +49,6 @@ def create_session(session: SessionCreate, db: Session = Depends(get_db), curren
         db.query(SessionModel).filter(SessionModel.status == "active").update({"status": "concluded"})
         
     start_time = session.start_time
-    if start_time and start_time.tzinfo is not None:
-        start_time = start_time.astimezone(timezone.utc).replace(tzinfo=None)
 
     db_session = SessionModel(
         title=session.title, 
@@ -81,14 +79,14 @@ def read_sessions(
     
     if start_date:
         try:
-            sd = datetime.fromisoformat(start_date.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
+            sd = datetime.fromisoformat(start_date.replace('Z', '+00:00')).astimezone(timezone.utc)
             query = query.filter(SessionModel.start_time >= sd)
         except ValueError:
             pass
             
     if end_date:
         try:
-            ed = datetime.fromisoformat(end_date.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
+            ed = datetime.fromisoformat(end_date.replace('Z', '+00:00')).astimezone(timezone.utc)
             query = query.filter(SessionModel.start_time <= ed)
         except ValueError:
             pass
@@ -103,9 +101,6 @@ def update_session(session_id: int, update: SessionUpdate, db: Session = Depends
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     for field, value in update.model_dump(exclude_unset=True).items():
-        if field == "start_time" and value.tzinfo is not None:
-            # Force naive UTC to prevent SQLAlchemy/SQLite implicit offset shifts
-            value = value.astimezone(timezone.utc).replace(tzinfo=None)
         setattr(session, field, value)
     db.commit()
     db.refresh(session)

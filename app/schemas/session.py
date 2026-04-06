@@ -30,11 +30,6 @@ class SessionBase(BaseModel):
     longitude: Optional[float] = None
     radius: Optional[int] = 50
 
-    @field_serializer('start_time', 'end_time')
-    def serialize_times(self, dt: datetime, _info):
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.isoformat()
 
 
 class SessionCreate(SessionBase):
@@ -60,11 +55,6 @@ class Session(SessionBase):
 
     model_config = ConfigDict(from_attributes = True)
 
-    @field_serializer('created_at')
-    def serialize_created_at(self, dt: datetime, _info):
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.isoformat()
 
 
 class SessionMetadata(BaseModel):
