@@ -9,7 +9,7 @@ from datetime import timedelta
 from typing import Optional
 from pydantic import BaseModel
 from app.models import Attendance, Member, Session
-from app.schemas import QRMarkResponse
+from app.schemas.qr import QRMarkResponse
 from app.core.database import get_db
 from app.core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
 from app.services.attendance import validate_attendance

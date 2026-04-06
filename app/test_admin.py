@@ -3,7 +3,7 @@ os.environ["DATABASE_URL"] = "postgresql://postgres:postgres@localhost:5432/atte
 
 from app.core.database import SessionLocal
 from app.models import Member
-from app.schemas import MemberUpdate
+from app.schemas.member import MemberUpdate
 from app.routers.members import update_member
 
 db = SessionLocal()

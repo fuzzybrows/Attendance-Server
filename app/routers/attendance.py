@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session, joinedload
 from typing import List
 from pydantic import BaseModel
 from app.models import Attendance as AttendanceModel, Member, Session as SessionModel
-from app.schemas import Attendance as AttendanceSchema, AttendanceCreate, AttendanceStats, AttendanceWithSession
+from app.schemas.attendance import Attendance as AttendanceSchema, AttendanceCreate, AttendanceWithSession
+from app.schemas.stats import AttendanceStats
 from app.core.database import get_db
 from app.core.database import get_db
 from app.core.auth import (

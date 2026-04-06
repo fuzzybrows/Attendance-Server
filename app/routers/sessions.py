@@ -3,8 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
 from app.models import Member, Session as SessionModel
-from app.schemas import Session as SessionSchema, SessionCreate, SessionUpdate, SessionMetadata
-from app.schemas.session import SessionType, SessionStatus
+from app.schemas.session import Session as SessionSchema, SessionCreate, SessionUpdate, SessionMetadata, SessionType, SessionStatus
 from datetime import timezone
 from app.core.database import get_db
 from app.core.database import get_db

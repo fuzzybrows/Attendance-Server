@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, date, timedelta, time, timezone
 from app.models import Session as SessionModel, SessionTemplate
-from app.schemas import Session as SessionSchema
+from app.schemas.session import Session as SessionSchema
 from app.schemas.session_template import SessionTemplate as SessionTemplateSchema, SessionTemplateCreate, SessionGenerationRequest
 from app.core.database import get_db
 from app.core.auth import (

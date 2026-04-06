@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from app.models import Member, Permission, Role
-from app.schemas import Member as MemberSchema, MemberCreate, MemberUpdate, MemberMetadata
-from app.schemas.member import PasswordResetRequest
+from app.schemas.member import Member as MemberSchema, MemberCreate, MemberUpdate, MemberMetadata, PasswordResetRequest
 from app.core.database import get_db
 from app.core.auth import (
     get_password_hash, 

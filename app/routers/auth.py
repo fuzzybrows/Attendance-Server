@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.models import Member
-from app.schemas import MemberLogin, LoginResponse, Member as MemberSchema, OTPVerification, StatusResponse, Token, ForgotPasswordRequest, ResetPasswordRequest
+from app.schemas.auth import MemberLogin, LoginResponse, OTPVerification, StatusResponse, Token, ForgotPasswordRequest, ResetPasswordRequest
+from app.schemas.member import Member as MemberSchema
 from app.core.database import get_db
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from app.services.twilio import send_sms_verification, send_email_verification, check_verification

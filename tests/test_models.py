@@ -1,13 +1,9 @@
 """Tests for data models and schemas."""
 import os
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from app.schemas import (
-    MemberCreate, MemberUpdate, SessionCreate, SessionUpdate,
-    Token, UnverifiedResponse, LoginResponse,
-    AttendanceCreate, Member as MemberSchema,
-)
+from app.schemas.member import MemberCreate, MemberUpdate, Member as MemberSchema
+from app.schemas.session import SessionCreate, SessionUpdate
+from app.schemas.auth import Token, UnverifiedResponse, LoginResponse
+from app.schemas.attendance import AttendanceCreate
 from pydantic import ValidationError
 import pytest
 
