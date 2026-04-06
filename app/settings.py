@@ -45,6 +45,27 @@ class Settings(BaseSettings):
     google_client_id: Optional[str] = None
     google_client_secret: Optional[str] = None
     google_redirect_uri: Optional[str] = None
+    # Comma-separated list of trusted redirect origins for OAuth callbacks.
+    # Supports web origins (https://app.com) and mobile schemes (attendanceapp://).
+    allowed_redirect_origins: str = "http://localhost:5173"
+
+    @property
+    def allowed_redirect_origins_list(self) -> list:
+        """Parsed list of trusted redirect origins."""
+        return [o.strip() for o in self.allowed_redirect_origins.split(",") if o.strip()]
+
+    @property
+    def default_redirect_url(self) -> str:
+        """First HTTP(S) origin in the allowlist, used as a fallback redirect destination."""
+        first_web = next(
+            (o for o in self.allowed_redirect_origins_list if o.startswith("http")),
+            "http://localhost:5173"
+        )
+        return f"{first_web}/calendar"
+
+    def is_redirect_allowed(self, app_redirect: str) -> bool:
+        """Security check: ensure the redirect target starts with a trusted origin."""
+        return any(app_redirect.startswith(origin) for origin in self.allowed_redirect_origins_list)
     
     # Recaptcha
     recaptcha_secret_key: Optional[str] = None

@@ -53,21 +53,30 @@ def get_proxy_aware_redirect_uri(req: Request):
 @router.get("/login")
 def login_google(
     request: Request,
-    app_redirect: str = "/calendar",
+    app_redirect: str = "",
     current_user: Member = Depends(get_current_active_member)
 ):
     """
     Initiate the Google OAuth 2.0 flow.
     Supports multiple clients (Web, Android, iOS) via `app_redirect`.
+    All clients must pass an absolute URL (e.g. https://app.com/calendar or attendanceapp://calendar).
+    The origin is validated against settings.allowed_redirect_origins.
     """
+    # Use the provided app_redirect or fall back to first allowed web origin
+    target_redirect = app_redirect.strip() or settings.default_redirect_url
+
+    # Security: reject redirects that don't start with a trusted origin
+    if not settings.is_redirect_allowed(target_redirect):
+        raise HTTPException(status_code=400, detail="Invalid redirect URI. Not in the list of allowed origins.")
+
     client_config = get_client_config()
     redirect_uri = get_proxy_aware_redirect_uri(request)
     
     # We need to pass the member ID in the state so we know who to attach the token to.
     # We also embed the app_redirect URI here so the callback knows where to send the user 
-    # (e.g. attendanceapp://calendar for Android, or /calendar for Web).
+    # (e.g. attendanceapp://calendar for Android, or https://app.com/calendar for Web).
     state_token = create_access_token(
-        data={"sub": str(current_user.id), "type": "google_oauth_state", "app_redirect": app_redirect},
+        data={"sub": str(current_user.id), "type": "google_oauth_state", "app_redirect": target_redirect},
         expires_delta=timedelta(minutes=10)
     )
 
@@ -89,6 +98,16 @@ def login_google(
     return {"auth_url": authorization_url}
 
 
+def resolve_redirect_url(app_redirect: str, suffix: str = "") -> str:
+    """
+    All clients pass absolute URLs, so just append the suffix.
+    Web:     https://network.thetechlads.info/calendar
+    Android: attendanceapp://calendar
+    iOS:     com.attendance.ios://calendar
+    """
+    return f"{app_redirect}{suffix}"
+
+
 @router.get("/callback", name="google_oauth_callback")
 def google_oauth_callback(
     request: Request,
@@ -101,11 +120,11 @@ def google_oauth_callback(
     Handle the callback from Google OAuth 2.0.
     """
     if error:
-        # User denied access or some other error
-        return RedirectResponse(url=f"/calendar?google_error={error}")
+        # Error before state decoded — fall back to first allowed web origin
+        return RedirectResponse(url=f"{settings.default_redirect_url}?google_error={error}")
 
     if not code or not state:
-        return RedirectResponse(url="/calendar?google_error=missing_parameters")
+        return RedirectResponse(url=f"{settings.default_redirect_url}?google_error=missing_parameters")
 
     # Verify the state token to get the member ID
     try:
@@ -115,18 +134,18 @@ def google_oauth_callback(
         member_id = int(payload.get("sub"))
         app_redirect = payload.get("app_redirect", "/calendar")
     except JWTError:
-        return RedirectResponse(url="/calendar?google_error=invalid_state")
+        return RedirectResponse(url=f"{settings.default_redirect_url}?google_error=invalid_state")
 
     # If decoding succeeded, we can now route errors back to their specific app!
     if error:
-        return RedirectResponse(url=f"{app_redirect}?google_error={error}")
+        return RedirectResponse(url=resolve_redirect_url(app_redirect, f"?google_error={error}"))
 
     if not code or not state:
-        return RedirectResponse(url=f"{app_redirect}?google_error=missing_parameters")
+        return RedirectResponse(url=resolve_redirect_url(app_redirect, "?google_error=missing_parameters"))
 
     member = db.query(Member).filter(Member.id == member_id).first()
     if not member:
-        return RedirectResponse(url=f"{app_redirect}?google_error=user_not_found")
+        return RedirectResponse(url=resolve_redirect_url(app_redirect, "?google_error=user_not_found"))
 
     client_config = get_client_config()
     redirect_uri = get_proxy_aware_redirect_uri(request)
@@ -147,9 +166,9 @@ def google_oauth_callback(
             db.commit()
             
     except Exception as e:
-        return RedirectResponse(url=f"{app_redirect}?google_error=token_exchange_failed")
+        return RedirectResponse(url=resolve_redirect_url(app_redirect, "?google_error=token_exchange_failed"))
 
-    return RedirectResponse(url=f"{app_redirect}?google_success=true")
+    return RedirectResponse(url=resolve_redirect_url(app_redirect, "?google_success=true"))
 
 
 @router.get("/events/{year}/{month}")
