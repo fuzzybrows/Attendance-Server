@@ -9,7 +9,18 @@ from alembic import context
 import os
 
 from app.settings import settings
-from app.models import Base
+from app.core.database import Base
+
+# Import all models to ensure they are registered on the Base.metadata
+# for 'autogenerate' support
+from app.models.member import Member, Role, Permission
+from app.models.session import Session as SessionModel
+from app.models.attendance import Attendance
+from app.models.assignment import Assignment
+from app.models.associations import member_roles, member_permissions
+from app.models.availability import Availability
+from app.models.day_off import DayOff
+from app.models.session_template import SessionTemplate
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

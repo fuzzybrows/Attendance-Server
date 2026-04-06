@@ -286,7 +286,7 @@ make migrate
 
 # alembic/env.py must use app-prefixed imports
 from app.settings import settings
-from app.models import Base
+from app.core.database import Base
 ```
 
 ---
@@ -325,7 +325,11 @@ Test names should follow the pattern:
 ```python
 # alembic/env.py — runs from project root
 from app.settings import settings
-from app.models import Base
+from app.core.database import Base
+
+# IMPORTANT: All models must be imported explicitly for 'autogenerate'
+# from app.models.member import Member, Role, Permission
+# ... etc.
 
 config.set_main_option("sqlalchemy.url", settings.database_url)
 target_metadata = Base.metadata
