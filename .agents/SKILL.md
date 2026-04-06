@@ -52,6 +52,27 @@ The uvicorn entry point is `app.server:app`, not `server:app`.
 
 ## Python Import Standards
 
+### Rule: All imports must be at the top level
+
+Imports must be defined at the top of the file, never inside functions or methods. This ensures the dependencies of a module are clear at a glance and avoids redundant imports during execution.
+
+```python
+# ✅ Correct
+import os
+import re
+from datetime import datetime
+from app.models.member import Member
+
+def my_function():
+    # Model used without local import
+    member = db.query(Member).first()
+
+# ❌ Wrong
+def my_function():
+    from app.models.member import Member  # INLINE IMPORT PROHIBITED
+    member = db.query(Member).first()
+```
+
 ### Rule: All internal imports must use the full `app.` prefix
 
 ```python

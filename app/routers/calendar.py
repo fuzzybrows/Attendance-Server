@@ -4,6 +4,7 @@ from sqlalchemy import extract
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import random
+import secrets
 from collections import defaultdict
 
 from app.core.database import get_db
@@ -603,7 +604,6 @@ def generate_sync_token(
     Generate or regenerate a sync token for the current user.
     This token is used to authenticate .ics calendar subscription URLs.
     """
-    import secrets
     token = secrets.token_urlsafe(32)
     current_user.sync_token = token
     db.commit()

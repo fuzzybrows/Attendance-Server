@@ -1,4 +1,5 @@
 import os
+import traceback
 os.environ["DATABASE_URL"] = "postgresql://postgres:postgres@localhost:5432/attendance"  # Try matching the actual DB
 
 from app.core.database import SessionLocal
@@ -16,5 +17,4 @@ try:
     res = update_member(target.id, update_data, db=db, current_member=admin)
     print("Success:", res.first_name)
 except Exception as e:
-    import traceback
     traceback.print_exc()

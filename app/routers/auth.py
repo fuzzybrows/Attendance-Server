@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.member import Member
@@ -106,7 +107,6 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
-    import re
     if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$", data.new_password):
         raise HTTPException(
             status_code=400, 

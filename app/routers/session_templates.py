@@ -1,4 +1,5 @@
 """SessionTemplate API router."""
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -121,7 +122,6 @@ def generate_sessions(request: SessionGenerationRequest, db: Session = Depends(g
                 else:
                     curr_month += 1
                     
-        from zoneinfo import ZoneInfo
         LOCAL_TZ = ZoneInfo("America/Chicago")
         
         for d in valid_dates:

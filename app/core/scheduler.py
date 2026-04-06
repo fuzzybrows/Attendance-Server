@@ -1,7 +1,7 @@
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time
 
 from app.core.database import SessionLocal
 from app.models.session import Session, SessionStatus
@@ -110,8 +110,7 @@ def update_session_statuses():
         ).all()
         
         for session in concluded_sessions:
-            import datetime as dt
-            archive_threshold = datetime.combine(session.start_time.date() + timedelta(days=7), dt.time.min)
+            archive_threshold = datetime.combine(session.start_time.date() + timedelta(days=7), time.min)
             if now >= archive_threshold:
                 session.status = SessionStatus.ARCHIVED.value
                 logger.info(f"Auto-marked session {session.id} as ARCHIVED")

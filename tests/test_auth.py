@@ -1,5 +1,7 @@
 """Tests for auth endpoints: login, OTP verification, password reset."""
 from unittest.mock import patch
+from app.models.member import Member
+from app.core.auth import get_password_hash
 
 
 class TestLogin:
@@ -28,7 +30,6 @@ class TestLogin:
 
     def test_login_disabled_account(self, client, db_session, created_member, sample_member_data):
         """Test login for a disabled account returns the generic error message."""
-        from app.models.member import Member
         member = db_session.query(Member).filter_by(email=sample_member_data["email"]).first()
         member.is_active = False
         db_session.commit()
@@ -52,7 +53,6 @@ class TestLogin:
 
     def test_login_verified_user_gets_token(self, client, db_session, created_member, sample_member_data):
         """Test that a verified user gets an access token."""
-        from app.models.member import Member
         member = db_session.query(Member).filter_by(email=sample_member_data["email"]).first()
         member.email_verified = True
         db_session.commit()
@@ -111,7 +111,6 @@ class TestPasswordReset:
 
     def test_reset_password_marks_verified(self, client, db_session, created_member, sample_member_data):
         """Test that password reset marks the user as verified."""
-        from app.models.member import Member
         response = client.post(
             "/auth/reset-password",
             json={
@@ -134,8 +133,6 @@ class TestPhoneAuth:
 
     def test_login_unverified_phone_sends_sms(self, client, db_session, sample_member_data):
         """Login via phone number with unverified phone sends SMS OTP."""
-        from app.models.member import Member
-        from app.core.auth import get_password_hash
         # Create member with phone number
         db_session.add(Member(
             first_name="Phone", last_name="User",
@@ -157,8 +154,6 @@ class TestPhoneAuth:
 
     def test_verify_otp_by_phone(self, client, db_session):
         """OTP verification via phone marks phone_number_verified."""
-        from app.models.member import Member
-        from app.core.auth import get_password_hash
         db_session.add(Member(
             first_name="Phone", last_name="OTP",
             email="phone_otp@test.com",
@@ -180,8 +175,6 @@ class TestPhoneAuth:
 
     def test_forgot_password_by_phone(self, client, db_session):
         """Forgot password via phone number sends SMS OTP."""
-        from app.models.member import Member
-        from app.core.auth import get_password_hash
         db_session.add(Member(
             first_name="Phone", last_name="Reset",
             email="phone_reset@test.com",
@@ -199,8 +192,6 @@ class TestPhoneAuth:
 
     def test_reset_password_by_phone(self, client, db_session):
         """Password reset via phone marks phone_number_verified."""
-        from app.models.member import Member
-        from app.core.auth import get_password_hash
         db_session.add(Member(
             first_name="Phone", last_name="ResetPw",
             email="phone_resetpw@test.com",

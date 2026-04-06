@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timedelta
 from app.models.session import Session as SessionModel
 from app.models.assignment import Assignment
-from app.models.member import Member
+from app.models.member import Member, Role
 import io
 
 def test_export_pdf(client, db_session):
@@ -107,9 +107,7 @@ def test_save_schedule(client, db_session):
     assert updated_assignment is not None
     assert updated_assignment.role == "alto"
 
-def test_generate_schedule_sunday_role_enforcement(client, db_session):
     """Test that only members with 'Sunday Lead Singer' role are assigned as lead on Sundays."""
-    from app.models.member import Role
     # 1. Setup Roles
     lead_role = Role(name="lead_singer", is_choir_role=True)
     sunday_lead_role = Role(name="Sunday Lead Singer", is_choir_role=False)

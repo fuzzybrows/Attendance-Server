@@ -9,7 +9,7 @@ from app.schemas.session import (
     SessionMetadata, SessionType, SessionStatus
 )
 from app.schemas.common import BulkDeleteRequest
-from datetime import timezone
+from datetime import datetime, timezone
 from app.core.database import get_db
 from app.core.database import get_db
 from app.core.auth import (
@@ -81,7 +81,6 @@ def read_sessions(
     
     if start_date:
         try:
-            from datetime import datetime
             sd = datetime.fromisoformat(start_date.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
             query = query.filter(SessionModel.start_time >= sd)
         except ValueError:
@@ -89,7 +88,6 @@ def read_sessions(
             
     if end_date:
         try:
-            from datetime import datetime
             ed = datetime.fromisoformat(end_date.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
             query = query.filter(SessionModel.start_time <= ed)
         except ValueError:
