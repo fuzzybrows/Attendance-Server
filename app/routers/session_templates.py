@@ -125,13 +125,15 @@ def generate_sessions(request: SessionGenerationRequest, db: Session = Depends(g
         LOCAL_TZ = ZoneInfo("America/Chicago")
         
         for d in valid_dates:
+            # Create a localized datetime in Austin time
             local_start = datetime.combine(d, t.start_time).replace(tzinfo=LOCAL_TZ)
-            start_time = local_start.astimezone(timezone.utc).replace(tzinfo=None)
+            # Convert to UTC-aware for database storage
+            start_time = local_start.astimezone(timezone.utc)
             
             local_end = datetime.combine(d, t.end_time).replace(tzinfo=LOCAL_TZ)
             if t.end_time < t.start_time:
                 local_end += timedelta(days=1)
-            end_time = local_end.astimezone(timezone.utc).replace(tzinfo=None)
+            end_time = local_end.astimezone(timezone.utc)
                 
             existing = db.query(SessionModel).filter(
                 SessionModel.start_time == start_time,

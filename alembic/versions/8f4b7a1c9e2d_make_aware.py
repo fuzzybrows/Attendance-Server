@@ -1,7 +1,7 @@
 """make_datetimes_timezone_aware
 
 Revision ID: 8f4b7a1c9e2d
-Revises: a48e53a7ed08
+Revises: 09c39f49709f
 Create Date: 2026-04-06 15:01:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '8f4b7a1c9e2d'
-down_revision: Union[str, Sequence[str], None] = 'a48e53a7ed08'
+down_revision: Union[str, Sequence[str], None] = '09c39f49709f'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

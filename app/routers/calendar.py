@@ -1,11 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 import random
 import secrets
+import io
+import csv
+import calendar
 from collections import defaultdict
+from icalendar import Calendar, Event
 
 from app.core.database import get_db
 from app.core.auth import (
@@ -27,11 +33,7 @@ from app.schemas.calendar import (
     DraftScheduleRequest, DraftAssignment, DraftSessionSchedule, 
     DraftScheduleResponse, SaveScheduleRequest, DayAvailabilityRequest
 )
-from fastapi.responses import StreamingResponse, Response
-import io
-import csv
-import calendar
-from icalendar import Calendar, Event, vText
+
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -100,8 +102,6 @@ def update_availability(
     db.commit()
     db.refresh(availability)
     return availability
-
-
 
 
 @router.post("/availability/day")
@@ -296,8 +296,6 @@ def generate_schedule(
     # Map roles to members
     members_by_role = defaultdict(list)
     for member in members:
-        # Member.roles gives ORM Role objects (if we assume the lazy load works)
-        # We need their string names.
         member_role_names = [r.name for r in member.roles]
         for role_name in REQUIRED_ROLES:
             if role_name in member_role_names:
@@ -497,8 +495,10 @@ def export_month_schedule_csv(
 
     for session in sessions:
         role_map = {a.role: f"{a.member.first_name} {a.member.last_name}" for a in assignments_by_session[session.id]}
+        # Convert UTC to Austin time for export
+        local_start = session.start_time.astimezone(ZoneInfo("America/Chicago"))
         writer.writerow([
-            session.start_time.strftime("%Y-%m-%d %H:%M"),
+            local_start.strftime("%Y-%m-%d %H:%M"),
             session.title,
             role_map.get("lead_singer", "Unassigned"),
             role_map.get("soprano", "Unassigned"),
@@ -557,8 +557,10 @@ def export_month_schedule_pdf(
     
     for session in sessions:
         role_map = assignments_by_session[session.id]
+        # Convert UTC to Austin time for export
+        local_start = session.start_time.astimezone(ZoneInfo("America/Chicago"))
         # Format date as "Wed, April 24 2026"
-        date_str = session.start_time.strftime("%a, %B %d %Y")
+        date_str = local_start.strftime("%a, %B %d %Y")
         data.append([
             date_str,
             session.title,
