@@ -527,7 +527,9 @@ def export_month_schedule_pdf(
     """
     sessions = db.query(SessionModel).filter(
         extract('year', SessionModel.start_time) == year,
-        extract('month', SessionModel.start_time) == month
+        extract('month', SessionModel.start_time) == month,
+        SessionModel.type != 'rehearsal',
+        SessionModel.status.in_(['active', 'scheduled'])
     ).order_by(SessionModel.start_time).all()
 
     if not sessions:
