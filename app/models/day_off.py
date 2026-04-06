@@ -1,7 +1,7 @@
 """DayOff ORM model – stores day-level unavailability independent of sessions."""
 from sqlalchemy import Column, Integer, Date, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
-from core.database import Base
+from app.core.database import Base
 
 
 class DayOff(Base):

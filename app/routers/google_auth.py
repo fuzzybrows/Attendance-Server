@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import calendar as pycalendar
 
-from core.database import get_db
-from core.auth import get_current_active_member, create_access_token
-from models.member import Member
-from settings import settings
+from app.core.database import get_db
+from app.core.auth import get_current_active_member, create_access_token
+from app.models.member import Member
+from app.settings import settings
 
 import google_auth_oauthlib.flow
 from google.oauth2.credentials import Credentials

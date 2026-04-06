@@ -1,8 +1,8 @@
 """Assignment Pydantic schemas."""
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
-from schemas.member import Member
-from schemas.session import Session
+from app.schemas.member import Member
+from app.schemas.session import Session
 
 class AssignmentBase(BaseModel):
     session_id: int

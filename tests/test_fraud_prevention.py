@@ -1,4 +1,4 @@
-from core.auth import create_access_token
+from app.core.auth import create_access_token
 import pytest
 
 # Reuse fixtures from conftest.py

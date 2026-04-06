@@ -3,11 +3,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime, timedelta, timezone
 
-from core.database import SessionLocal
-from models import Session, SessionStatus
-from models.assignment import Assignment
-from models.member import Member
-from services.comm import send_reminder_email, send_reminder_sms, send_push_notification
+from app.core.database import SessionLocal
+from app.models import Session, SessionStatus
+from app.models.assignment import Assignment
+from app.models.member import Member
+from app.services.comm import send_reminder_email, send_reminder_sms, send_push_notification
 
 logger = logging.getLogger("scheduler")
 scheduler = BackgroundScheduler()

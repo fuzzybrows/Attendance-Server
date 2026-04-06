@@ -5,7 +5,7 @@ from twilio.rest import Client
 import firebase_admin
 from firebase_admin import credentials, messaging
 import os
-from settings import settings
+from app.settings import settings
 
 # API credentials from settings
 SENDGRID_API_KEY = settings.sendgrid_api_key

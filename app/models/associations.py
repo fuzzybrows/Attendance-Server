@@ -1,6 +1,6 @@
 """Association tables for many-to-many relationships."""
 from sqlalchemy import Table, Column, Integer, ForeignKey
-from core.database import Base
+from app.core.database import Base
 
 member_roles = Table(
     'member_roles', Base.metadata,

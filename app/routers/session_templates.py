@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, date, timedelta, time, timezone
-import models, schemas
-from core.database import get_db
-from core.auth import (
+import app.models as models, app.schemas as schemas
+from app.core.database import get_db
+from app.core.auth import (
     get_admin_member, 
     get_templates_manager,
     get_schedule_generate_manager

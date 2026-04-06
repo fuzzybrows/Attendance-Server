@@ -6,8 +6,8 @@ from datetime import datetime
 import random
 from collections import defaultdict
 
-from core.database import get_db
-from core.auth import (
+from app.core.database import get_db
+from app.core.auth import (
     get_current_active_member, 
     get_admin_member, 
     get_schedule_read_manager, 
@@ -15,13 +15,13 @@ from core.auth import (
     get_schedule_generate_manager,
     get_schedule_export_manager
 )
-from models.member import Member, Role
-from models.session import Session as SessionModel
-from models.availability import Availability
-from models.assignment import Assignment
-from models.day_off import DayOff
-from schemas.availability import AvailabilityUpdate, AvailabilitySchema
-from schemas.assignment import AssignmentCreate, AssignmentSchema
+from app.models.member import Member, Role
+from app.models.session import Session as SessionModel
+from app.models.availability import Availability
+from app.models.assignment import Assignment
+from app.models.day_off import DayOff
+from app.schemas.availability import AvailabilityUpdate, AvailabilitySchema
+from app.schemas.assignment import AssignmentCreate, AssignmentSchema
 from pydantic import BaseModel
 from fastapi.responses import StreamingResponse, Response
 import io

@@ -2,7 +2,7 @@
 Tests for QR attendance endpoints.
 Covers: /attendance/qr/token/{session_id} and /attendance/qr/mark
 """
-from core.auth import create_access_token
+from app.core.auth import create_access_token
 
 
 class TestQRToken:

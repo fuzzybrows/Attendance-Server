@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta
-from models import Session as SessionModel, Assignment, Member
+from app.models import Session as SessionModel, Assignment, Member
 import io
 
 def test_export_pdf(client, db_session):

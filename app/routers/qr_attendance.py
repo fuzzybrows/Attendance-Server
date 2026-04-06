@@ -8,10 +8,10 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import Optional
 from pydantic import BaseModel
-import models, schemas
-from core.database import get_db
-from core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
-from services.attendance import validate_attendance
+import app.models as models, app.schemas as schemas
+from app.core.database import get_db
+from app.core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
+from app.services.attendance import validate_attendance
 from jose import JWTError, jwt
 import logging
 

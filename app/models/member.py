@@ -1,8 +1,8 @@
 """Role, Permission, and Member ORM models."""
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
-from core.database import Base
-from models.associations import member_roles, member_permissions
+from app.core.database import Base
+from app.models.associations import member_roles, member_permissions
 
 
 class Role(Base):

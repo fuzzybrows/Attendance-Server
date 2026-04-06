@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from typing import Optional
 import logging
-import models
-from core.utils import calculate_distance
+import app.models
+from app.core.utils import calculate_distance
 
 logger = logging.getLogger(__name__)
 

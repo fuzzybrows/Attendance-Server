@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 # Add parent directory to path to import settings
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from settings import settings
+from app.settings import settings
 
 def create_database():
     db_url = settings.database_url

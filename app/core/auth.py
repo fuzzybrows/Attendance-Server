@@ -5,9 +5,9 @@ from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from settings import settings
-from core.database import get_db
-import models
+from app.settings import settings
+from app.core.database import get_db
+import app.models
 
 # JWT Configuration from settings
 SECRET_KEY = settings.secret_key

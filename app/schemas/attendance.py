@@ -2,7 +2,7 @@
 from pydantic import BaseModel, field_serializer, ConfigDict
 from datetime import datetime, timezone
 from typing import Optional
-from schemas.session import Session
+from app.schemas.session import Session
 
 
 class AttendanceBase(BaseModel):

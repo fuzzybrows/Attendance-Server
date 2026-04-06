@@ -1,6 +1,6 @@
 import requests
 import logging
-from settings import settings
+from app.settings import settings
 
 logger = logging.getLogger(__name__)
 

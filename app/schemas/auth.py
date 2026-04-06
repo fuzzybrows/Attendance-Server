@@ -1,7 +1,7 @@
 """Authentication-related Pydantic schemas."""
 from pydantic import BaseModel
 from typing import Optional, Union
-from schemas.member import Member
+from app.schemas.member import Member
 
 
 class MemberLogin(BaseModel):

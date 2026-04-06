@@ -3,7 +3,7 @@ Twilio Verify API service for OTP verification.
 Uses Twilio's managed Verify service instead of manually sending OTPs.
 """
 from twilio.rest import Client
-from settings import settings
+from app.settings import settings
 
 # Twilio API credentials from settings
 TWILIO_ACCOUNT_SID = settings.twilio_account_sid

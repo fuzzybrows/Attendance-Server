@@ -1,7 +1,7 @@
 """Assignment ORM model."""
 from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
-from core.database import Base
+from app.core.database import Base
 
 class Assignment(Base):
     __tablename__ = "assignments"

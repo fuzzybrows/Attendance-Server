@@ -19,11 +19,11 @@ install:
 # Run in production mode
 run:
 	@echo "Starting production server on port $(PORT)..."
-	cd app && source ../$(VENV)/bin/activate && ../$(UVICORN) server:app --host 0.0.0.0 --port $(PORT)
+	source $(VENV)/bin/activate && $(UVICORN) app.server:app --host 0.0.0.0 --port $(PORT)
 
 # Start backend in development mode (auto-reload)
 dev:
-	cd app && source ../$(VENV)/bin/activate && ../$(PYTHON) scripts/create_db.py && ../$(UVICORN) server:app --reload --host 192.168.0.173 --port $(PORT)
+	source $(VENV)/bin/activate && $(PYTHON) app/scripts/create_db.py && $(UVICORN) app.server:app --reload --host 192.168.0.173 --port $(PORT)
 
 # Clean up
 clean:
@@ -35,19 +35,20 @@ clean:
 # Create a new migration
 # Usage: make migrations m="Your message"
 migrations:
-	cd app && source ../$(VENV)/bin/activate && ../$(VENV)/bin/alembic revision --autogenerate -m "$(m)"
+	source $(VENV)/bin/activate && $(VENV)/bin/alembic revision --autogenerate -m "$(m)"
 
 # Run migrations
 # Usage: make migrate [cmd="upgrade head"]
 migrate:
-	cd app && source ../$(VENV)/bin/activate && ../$(VENV)/bin/alembic $(or $(cmd),upgrade head)
+	source $(VENV)/bin/activate && $(VENV)/bin/alembic $(or $(cmd),upgrade head)
 
 # Testing
 
 # Run all tests
 test:
-	cd app && source ../$(VENV)/bin/activate && ../$(VENV)/bin/pytest tests/ -v
+	source $(VENV)/bin/activate && $(VENV)/bin/pytest tests/ -v
 
 # Run tests with coverage report
 coverage:
-	cd app && source ../$(VENV)/bin/activate && ../$(VENV)/bin/pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=html:../htmlcov --cov-config=../pyproject.toml
+	source $(VENV)/bin/activate && $(VENV)/bin/pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov --cov-config=pyproject.toml
+

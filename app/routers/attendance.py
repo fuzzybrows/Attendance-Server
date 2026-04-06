@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from pydantic import BaseModel
-import models, schemas
-from core.database import get_db
-from core.database import get_db
-from core.auth import (
+import app.models as models, app.schemas as schemas
+from app.core.database import get_db
+from app.core.database import get_db
+from app.core.auth import (
     get_current_user, 
     get_admin_member, 
     get_current_active_member,
@@ -26,7 +26,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-from services.attendance import validate_attendance
+from app.services.attendance import validate_attendance
 
 @router.post("/", response_model=schemas.Attendance)
 def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db), current_member=Depends(get_attendance_write_manager)):

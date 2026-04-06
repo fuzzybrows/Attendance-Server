@@ -2,15 +2,15 @@
 Schemas package — re-exports all Pydantic schemas for convenient import.
 Usage: `import schemas` continues to work as before.
 """
-from schemas.member import MemberBase, MemberCreate, Member, MemberUpdate, MemberMetadata
-from schemas.session import SessionBase, SessionCreate, SessionUpdate, Session, SessionMetadata
-from schemas.attendance import AttendanceBase, AttendanceCreate, Attendance, AttendanceWithSession
-from schemas.auth import MemberLogin, Token, UnverifiedResponse, LoginResponse, TokenData, OTPVerification, StatusResponse, ForgotPasswordRequest
-from schemas.stats import AttendanceStats, SessionHistory, MemberStatsResponse
-from schemas.qr import QRTokenResponse, QRMarkResponse
-from schemas.availability import AvailabilityBase, AvailabilityCreate, AvailabilityUpdate, AvailabilitySchema, AvailabilityWithDetails
-from schemas.assignment import AssignmentBase, AssignmentCreate, AssignmentSchema, AssignmentWithDetails
-from schemas import session_template
+from app.schemas.member import MemberBase, MemberCreate, Member, MemberUpdate, MemberMetadata
+from app.schemas.session import SessionBase, SessionCreate, SessionUpdate, Session, SessionMetadata
+from app.schemas.attendance import AttendanceBase, AttendanceCreate, Attendance, AttendanceWithSession
+from app.schemas.auth import MemberLogin, Token, UnverifiedResponse, LoginResponse, TokenData, OTPVerification, StatusResponse, ForgotPasswordRequest
+from app.schemas.stats import AttendanceStats, SessionHistory, MemberStatsResponse
+from app.schemas.qr import QRTokenResponse, QRMarkResponse
+from app.schemas.availability import AvailabilityBase, AvailabilityCreate, AvailabilityUpdate, AvailabilitySchema, AvailabilityWithDetails
+from app.schemas.assignment import AssignmentBase, AssignmentCreate, AssignmentSchema, AssignmentWithDetails
+from app.schemas import session_template
 
 __all__ = [
     # Member

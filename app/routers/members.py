@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-import models, schemas
-from core.database import get_db
-from core.auth import (
+import app.models as models, app.schemas as schemas
+from app.core.database import get_db
+from app.core.auth import (
     get_password_hash, 
     get_current_user, 
     get_admin_member, 

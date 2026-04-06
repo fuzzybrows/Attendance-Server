@@ -1,7 +1,7 @@
 """Availability ORM model."""
 from sqlalchemy import Column, Integer, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
-from core.database import Base
+from app.core.database import Base
 
 class Availability(Base):
     __tablename__ = "availabilities"

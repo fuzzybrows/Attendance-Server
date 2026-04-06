@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from core.database import Base
+from app.core.database import Base
 
 
 class Attendance(Base):

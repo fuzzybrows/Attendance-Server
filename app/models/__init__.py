@@ -3,16 +3,16 @@ Models package — re-exports all ORM models and the Base for convenient import.
 Usage: `import models` continues to work as before.
 """
 import enum
-from core.database import Base
+from app.core.database import Base
 
-from models.associations import member_roles, member_permissions
-from models.member import Role, Permission, Member
-from models.session import Session
-from models.attendance import Attendance
-from models.availability import Availability
-from models.assignment import Assignment
-from models.day_off import DayOff
-from models.session_template import SessionTemplate
+from app.models.associations import member_roles, member_permissions
+from app.models.member import Role, Permission, Member
+from app.models.session import Session
+from app.models.attendance import Attendance
+from app.models.availability import Availability
+from app.models.assignment import Assignment
+from app.models.day_off import DayOff
+from app.models.session_template import SessionTemplate
 
 
 class SessionStatus(str, enum.Enum):

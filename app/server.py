@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from settings import settings as app_settings
-import models
-from core.database import engine
-from routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar
-from core.logging_config import setup_logging
+from app.settings import settings as app_settings
+import app.models
+from app.core.database import engine
+from app.routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar
+from app.core.logging_config import setup_logging
 
 # Setup logging before creating app or during startup
 setup_logging()
@@ -12,7 +12,7 @@ setup_logging()
 # models.Base.metadata.create_all(bind=engine)
 
 from contextlib import asynccontextmanager
-from core.scheduler import start_scheduler, stop_scheduler
+from app.core.scheduler import start_scheduler, stop_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,7 +57,7 @@ app.include_router(sessions.router)
 app.include_router(attendance.router)
 app.include_router(statistics.router)
 app.include_router(qr_attendance.router)
-from routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar, google_auth, session_templates
+from app.routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar, google_auth, session_templates
 app.include_router(calendar.router)
 app.include_router(google_auth.router)
 app.include_router(session_templates.router)

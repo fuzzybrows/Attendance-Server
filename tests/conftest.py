@@ -6,9 +6,6 @@ import os
 import sys
 import pytest
 
-# Ensure app directory is on the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 # ── Postgres connection details (same server as production) ──
 PG_USER = os.getenv("TEST_PG_USER", "postgres")
 PG_PASS = os.getenv("TEST_PG_PASS", "postgres")
@@ -35,7 +32,7 @@ os.environ.update({
     "recaptcha_enabled": "false",
 })
 
-from settings import settings
+from app.settings import settings
 settings.twilio_account_sid = "placeholder_twilio_sid"
 settings.twilio_auth_token = "placeholder_twilio_token"
 settings.twilio_verify_service_sid = "placeholder_verify_sid"
@@ -43,16 +40,16 @@ settings.twilio_phone_number = "+10000000000"
 settings.sendgrid_api_key = "placeholder_sendgrid_key"
 settings.firebase_credentials_path = "placeholder_firebase_path"
 
-from server import app
+from app.server import app
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
-from core.database import Base, get_db
-import models
-from services.twilio import send_sms_verification
-from core.auth import get_password_hash, get_current_user
+from app.core.database import Base, get_db
+import app.models as models
+from app.services.twilio import send_sms_verification
+from app.core.auth import get_password_hash, get_current_user
 
 
 def _create_test_db():

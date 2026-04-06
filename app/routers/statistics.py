@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-import models, schemas
-from core.database import get_db
-from core.database import get_db
-from core.auth import get_current_user, get_current_active_member
+import app.models as models, app.schemas as schemas
+from app.core.database import get_db
+from app.core.database import get_db
+from app.core.auth import get_current_user, get_current_active_member
 
 router = APIRouter(
     prefix="/statistics",

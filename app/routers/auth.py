@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-import models, schemas
-from core.database import get_db
-from core.auth import get_password_hash, verify_password, create_access_token
-from services.twilio import send_sms_verification, send_email_verification, check_verification
-from services.recaptcha import verify_recaptcha
+import app.models as models, app.schemas as schemas
+from app.core.database import get_db
+from app.core.auth import get_password_hash, verify_password, create_access_token
+from app.services.twilio import send_sms_verification, send_email_verification, check_verification
+from app.services.recaptcha import verify_recaptcha
 import logging
 
 logger = logging.getLogger(__name__)

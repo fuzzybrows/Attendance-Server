@@ -1,10 +1,10 @@
 import os
 os.environ["DATABASE_URL"] = "postgresql://postgres:postgres@localhost:5432/attendance"  # Try matching the actual DB
 
-from core.database import SessionLocal
-import models
-import schemas
-from routers.members import update_member
+from app.core.database import SessionLocal
+import app.models
+import app.schemas
+from app.routers.members import update_member
 
 db = SessionLocal()
 admin = db.query(models.Member).filter_by(email="administrator@thetechlads.info").first()

@@ -3,7 +3,7 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from schemas import (
+from app.schemas import (
     MemberCreate, MemberUpdate, SessionCreate, SessionUpdate,
     Token, UnverifiedResponse, LoginResponse,
     AttendanceCreate, Member as MemberSchema,

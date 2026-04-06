@@ -1,6 +1,6 @@
 """SessionTemplate ORM model."""
 from sqlalchemy import Column, Integer, String, Time, Boolean, Float, Date
-from core.database import Base
+from app.core.database import Base
 
 class SessionTemplate(Base):
     __tablename__ = "session_templates"
