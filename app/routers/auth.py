@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.models import Member
+from app.models.member import Member
 from app.schemas.auth import MemberLogin, LoginResponse, OTPVerification, StatusResponse, Token, ForgotPasswordRequest, ResetPasswordRequest
 from app.schemas.member import Member as MemberSchema
 from app.core.database import get_db

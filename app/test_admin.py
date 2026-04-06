@@ -2,7 +2,7 @@ import os
 os.environ["DATABASE_URL"] = "postgresql://postgres:postgres@localhost:5432/attendance"  # Try matching the actual DB
 
 from app.core.database import SessionLocal
-from app.models import Member
+from app.models.member import Member
 from app.schemas.member import MemberUpdate
 from app.routers.members import update_member
 

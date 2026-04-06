@@ -1,4 +1,4 @@
-"""Session ORM model."""
+import enum
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, Float
 from sqlalchemy.orm import relationship
@@ -23,3 +23,10 @@ class Session(Base):
     radius = Column(Integer, default=50)  # meters
 
     attendance = relationship("Attendance", back_populates="session", cascade="all, delete-orphan", passive_deletes=True)
+
+
+class SessionStatus(str, enum.Enum):
+    SCHEDULED = "scheduled"
+    ACTIVE = "active"
+    CONCLUDED = "concluded"
+    ARCHIVED = "archived"

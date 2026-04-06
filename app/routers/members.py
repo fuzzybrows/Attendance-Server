@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from app.models import Member, Permission, Role
+from app.models.member import Member, Permission, Role
 from app.schemas.member import Member as MemberSchema, MemberCreate, MemberUpdate, MemberMetadata, PasswordResetRequest
 from app.core.database import get_db
 from app.core.auth import (

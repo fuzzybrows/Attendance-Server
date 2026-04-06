@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import patch
 from app.core.auth import verify_password
-import app.models as models
+from app.models.member import Member
 
 class TestPasswordReset:
     def test_admin_reset_member_password_updates_db(self, client, db_session, created_member):
@@ -11,7 +11,7 @@ class TestPasswordReset:
         member_id = created_member["id"]
         
         # Initial check
-        member_before = db_session.get(models.Member, member_id)
+        member_before = db_session.get(Member, member_id)
         old_hash = member_before.password_hash
         
         # Reset password
@@ -24,7 +24,7 @@ class TestPasswordReset:
         
         # Verify DB update
         db_session.expire_all()
-        member_after = db_session.get(models.Member, member_id)
+        member_after = db_session.get(Member, member_id)
         assert member_after.password_hash != old_hash
         assert verify_password(new_password, member_after.password_hash)
 
@@ -56,7 +56,7 @@ class TestPasswordReset:
         
         # 3. Verify DB update
         db_session.expire_all()
-        member = db_session.query(models.Member).filter_by(email=login).first()
+        member = db_session.query(Member).filter_by(email=login).first()
         assert verify_password(new_password, member.password_hash)
         
         # 4. Verify login with new password works

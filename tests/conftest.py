@@ -47,7 +47,7 @@ from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
 from app.core.database import Base, get_db
-import app.models as models
+from app.models.member import Member, Permission
 from app.services.twilio import send_sms_verification
 from app.core.auth import get_password_hash, get_current_user
 
@@ -102,7 +102,7 @@ def setup_db(create_test_database):
     # Seed permissions needed by the member create endpoint
     session = TestSession()
     for name in ["member", "admin"]:
-        session.add(models.Permission(name=name))
+        session.add(Permission(name=name))
     session.commit()
     session.close()
     yield
@@ -126,12 +126,12 @@ def _fake_current_user():
 def client(db_session):
     """Create an authenticated FastAPI test client with overridden DB and auth."""
     # Create the test user in the DB so get_current_active_member works
-    admin_perm = db_session.query(models.Permission).filter_by(name="admin").first()
+    admin_perm = db_session.query(Permission).filter_by(name="admin").first()
     if not admin_perm:
-        admin_perm = models.Permission(name="admin")
+        admin_perm = Permission(name="admin")
         db_session.add(admin_perm)
     
-    test_user = models.Member(
+    test_user = Member(
         first_name="Test",
         last_name="Admin",
         email="test@example.com",

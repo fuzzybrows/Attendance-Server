@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models import Attendance, Member, Session
+from app.models.attendance import Attendance
+from app.models.member import Member
+from app.models.session import Session
 from app.schemas.stats import MemberStatsResponse
 from app.core.database import get_db
 from app.core.database import get_db

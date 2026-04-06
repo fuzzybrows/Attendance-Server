@@ -13,11 +13,11 @@ Attendance Server/
 ├── alembic.ini       # Alembic config (project root)
 ├── tests/            # Test suite (project root, NOT inside app/)
 ├── app/
-│   ├── __init__.py   # Required — makes app a proper Python package
+│   ├── __init__.py   # Makes app a proper package — must remain EMPTY
 │   ├── core/
-│   ├── models/
+│   ├── models/       # Models must be imported explicitly (e.g., app.models.member)
 │   ├── routers/
-│   ├── schemas/
+│   ├── schemas/      # Schemas must be imported explicitly (e.g., app.schemas.auth)
 │   ├── services/
 │   ├── server.py
 │   └── settings.py
@@ -55,30 +55,29 @@ The uvicorn entry point is `app.server:app`, not `server:app`.
 ### Rule: All internal imports must use the full `app.` prefix
 
 ```python
-# ✅ Correct
-from app.models import Member
-from app.core.database import get_db
-from app.settings import settings
-from app.schemas import MemberCreate
+# ✅ Correct — Explicit submodule imports
+from app.models.member import Member
+from app.models.session import Session, SessionStatus
+from app.schemas.auth import MemberLogin, ResetPasswordRequest
+from app.schemas.member import Member as MemberSchema
 from app.services.twilio import send_sms_verification
 
-# ❌ Wrong — bare imports break when running from project root
-from models import Member
-from core.database import get_db
-from settings import settings
-import models, schemas
+# ❌ Wrong — Import from unified package (REMOVED)
+from app.models import Member
+from app.schemas import MemberCreate
 ```
 
 ### Rule: Use explicit named imports, not module aliases
 
 ```python
 # ✅ Correct
-from app.models import Member, Session, Attendance
-from app.schemas import MemberCreate, MemberUpdate
+from app.models.member import Member, Session, Attendance
+from app.schemas.member import MemberCreate, MemberUpdate
 
-# ❌ Wrong — avoid module-level aliases
+# ❌ Wrong — Module aliases or unified package imports
 import app.models as models
 import app.schemas as schemas
+from app.models import Member
 ```
 
 ### Rule: When model and schema share the same name, alias the schema
@@ -88,12 +87,12 @@ When a file uses **both** the DB model and the schema of the same name, alias th
 
 ```python
 # ✅ Correct — clear distinction between DB model and schema
-from app.models import Member
-from app.schemas import Member as MemberSchema, MemberCreate, MemberUpdate
+from app.models.member import Member
+from app.schemas.member import Member as MemberSchema, MemberCreate, MemberUpdate
 
 # ✅ Correct — session example
-from app.models import Session as SessionModel
-from app.schemas import Session as SessionSchema, SessionCreate
+from app.models.session import Session as SessionModel
+from app.schemas.session import Session as SessionSchema, SessionCreate
 ```
 
 **Naming convention for aliases:**
@@ -256,7 +255,11 @@ make coverage   # run with coverage report
 `tests/conftest.py` must:
 - Import the app as `from app.server import app`
 - NOT manipulate `sys.path`
-- Use `from app.X import Y` throughout
+- Use `from app.X.Y import Z` style for all models and schemas.
+
+### Rule: Major bug-fixes require corresponding tests
+
+If a bug is found that would have been caught by an automated test, a new regression test must be added to the `tests/` directory (e.g., `tests/test_password_reset.py`).
 
 ---
 

@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import Optional
 from pydantic import BaseModel
-from app.models import Attendance, Member, Session
+from app.models.attendance import Attendance
+from app.models.member import Member
+from app.models.session import Session
 from app.schemas.qr import QRMarkResponse
 from app.core.database import get_db
 from app.core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user

@@ -4,7 +4,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime, timedelta, timezone
 
 from app.core.database import SessionLocal
-from app.models import Session, SessionStatus
+from app.models.session import Session, SessionStatus
 from app.models.assignment import Assignment
 from app.models.member import Member
 from app.services.comm import send_reminder_email, send_reminder_sms, send_push_notification

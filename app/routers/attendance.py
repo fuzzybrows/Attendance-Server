@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from pydantic import BaseModel
-from app.models import Attendance as AttendanceModel, Member, Session as SessionModel
+from app.models.attendance import Attendance as AttendanceModel
+from app.models.member import Member
+from app.models.session import Session as SessionModel
 from app.schemas.attendance import Attendance as AttendanceSchema, AttendanceCreate, AttendanceWithSession
 from app.schemas.stats import AttendanceStats
 from app.core.database import get_db

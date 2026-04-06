@@ -1,6 +1,8 @@
 import pytest
 from datetime import datetime, timedelta
-from app.models import Session as SessionModel, Assignment, Member
+from app.models.session import Session as SessionModel
+from app.models.assignment import Assignment
+from app.models.member import Member
 import io
 
 def test_export_pdf(client, db_session):
@@ -107,22 +109,21 @@ def test_save_schedule(client, db_session):
 
 def test_generate_schedule_sunday_role_enforcement(client, db_session):
     """Test that only members with 'Sunday Lead Singer' role are assigned as lead on Sundays."""
-    import app.models as models
+    from app.models.member import Role
     # 1. Setup Roles
-    lead_role = models.Role(name="lead_singer", is_choir_role=True)
-    sunday_lead_role = models.Role(name="Sunday Lead Singer", is_choir_role=False)
+    lead_role = Role(name="lead_singer", is_choir_role=True)
+    sunday_lead_role = Role(name="Sunday Lead Singer", is_choir_role=False)
     db_session.add_all([lead_role, sunday_lead_role])
     db_session.commit()
 
-    # 2. Setup Members
     # Member A: Has choir role lead_singer but NOT Sunday Lead Singer
-    member_a = models.Member(
+    member_a = Member(
         first_name="Regular", last_name="Lead",
         email="regular@test.com", password_hash="hash",
         roles=[lead_role]
     )
     # Member B: Has BOTH roles
-    member_b = models.Member(
+    member_b = Member(
         first_name="Sunday", last_name="Pro",
         email="sunday@test.com", password_hash="hash",
         roles=[lead_role, sunday_lead_role]

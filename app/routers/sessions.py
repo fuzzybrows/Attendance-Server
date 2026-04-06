@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
-from app.models import Member, Session as SessionModel
+from app.models.member import Member
+from app.models.session import Session as SessionModel
 from app.schemas.session import Session as SessionSchema, SessionCreate, SessionUpdate, SessionMetadata, SessionType, SessionStatus
 from datetime import timezone
 from app.core.database import get_db
