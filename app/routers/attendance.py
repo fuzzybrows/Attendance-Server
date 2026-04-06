@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from typing import List
-from pydantic import BaseModel
+
 from app.models.attendance import Attendance as AttendanceModel
 from app.models.member import Member
 from app.models.session import Session as SessionModel
-from app.schemas.attendance import Attendance as AttendanceSchema, AttendanceCreate, AttendanceWithSession
+from app.schemas.attendance import (
+    Attendance as AttendanceSchema, AttendanceCreate, 
+    AttendanceWithSession, BulkDeleteRequest
+)
 from app.schemas.stats import AttendanceStats
 from app.core.database import get_db
 from app.core.database import get_db
@@ -21,8 +24,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class BulkDeleteRequest(BaseModel):
-    ids: List[int]
 
 router = APIRouter(
     prefix="/attendance",

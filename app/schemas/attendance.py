@@ -39,3 +39,8 @@ class AttendanceWithSession(Attendance):
     session: Session
 
     model_config = ConfigDict(from_attributes = True)
+
+
+class BulkDeleteRequest(BaseModel):
+    from typing import List
+    ids: List[int]

@@ -70,3 +70,7 @@ class Session(SessionBase):
 class SessionMetadata(BaseModel):
     types: List[str]
     statuses: List[str]
+
+
+class BulkDeleteRequest(BaseModel):
+    ids: List[int]

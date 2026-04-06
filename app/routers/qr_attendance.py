@@ -7,11 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Body
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import Optional
-from pydantic import BaseModel
+
 from app.models.attendance import Attendance
 from app.models.member import Member
 from app.models.session import Session
-from app.schemas.qr import QRMarkResponse
+from app.schemas.qr import QRMarkResponse, QRMarkPayload
 from app.core.database import get_db
 from app.core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
 from app.services.attendance import validate_attendance
@@ -28,10 +28,7 @@ router = APIRouter(
 QR_TOKEN_EXPIRE_SECONDS = 30
 
 
-class QRMarkPayload(BaseModel):
-    device_id: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+
 
 
 @router.get("/token/{session_id}")

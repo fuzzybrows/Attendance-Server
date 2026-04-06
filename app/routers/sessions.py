@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from pydantic import BaseModel
+
 from app.models.member import Member
 from app.models.session import Session as SessionModel
-from app.schemas.session import Session as SessionSchema, SessionCreate, SessionUpdate, SessionMetadata, SessionType, SessionStatus
+from app.schemas.session import (
+    Session as SessionSchema, SessionCreate, SessionUpdate, 
+    SessionMetadata, SessionType, SessionStatus, BulkDeleteRequest
+)
 from datetime import timezone
 from app.core.database import get_db
 from app.core.database import get_db
@@ -20,8 +23,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class BulkDeleteRequest(BaseModel):
-    ids: List[int]
 
 router = APIRouter(
     prefix="/sessions",

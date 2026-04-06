@@ -22,7 +22,10 @@ from app.models.assignment import Assignment
 from app.models.day_off import DayOff
 from app.schemas.availability import AvailabilityUpdate, AvailabilitySchema
 from app.schemas.assignment import AssignmentCreate, AssignmentSchema
-from pydantic import BaseModel
+from app.schemas.calendar import (
+    DraftScheduleRequest, DraftAssignment, DraftSessionSchedule, 
+    DraftScheduleResponse, SaveScheduleRequest, DayAvailabilityRequest
+)
 from fastapi.responses import StreamingResponse, Response
 import io
 import csv
@@ -35,30 +38,6 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 
-class DraftScheduleRequest(BaseModel):
-    year: int
-    month: int
-
-from pydantic import BaseModel, Field, AliasChoices
-from typing import Optional, List, Dict
-
-class DraftAssignment(BaseModel):
-    member_id: int
-    member_name: Optional[str] = None
-    role: str
-
-class DraftSessionSchedule(BaseModel):
-    id: int = Field(validation_alias=AliasChoices('id', 'session_id'))
-    title: str = Field(validation_alias=AliasChoices('title', 'session_title'))
-    start_time: str
-    type: str
-    assignments: List[DraftAssignment]
-
-class DraftScheduleResponse(BaseModel):
-    sessions: List[DraftSessionSchedule]
-
-class SaveScheduleRequest(BaseModel):
-    sessions: List[DraftSessionSchedule]
 
 def is_month_locked(db: Session, year: int, month: int) -> bool:
     """
@@ -123,9 +102,6 @@ def update_availability(
     return availability
 
 
-class DayAvailabilityRequest(BaseModel):
-    date: str  # ISO date string, e.g. "2026-03-29"
-    is_available: bool = False
 
 
 @router.post("/availability/day")
