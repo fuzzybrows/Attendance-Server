@@ -116,6 +116,33 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 ---
 
+## Security & API Patterns
+
+### Rule: Sensitive data in Request Body, NOT Query Parameters
+
+Sensitive data (passwords, tokens, OTPs) must never be passed in the URL (query string). This prevents exposure in server logs, browser history, and intermediate proxies.
+
+```python
+# ✅ Correct — Pydantic schema used for body (POST/PATCH)
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+
+@router.post("/reset-password")
+def reset_password(data: ResetPasswordRequest):
+    ...
+
+# ❌ Wrong — New password in query parameter
+@router.post("/reset-password")
+def reset_password(new_password: str): # INSECURE
+    ...
+```
+
+### Rule: Existence checks in State-Modifying operations
+
+Always verify a record exists in the database before attempting to modify it (Password Reset, Update, Delete).
+
+---
+
 ## Settings & Configuration
 
 ### Rule: Parsing logic belongs in the Settings class
