@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-import app.models as models, app.schemas as schemas
+from app.models import Member
+from app.schemas import MemberLogin, LoginResponse, Member as MemberSchema, OTPVerification, StatusResponse, Token, ForgotPasswordRequest
 from app.core.database import get_db
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from app.services.twilio import send_sms_verification, send_email_verification, check_verification
@@ -15,8 +16,8 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.post("/login", response_model=schemas.LoginResponse)
-def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
+@router.post("/login", response_model=LoginResponse)
+def login(data: MemberLogin, db: Session = Depends(get_db)):
     logger.info("Login attempt", extra={"type": "login_attempt", "login": data.login})
     
     # Verify reCAPTCHA token
@@ -24,8 +25,8 @@ def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="reCAPTCHA verification failed. Please complete the captcha.")
         
     # Find member by email or phone
-    member = db.query(models.Member).filter(
-        (models.Member.email == data.login) | (models.Member.phone_number == data.login)
+    member = db.query(Member).filter(
+        (Member.email == data.login) | (Member.phone_number == data.login)
     ).first()
     
     if not member or not verify_password(data.password, member.password_hash) or not member.is_active:
@@ -47,18 +48,18 @@ def login(data: schemas.MemberLogin, db: Session = Depends(get_db)):
     
     access_token = create_access_token(data={"sub": member.email})
     logger.info("Login successful", extra={"type": "login_success", "login": data.login, "member_id": member.id})
-    member_data = schemas.Member.model_validate(member, from_attributes=True)
+    member_data = MemberSchema.model_validate(member, from_attributes=True)
     return {"access_token": access_token, "token_type": "bearer", "member": member_data}
 
-@router.post("/verify-otp", response_model=schemas.Token)
-def verify_otp(data: schemas.OTPVerification, db: Session = Depends(get_db)):
+@router.post("/verify-otp", response_model=Token)
+def verify_otp(data: OTPVerification, db: Session = Depends(get_db)):
     # Use Twilio Verify to check the code
     if not check_verification(data.login, data.otp):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
     
     # Find member and mark verified
-    member = db.query(models.Member).filter(
-        (models.Member.email == data.login) | (models.Member.phone_number == data.login)
+    member = db.query(Member).filter(
+        (Member.email == data.login) | (Member.phone_number == data.login)
     ).first()
     
     if "@" in data.login:
@@ -71,14 +72,14 @@ def verify_otp(data: schemas.OTPVerification, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": member.email})
     return {"access_token": access_token, "token_type": "bearer", "member": member}
 
-@router.post("/forgot-password", response_model=schemas.StatusResponse)
-def forgot_password(data: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+@router.post("/forgot-password", response_model=StatusResponse)
+def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     # Verify reCAPTCHA token
     if not verify_recaptcha(data.recaptcha_token):
         raise HTTPException(status_code=400, detail="reCAPTCHA verification failed. Please complete the captcha.")
 
-    member = db.query(models.Member).filter(
-        (models.Member.email == data.login) | (models.Member.phone_number == data.login)
+    member = db.query(Member).filter(
+        (Member.email == data.login) | (Member.phone_number == data.login)
     ).first()
     
     if not member:
@@ -91,14 +92,14 @@ def forgot_password(data: schemas.ForgotPasswordRequest, db: Session = Depends(g
         send_sms_verification(member.phone_number)
     return {"status": "If an account matching this email or phone number exists, we'll send reset instructions."}
 
-@router.post("/reset-password", response_model=schemas.StatusResponse)
-def reset_password(data: schemas.OTPVerification, new_password: str, db: Session = Depends(get_db)):
+@router.post("/reset-password", response_model=StatusResponse)
+def reset_password(data: OTPVerification, new_password: str, db: Session = Depends(get_db)):
     # Use Twilio Verify to check the code
     if not check_verification(data.login, data.otp):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
         
-    member = db.query(models.Member).filter(
-        (models.Member.email == data.login) | (models.Member.phone_number == data.login)
+    member = db.query(Member).filter(
+        (Member.email == data.login) | (Member.phone_number == data.login)
     ).first()
     
     import re

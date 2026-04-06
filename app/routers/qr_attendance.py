@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import Optional
 from pydantic import BaseModel
-import app.models as models, app.schemas as schemas
+from app.models import Attendance, Member, Session
+from app.schemas import QRMarkResponse
 from app.core.database import get_db
 from app.core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
 from app.services.attendance import validate_attendance
@@ -34,7 +35,7 @@ class QRMarkPayload(BaseModel):
 @router.get("/token/{session_id}")
 def generate_qr_token(session_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
     """Generate a short-lived token for QR attendance."""
-    session = db.query(models.Session).filter(models.Session.id == session_id).first()
+    session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
         logger.warning("QR Token gen failed - Session not found", extra={"type": "qr_token_gen_failed", "session_id": session_id, "reason": "session_not_found"})
         raise HTTPException(status_code=404, detail="Session not found")
@@ -48,7 +49,7 @@ def generate_qr_token(session_id: int, db: Session = Depends(get_db), _current_u
     return {"token": token, "expires_in": QR_TOKEN_EXPIRE_SECONDS}
 
 
-@router.post("/mark", response_model=schemas.QRMarkResponse)
+@router.post("/mark", response_model=QRMarkResponse)
 def mark_qr_attendance(
     session_id: int,
     qr_token: str,
@@ -84,12 +85,12 @@ def mark_qr_attendance(
         raise HTTPException(status_code=401, detail="Please log in first")
 
     # 3. Check member exists
-    member = db.query(models.Member).filter(models.Member.email == user_email).first()
+    member = db.query(Member).filter(Member.email == user_email).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
     # 4. Check session exists
-    session = db.query(models.Session).filter(models.Session.id == session_id).first()
+    session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -109,7 +110,7 @@ def mark_qr_attendance(
     )
 
     # 7. Mark attendance
-    db_attendance = models.Attendance(
+    db_attendance = Attendance(
         member_id=member.id,
         session_id=session_id,
         latitude=latitude,

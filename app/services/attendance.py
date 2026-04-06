@@ -2,14 +2,14 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from typing import Optional
 import logging
-import app.models
+from app.models import Session as SessionModel, Attendance
 from app.core.utils import calculate_distance
 
 logger = logging.getLogger(__name__)
 
 def validate_attendance(
     db: Session,
-    session: models.Session,
+    session: SessionModel,
     member_id: int,
     device_id: Optional[str],
     latitude: Optional[float],
@@ -30,10 +30,10 @@ def validate_attendance(
     is_self_checkin = (marked_by_id is None) or (marked_by_id == member_id)
     
     if is_self_checkin and device_id:
-        existing_device_usage = db.query(models.Attendance).filter(
-            models.Attendance.session_id == session.id,
-            models.Attendance.device_id == device_id,
-            models.Attendance.member_id != member_id
+        existing_device_usage = db.query(Attendance).filter(
+            Attendance.session_id == session.id,
+            Attendance.device_id == device_id,
+            Attendance.member_id != member_id
         ).first()
 
         if existing_device_usage:
@@ -65,9 +65,9 @@ def validate_attendance(
             raise HTTPException(status_code=403, detail=f"You are too far from the venue ({int(distance)}m). You must be within {session.radius}m.")
 
     # 3. Duplicate Check
-    existing = db.query(models.Attendance).filter(
-        models.Attendance.member_id == member_id,
-        models.Attendance.session_id == session.id
+    existing = db.query(Attendance).filter(
+        Attendance.member_id == member_id,
+        Attendance.session_id == session.id
     ).first()
     
     if existing:

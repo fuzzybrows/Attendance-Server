@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
-import app.models as models, app.schemas as schemas
+from app.models import Member, Session as SessionModel
+from app.schemas import Session as SessionSchema, SessionCreate, SessionUpdate, SessionMetadata
+from app.schemas.session import SessionType, SessionStatus
 from datetime import timezone
 from app.core.database import get_db
 from app.core.database import get_db
@@ -27,28 +29,28 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/metadata", response_model=schemas.SessionMetadata)
+@router.get("/metadata", response_model=SessionMetadata)
 def get_session_metadata(current_member=Depends(get_sessions_read_manager)):
     """
     Get all available session types and statuses from the Enums.
     """
     return {
-        "types": [t.value for t in schemas.session.SessionType],
-        "statuses": [s.value for s in schemas.session.SessionStatus]
+        "types": [t.value for t in SessionType],
+        "statuses": [s.value for s in SessionStatus]
     }
 
-@router.post("/", response_model=schemas.Session)
-def create_session(session: schemas.SessionCreate, db: Session = Depends(get_db), current_member=Depends(get_sessions_create_manager)):
+@router.post("/", response_model=SessionSchema)
+def create_session(session: SessionCreate, db: Session = Depends(get_db), current_member=Depends(get_sessions_create_manager)):
     logger.info("Creating session", extra={"type": "session_create_attempt", "title": session.title, "session_type": session.type})
     
     if session.status == "active":
-        db.query(models.Session).filter(models.Session.status == "active").update({"status": "concluded"})
+        db.query(SessionModel).filter(SessionModel.status == "active").update({"status": "concluded"})
         
     start_time = session.start_time
     if start_time and start_time.tzinfo is not None:
         start_time = start_time.astimezone(timezone.utc).replace(tzinfo=None)
 
-    db_session = models.Session(
+    db_session = SessionModel(
         title=session.title, 
         type=session.type,
         status=session.status,
@@ -64,22 +66,22 @@ def create_session(session: schemas.SessionCreate, db: Session = Depends(get_db)
     logger.info("Session created successfully", extra={"type": "session_create_success", "session_id": db_session.id})
     return db_session
 
-@router.get("/", response_model=List[schemas.Session])
+@router.get("/", response_model=List[SessionSchema])
 def read_sessions(
     skip: int = 0, 
     limit: int = 100, 
     start_date: str = None,
     end_date: str = None,
     db: Session = Depends(get_db), 
-    _current_user: models.Member = Depends(get_sessions_read_manager)
+    _current_user: Member = Depends(get_sessions_read_manager)
 ):
-    query = db.query(models.Session)
+    query = db.query(SessionModel)
     
     if start_date:
         try:
             from datetime import datetime
             sd = datetime.fromisoformat(start_date.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
-            query = query.filter(models.Session.start_time >= sd)
+            query = query.filter(SessionModel.start_time >= sd)
         except ValueError:
             pass
             
@@ -87,17 +89,17 @@ def read_sessions(
         try:
             from datetime import datetime
             ed = datetime.fromisoformat(end_date.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
-            query = query.filter(models.Session.start_time <= ed)
+            query = query.filter(SessionModel.start_time <= ed)
         except ValueError:
             pass
 
-    sessions = query.order_by(models.Session.start_time.desc()).offset(skip).limit(limit).all()
+    sessions = query.order_by(SessionModel.start_time.desc()).offset(skip).limit(limit).all()
     return sessions
 
-@router.patch("/{session_id}", response_model=schemas.Session)
-def update_session(session_id: int, update: schemas.SessionUpdate, db: Session = Depends(get_db), current_member=Depends(get_sessions_edit_manager)):
+@router.patch("/{session_id}", response_model=SessionSchema)
+def update_session(session_id: int, update: SessionUpdate, db: Session = Depends(get_db), current_member=Depends(get_sessions_edit_manager)):
     logger.info("Updating session", extra={"type": "session_update", "session_id": session_id, "admin": current_member.email})
-    session = db.query(models.Session).filter(models.Session.id == session_id).first()
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     for field, value in update.model_dump(exclude_unset=True).items():
@@ -111,7 +113,7 @@ def update_session(session_id: int, update: schemas.SessionUpdate, db: Session =
 
 @router.delete("/{session_id}")
 def delete_session(session_id: int, db: Session = Depends(get_db), current_member=Depends(get_sessions_delete_manager)):
-    session = db.query(models.Session).filter(models.Session.id == session_id).first()
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     db.delete(session)
@@ -123,6 +125,6 @@ def bulk_delete_sessions(request: BulkDeleteRequest, db: Session = Depends(get_d
     if not request.ids:
         raise HTTPException(status_code=400, detail="No IDs provided")
     logger.warning("Bulk deleting sessions", extra={"type": "session_bulk_delete", "ids": request.ids})
-    deleted = db.query(models.Session).filter(models.Session.id.in_(request.ids)).delete(synchronize_session='fetch')
+    deleted = db.query(SessionModel).filter(SessionModel.id.in_(request.ids)).delete(synchronize_session='fetch')
     db.commit()
     return {"status": "deleted", "count": deleted}

@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from pydantic import BaseModel
-import app.models as models, app.schemas as schemas
+from app.models import Attendance as AttendanceModel, Member, Session as SessionModel
+from app.schemas import Attendance as AttendanceSchema, AttendanceCreate, AttendanceStats, AttendanceWithSession
 from app.core.database import get_db
 from app.core.database import get_db
 from app.core.auth import (
@@ -28,8 +29,8 @@ router = APIRouter(
 
 from app.services.attendance import validate_attendance
 
-@router.post("/", response_model=schemas.Attendance)
-def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(get_db), current_member=Depends(get_attendance_write_manager)):
+@router.post("/", response_model=AttendanceSchema)
+def mark_attendance(attendance: AttendanceCreate, db: Session = Depends(get_db), current_member=Depends(get_attendance_write_manager)):
     logger.info("Marking attendance", extra={
         "type": "attendance_mark_attempt",
         "member_id": attendance.member_id,
@@ -38,11 +39,11 @@ def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(
     })
 
     # Verify member and session exist
-    member = db.query(models.Member).filter(models.Member.id == attendance.member_id).first()
+    member = db.query(Member).filter(Member.id == attendance.member_id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    session = db.query(models.Session).filter(models.Session.id == attendance.session_id).first()
+    session = db.query(SessionModel).filter(SessionModel.id == attendance.session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -57,7 +58,7 @@ def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(
         marked_by_id=attendance.marked_by_id
     )
 
-    db_attendance = models.Attendance(
+    db_attendance = AttendanceModel(
         member_id=attendance.member_id,
         session_id=attendance.session_id,
         latitude=attendance.latitude,
@@ -71,27 +72,27 @@ def mark_attendance(attendance: schemas.AttendanceCreate, db: Session = Depends(
     db.refresh(db_attendance)
     return db_attendance
 
-@router.get("/session/{session_id}", response_model=List[schemas.Attendance])
+@router.get("/session/{session_id}", response_model=List[AttendanceSchema])
 def read_attendance(session_id: int, db: Session = Depends(get_db), current_member=Depends(get_current_active_member)):
     # Note: Keep get_current_active_member to allow mobile users to resolve names for their own session.
     # However, for administrative lists, we should use get_attendance_read_manager.
     # For now, we'll keep this as-is for mobile app compatibility but update the stats route below.
     # Allow all authenticated members to view session attendance (for mobile app)
-    attendance = db.query(models.Attendance).filter(models.Attendance.session_id == session_id).all()
+    attendance = db.query(AttendanceModel).filter(AttendanceModel.session_id == session_id).all()
     return attendance
 
-@router.get("/member/{member_id}", response_model=List[schemas.AttendanceWithSession])
+@router.get("/member/{member_id}", response_model=List[AttendanceWithSession])
 def get_member_attendance(member_id: int, db: Session = Depends(get_db), current_member=Depends(get_current_active_member)):
     # Allow if accessing own data or if admin
     is_admin = any(p.name == "admin" for p in current_member.permissions)
     if current_member.id != member_id and not is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
     try:
-        attendance = db.query(models.Attendance)\
-            .join(models.Session)\
-            .options(joinedload(models.Attendance.session))\
-            .filter(models.Attendance.member_id == member_id)\
-            .order_by(models.Attendance.timestamp.desc())\
+        attendance = db.query(AttendanceModel)\
+            .join(SessionModel)\
+            .options(joinedload(AttendanceModel.session))\
+            .filter(AttendanceModel.member_id == member_id)\
+            .order_by(AttendanceModel.timestamp.desc())\
             .all()
         return attendance
     except Exception as e:
@@ -100,7 +101,7 @@ def get_member_attendance(member_id: int, db: Session = Depends(get_db), current
 
 @router.delete("/{attendance_id}")
 def delete_attendance(attendance_id: int, db: Session = Depends(get_db), current_member=Depends(get_attendance_delete_manager)):
-    attendance = db.query(models.Attendance).filter(models.Attendance.id == attendance_id).first()
+    attendance = db.query(AttendanceModel).filter(AttendanceModel.id == attendance_id).first()
     if not attendance:
         raise HTTPException(status_code=404, detail="Attendance record not found")
     db.delete(attendance)
@@ -112,16 +113,16 @@ def bulk_delete_attendance(request: BulkDeleteRequest, db: Session = Depends(get
     if not request.ids:
         raise HTTPException(status_code=400, detail="No IDs provided")
     logger.warning("Bulk deleting attendance records", extra={"type": "attendance_bulk_delete", "ids": request.ids})
-    deleted = db.query(models.Attendance).filter(models.Attendance.id.in_(request.ids)).delete(synchronize_session='fetch')
+    deleted = db.query(AttendanceModel).filter(AttendanceModel.id.in_(request.ids)).delete(synchronize_session='fetch')
     db.commit()
     return {"status": "deleted", "count": deleted}
 
 
-@router.get("/stats", response_model=List[schemas.AttendanceStats])
+@router.get("/stats", response_model=List[AttendanceStats])
 def get_overall_stats(db: Session = Depends(get_db), current_member=Depends(get_attendance_read_manager)):
-    members = db.query(models.Member).all()
-    attendance = db.query(models.Attendance).all()
-    sessions = {s.id: s for s in db.query(models.Session).all()}
+    members = db.query(Member).all()
+    attendance = db.query(AttendanceModel).all()
+    sessions = {s.id: s for s in db.query(SessionModel).all()}
 
     stats = []
     for member in members:

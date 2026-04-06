@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, date, timedelta, time, timezone
-import app.models as models, app.schemas as schemas
+from app.models import Session as SessionModel, SessionTemplate
+from app.schemas import Session as SessionSchema
+from app.schemas.session_template import SessionTemplate as SessionTemplateSchema, SessionTemplateCreate, SessionGenerationRequest
 from app.core.database import get_db
 from app.core.auth import (
     get_admin_member, 
@@ -19,13 +21,13 @@ router = APIRouter(
     tags=["session_templates"],
 )
 
-@router.get("/", response_model=List[schemas.session_template.SessionTemplate])
+@router.get("/", response_model=List[SessionTemplateSchema])
 def read_templates(db: Session = Depends(get_db), current_member=Depends(get_templates_manager)):
-    return db.query(models.SessionTemplate).all()
+    return db.query(SessionTemplate).all()
 
-@router.post("/", response_model=schemas.session_template.SessionTemplate)
-def create_template(template: schemas.session_template.SessionTemplateCreate, db: Session = Depends(get_db), current_member=Depends(get_templates_manager)):
-    db_template = models.SessionTemplate(**template.model_dump())
+@router.post("/", response_model=SessionTemplateSchema)
+def create_template(template: SessionTemplateCreate, db: Session = Depends(get_db), current_member=Depends(get_templates_manager)):
+    db_template = SessionTemplate(**template.model_dump())
     db.add(db_template)
     db.commit()
     db.refresh(db_template)
@@ -33,15 +35,15 @@ def create_template(template: schemas.session_template.SessionTemplateCreate, db
 
 @router.delete("/{template_id}")
 def delete_template(template_id: int, db: Session = Depends(get_db), current_member=Depends(get_templates_manager)):
-    db_template = db.query(models.SessionTemplate).filter(models.SessionTemplate.id == template_id).first()
+    db_template = db.query(SessionTemplate).filter(SessionTemplate.id == template_id).first()
     if not db_template:
         raise HTTPException(status_code=404, detail="Template not found")
     db.delete(db_template)
     db.commit()
     return {"status": "success"}
 
-@router.post("/generate", response_model=List[schemas.Session])
-def generate_sessions(request: schemas.session_template.SessionGenerationRequest, db: Session = Depends(get_db), current_member=Depends(get_schedule_generate_manager)):
+@router.post("/generate", response_model=List[SessionSchema])
+def generate_sessions(request: SessionGenerationRequest, db: Session = Depends(get_db), current_member=Depends(get_schedule_generate_manager)):
     """
     Generate sessions for a date range based on active templates.
     """
@@ -51,7 +53,7 @@ def generate_sessions(request: schemas.session_template.SessionGenerationRequest
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
     
-    templates = db.query(models.SessionTemplate).filter(models.SessionTemplate.is_active == True).all()
+    templates = db.query(SessionTemplate).filter(SessionTemplate.is_active == True).all()
     
     generated_sessions = []
     
@@ -130,13 +132,13 @@ def generate_sessions(request: schemas.session_template.SessionGenerationRequest
                 local_end += timedelta(days=1)
             end_time = local_end.astimezone(timezone.utc).replace(tzinfo=None)
                 
-            existing = db.query(models.Session).filter(
-                models.Session.start_time == start_time,
-                models.Session.title == t.title
+            existing = db.query(SessionModel).filter(
+                SessionModel.start_time == start_time,
+                SessionModel.title == t.title
             ).first()
             
             if not existing:
-                db_session = models.Session(
+                db_session = SessionModel(
                     title=t.title,
                     type=t.type,
                     status="scheduled",

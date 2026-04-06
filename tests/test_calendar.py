@@ -107,7 +107,7 @@ def test_save_schedule(client, db_session):
 
 def test_generate_schedule_sunday_role_enforcement(client, db_session):
     """Test that only members with 'Sunday Lead Singer' role are assigned as lead on Sundays."""
-    import models
+    import app.models as models
     # 1. Setup Roles
     lead_role = models.Role(name="lead_singer", is_choir_role=True)
     sunday_lead_role = models.Role(name="Sunday Lead Singer", is_choir_role=False)

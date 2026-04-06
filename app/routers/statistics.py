@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-import app.models as models, app.schemas as schemas
+from app.models import Attendance, Member, Session
+from app.schemas import MemberStatsResponse
 from app.core.database import get_db
 from app.core.database import get_db
 from app.core.auth import get_current_user, get_current_active_member
@@ -12,19 +13,19 @@ router = APIRouter(
 )
 
 
-@router.get("/member/{member_id}", response_model=schemas.MemberStatsResponse)
+@router.get("/member/{member_id}", response_model=MemberStatsResponse)
 def get_member_stats(member_id: int, db: Session = Depends(get_db), current_member=Depends(get_current_active_member)):
     # Allow if accessing own data or if admin
     is_admin = any(p.name == "admin" for p in current_member.permissions)
     if current_member.id != member_id and not is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    member = db.query(models.Member).filter(models.Member.id == member_id).first()
+    member = db.query(Member).filter(Member.id == member_id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    attendance = db.query(models.Attendance).filter(models.Attendance.member_id == member_id).all()
-    sessions = {s.id: s for s in db.query(models.Session).all()}
+    attendance = db.query(Attendance).filter(Attendance.member_id == member_id).all()
+    sessions = {s.id: s for s in db.query(Session).all()}
 
     history = []
     for a in attendance:
