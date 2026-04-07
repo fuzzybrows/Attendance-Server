@@ -26,10 +26,12 @@ def validate_attendance(
     Raises HTTPException if any check fails.
     """
     
-    # 1. Device Lock Check (Anti-Buddy Punching)
-    # Only enforce if self-check-in (marked_by_id is None OR marked_by_id == member_id)
+    # Determine if this is an admin override (marked by someone other than the member)
     is_self_checkin = (marked_by_id is None) or (marked_by_id == member_id)
-    
+    is_admin_override = not is_self_checkin
+
+    # 1. Device Lock Check (Anti-Buddy Punching)
+    # Only enforce if self-check-in
     if is_self_checkin and device_id:
         existing_device_usage = db.query(Attendance).filter(
             Attendance.session_id == session.id,
@@ -46,8 +48,8 @@ def validate_attendance(
             })
             raise HTTPException(status_code=403, detail="This device has already been used to mark attendance for another member in this session.")
 
-    # 2. Geofence Check
-    if session.latitude is not None and session.longitude is not None and session.radius:
+    # 2. Geofence Check – skip for admin overrides
+    if not is_admin_override and session.latitude is not None and session.longitude is not None and session.radius:
         if latitude is None or longitude is None:
              raise HTTPException(status_code=403, detail="Location access is required for this session.")
         
@@ -64,6 +66,14 @@ def validate_attendance(
                 "radius": session.radius
             })
             raise HTTPException(status_code=403, detail=f"You are too far from the venue ({int(distance)}m). You must be within {session.radius}m.")
+    
+    if is_admin_override:
+        logger.info("Admin override – skipping geofence/device checks", extra={
+            "type": "admin_override",
+            "marked_by_id": marked_by_id,
+            "member_id": member_id,
+            "session_id": session.id
+        })
 
     # 3. Duplicate Check
     existing = db.query(Attendance).filter(
