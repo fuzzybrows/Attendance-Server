@@ -1,5 +1,5 @@
 import re
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from app.models.member import Member
 from app.schemas.auth import MemberLogin, LoginResponse, OTPVerification, StatusResponse, Token, ForgotPasswordRequest, ResetPasswordRequest
@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from app.services.twilio import send_sms_verification, send_email_verification, check_verification
 from app.services.recaptcha import verify_recaptcha
+from app.services.rate_limiter import check_login_rate, check_forgot_password_rate
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,11 +20,14 @@ router = APIRouter(
 )
 
 @router.post("/login", response_model=LoginResponse)
-def login(data: MemberLogin, db: Session = Depends(get_db)):
+def login(data: MemberLogin, request: Request, db: Session = Depends(get_db)):
+    # Rate limit by IP – protects all clients (web, mobile, API)
+    check_login_rate(request)
+
     logger.info("Login attempt", extra={"type": "login_attempt", "login": data.login})
     
-    # Verify reCAPTCHA token
-    if not verify_recaptcha(data.recaptcha_token):
+    # Verify reCAPTCHA only if a token was provided (web clients send one, mobile doesn't)
+    if data.recaptcha_token and not verify_recaptcha(data.recaptcha_token):
         raise HTTPException(status_code=400, detail="reCAPTCHA verification failed. Please complete the captcha.")
         
     # Find member by email or phone
@@ -75,9 +79,12 @@ def verify_otp(data: OTPVerification, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer", "member": member}
 
 @router.post("/forgot-password", response_model=StatusResponse)
-def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    # Verify reCAPTCHA token
-    if not verify_recaptcha(data.recaptcha_token):
+def forgot_password(data: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)):
+    # Rate limit by IP
+    check_forgot_password_rate(request)
+
+    # Verify reCAPTCHA only if a token was provided
+    if data.recaptcha_token and not verify_recaptcha(data.recaptcha_token):
         raise HTTPException(status_code=400, detail="reCAPTCHA verification failed. Please complete the captcha.")
 
     member = db.query(Member).filter(

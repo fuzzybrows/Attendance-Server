@@ -98,6 +98,10 @@ def create_test_database():
 @pytest.fixture(autouse=True)
 def setup_db(create_test_database):
     """Create all tables before each test, drop after."""
+    # Reset rate limiter state between tests
+    from app.services.rate_limiter import auth_limiter
+    auth_limiter._hits.clear()
+
     Base.metadata.create_all(bind=TEST_ENGINE)
     # Seed permissions needed by the member create endpoint
     session = TestSession()

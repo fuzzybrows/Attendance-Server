@@ -8,9 +8,17 @@ def verify_recaptcha(token: str) -> bool:
     """
     Verifies a Google reCAPTCHA v2 token against the Google API.
     Returns True if valid, False otherwise.
+    
+    When recaptcha is enabled:
+    - If token is None/empty: returns False (web must provide one)
+    - If token is provided: validates against Google
+    When recaptcha is disabled: always returns True
     """
     if not settings.recaptcha_enabled:
         return True
+
+    if not token:
+        return False
         
     if not settings.recaptcha_secret_key:
         logger.warning("RECAPTCHA_SECRET_KEY is not configured but recaptcha is enabled! Failing verification.")
@@ -35,3 +43,4 @@ def verify_recaptcha(token: str) -> bool:
     except Exception as e:
         logger.error(f"Error communicating with reCAPTCHA service: {e}")
         return False
+
