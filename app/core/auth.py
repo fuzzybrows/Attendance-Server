@@ -123,7 +123,8 @@ def get_attendance_delete_manager(member: Member = Depends(get_current_active_me
 
 # Granular Member Permissions
 def get_members_read_manager(member: Member = Depends(get_current_active_member)) -> Member:
-    if not _has_any_permission(member, ["members_read"]):
+    # schedule_generate and assignments_edit users also need the member list for assignment dropdowns
+    if not _has_any_permission(member, ["members_read", "schedule_generate", "assignments_edit"]):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Members Read permission required")
     return member
 

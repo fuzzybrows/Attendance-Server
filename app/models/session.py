@@ -11,7 +11,7 @@ class Session(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String)  # e.g., "Saturday Rehearsal", "Sunday Service"
     type = Column(String)  # "rehearsal" or "program"
-    status = Column(String, default="active")  # "active", "concluded", "archived"
+    status = Column(String, default="scheduled")  # "scheduled", "active", "concluded", "archived"
     start_time = Column(DateTime(timezone=True), nullable=False)  # Scheduled start time
     end_time = Column(DateTime(timezone=True), nullable=True)  # Scheduled end time
 
