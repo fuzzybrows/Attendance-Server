@@ -36,7 +36,7 @@ from app.schemas.calendar import (
 
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 
@@ -494,16 +494,18 @@ def export_month_schedule_csv(
     writer.writerow(["Date", "Session Title", "Lead Singer", "Soprano", "Alto", "Tenor"])
 
     for session in sessions:
-        role_map = {a.role: f"{a.member.first_name} {a.member.last_name}" for a in assignments_by_session[session.id]}
+        role_map = defaultdict(list)
+        for a in assignments_by_session[session.id]:
+            role_map[a.role].append(f"{a.member.first_name} {a.member.last_name}")
         # Convert UTC to Austin time for export
         local_start = session.start_time.astimezone(ZoneInfo("America/Chicago"))
         writer.writerow([
             local_start.strftime("%Y-%m-%d %H:%M"),
             session.title,
-            role_map.get("lead_singer", "Unassigned"),
-            role_map.get("soprano", "Unassigned"),
-            role_map.get("alto", "Unassigned"),
-            role_map.get("tenor", "Unassigned")
+            "\n".join(role_map.get("lead_singer", [])) or "Unassigned",
+            "\n".join(role_map.get("soprano", [])) or "Unassigned",
+            "\n".join(role_map.get("alto", [])) or "Unassigned",
+            "\n".join(role_map.get("tenor", [])) or "Unassigned"
         ])
 
     output.seek(0)
@@ -538,9 +540,9 @@ def export_month_schedule_pdf(
     session_ids = [s.id for s in sessions]
     assignments = db.query(Assignment).filter(Assignment.session_id.in_(session_ids)).all()
 
-    assignments_by_session = defaultdict(lambda: defaultdict(str))
+    assignments_by_session = defaultdict(lambda: defaultdict(list))
     for a in assignments:
-        assignments_by_session[a.session_id][a.role] = f"{a.member.first_name} {a.member.last_name}"
+        assignments_by_session[a.session_id][a.role].append(f"{a.member.first_name} {a.member.last_name}")
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.5*inch, bottomMargin=0.5*inch)
@@ -554,6 +556,9 @@ def export_month_schedule_pdf(
     elements.append(Paragraph(f"Choir Schedule - {month_name} {year}", title_style))
     elements.append(Spacer(1, 0.25*inch))
 
+    # Cell style for wrapping text in role columns
+    cell_style = ParagraphStyle('CellStyle', parent=styles['Normal'], fontSize=10, alignment=1, leading=14)
+
     # Table data header
     data = [["Date", "Session Title", "Lead Singer", "Soprano", "Alto", "Tenor"]]
     
@@ -563,13 +568,22 @@ def export_month_schedule_pdf(
         local_start = session.start_time.astimezone(ZoneInfo("America/Chicago"))
         # Format date as "Wed, April 24 2026"
         date_str = local_start.strftime("%a, %B %d %Y")
+
+        def role_cell(role_key):
+            names = role_map.get(role_key, [])
+            if not names:
+                return "-"
+            if len(names) == 1:
+                return names[0]
+            return Paragraph("<br/>".join(names), cell_style)
+
         data.append([
             date_str,
             session.title,
-            role_map.get("lead_singer", "-"),
-            role_map.get("soprano", "-"),
-            role_map.get("alto", "-"),
-            role_map.get("tenor", "-")
+            role_cell("lead_singer"),
+            role_cell("soprano"),
+            role_cell("alto"),
+            role_cell("tenor")
         ])
 
     # Table styling
