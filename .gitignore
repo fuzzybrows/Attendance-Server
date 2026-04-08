@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*$py.class
+.venv/
+.env
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Database
+attendance.db
+
+# Test / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+**/*.log
+
+# One-off scripts
+cleanup_orphans.py
+test_db.py
+test_query.py
+
+# Deploy
+deploy/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
