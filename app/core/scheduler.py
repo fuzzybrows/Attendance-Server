@@ -30,7 +30,7 @@ def dispatch_24hr_reminders():
         upcoming_sessions = db.query(Session).filter(
             Session.start_time >= target_start,
             Session.start_time < target_end,
-            Session.status == SessionStatus.ACTIVE.value
+            Session.status == SessionStatus.SCHEDULED.value
         ).all()
 
         for session in upcoming_sessions:
