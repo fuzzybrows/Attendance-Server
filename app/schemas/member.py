@@ -56,7 +56,8 @@ class Member(MemberBase):
 class RoleSchema(BaseModel):
     name: str
     description: Optional[str] = None
-    is_choir_role: bool = Field(default=False, description="Flag to identify roles used for choir scheduling slots (e.g. Soprano, Alto).")
+    display_order: Optional[int] = Field(default=None, description="Display order for assignable roles. If set, the role is assignable in session scheduling.")
+    is_assignable: bool = Field(default=False, description="Whether members with this role can be assigned in session scheduling.")
     
     model_config = ConfigDict(from_attributes = True)
 
@@ -78,4 +79,4 @@ class PasswordResetRequest(BaseModel):
 class MemberMetadata(BaseModel):
     roles: List[str]
     permissions: List[str]
-    choir_roles: List[str]
+    assignable_roles: List[str]

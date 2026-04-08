@@ -10,7 +10,11 @@ class Role(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     description = Column(String, nullable=True)
-    is_choir_role = Column(Boolean, default=False, comment="Flag to identify roles used for choir scheduling slots (e.g. Soprano, Alto).")
+    display_order = Column(Integer, nullable=True, comment="Display order for assignable roles. If set, the role is assignable in session scheduling.")
+
+    @property
+    def is_assignable(self):
+        return self.display_order is not None
 
 
 class Permission(Base):

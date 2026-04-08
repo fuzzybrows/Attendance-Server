@@ -250,8 +250,8 @@ def generate_schedule(
     (Admin only)
     Roles: lead_singer, soprano, alto, tenor
     """
-    choir_roles = db.query(Role).filter(Role.is_choir_role == True).all()
-    REQUIRED_ROLES = [r.name for r in choir_roles]
+    assignable_roles = db.query(Role).filter(Role.display_order.isnot(None)).order_by(Role.display_order.asc()).all()
+    REQUIRED_ROLES = [r.name for r in assignable_roles]
     if not REQUIRED_ROLES:
         # Fallback to defaults if none marked to avoid empty schedule
         REQUIRED_ROLES = ["lead_singer", "soprano", "alto", "tenor"]

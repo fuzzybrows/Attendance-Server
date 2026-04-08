@@ -70,10 +70,11 @@ def get_member_metadata(db: Session = Depends(get_db)):
     """Returns all available roles and permissions from the database."""
     roles = db.query(Role).all()
     permissions = db.query(Permission).all()
+    assignable = db.query(Role).filter(Role.display_order.isnot(None)).order_by(Role.display_order.asc()).all()
     return {
         "roles": [r.name for r in roles],
         "permissions": [p.name for p in permissions],
-        "choir_roles": [r.name for r in roles if r.is_choir_role]
+        "assignable_roles": [r.name for r in assignable]
     }
 
 

@@ -109,8 +109,8 @@ def test_calendar_save_schedule_updates_assignments_correctly_in_database(client
 
 def test_generate_schedule_enforces_sunday_lead_singer_role_restriction_on_sundays(client, db_session):
     # 1. Setup Roles
-    lead_role = Role(name="lead_singer", is_choir_role=True)
-    sunday_lead_role = Role(name="Sunday Lead Singer", is_choir_role=False)
+    lead_role = Role(name="lead_singer", display_order=1)
+    sunday_lead_role = Role(name="Sunday Lead Singer")
     db_session.add_all([lead_role, sunday_lead_role])
     db_session.commit()
 
