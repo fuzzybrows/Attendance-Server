@@ -8,6 +8,7 @@ from enum import Enum
 class SessionType(str, Enum):
     REHEARSAL = "rehearsal"
     PROGRAM = "program"
+    MEETING = "meeting"
 
 
 class SessionStatus(str, Enum):
