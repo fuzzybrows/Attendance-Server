@@ -1,0 +1,111 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Fail on syntax errors and undefined names only — keeps it practical
+      - name: Run flake8 (critical errors)
+        run: |
+          pip install flake8
+          flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: attendance_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Test environment overrides (mirrors conftest.py but ensures the settings module loads)
+      ENVIRONMENT: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/attendance_test
+      SECRET_KEY: ci-test-secret-key
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      TWILIO_ACCOUNT_SID: placeholder_twilio_sid
+      TWILIO_AUTH_TOKEN: placeholder_twilio_token
+      TWILIO_VERIFY_SERVICE_SID: placeholder_verify_sid
+      TWILIO_PHONE_NUMBER: "+10000000000"
+      SENDGRID_API_KEY: placeholder_sendgrid_key
+      FIREBASE_CREDENTIALS_PATH: placeholder_firebase_path
+      CORS_ORIGINS: ""
+      RECAPTCHA_ENABLED: "false"
+      TEST_PG_USER: postgres
+      TEST_PG_PASS: postgres
+      TEST_PG_HOST: localhost
+      TEST_PG_PORT: "5432"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests with coverage
+        run: |
+          PYTHONPATH=. pytest tests/ -v \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-config=pyproject.toml
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: htmlcov/
+          retention-days: 14
