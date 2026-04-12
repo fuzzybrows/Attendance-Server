@@ -2,9 +2,17 @@
 Application settings using Pydantic BaseSettings.
 All environment variables are centralized here.
 """
+from enum import Enum
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional, List
+
+
+class Environment(str, Enum):
+    LOCAL = "local"
+    DEV = "dev"
+    CI = "ci"
+    PRODUCTION = "production"
 
 
 class Settings(BaseSettings):
@@ -12,11 +20,8 @@ class Settings(BaseSettings):
     Application settings loaded from environment variables.
     Use .env file for local development.
     """
-    environment: str
-    
-
     # Environment
-    environment: str = "development"
+    environment: Environment = Environment.LOCAL
 
     # JWT / Auth
     secret_key: str
