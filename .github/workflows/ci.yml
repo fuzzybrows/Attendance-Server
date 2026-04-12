@@ -59,7 +59,7 @@ jobs:
 
     env:
       # Test environment overrides (mirrors conftest.py but ensures the settings module loads)
-      ENVIRONMENT: test
+      ENVIRONMENT: ci
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/attendance_test
       SECRET_KEY: ci-test-secret-key
       ALGORITHM: HS256
