@@ -14,7 +14,7 @@ class MemberBase(BaseModel):
     @field_validator('email')
     @classmethod
     def normalize_email(cls, v: str) -> str:
-        return v.lower()
+        return v.strip().lower()
 
     @field_validator('phone_number', 'nfc_id', mode='before')
     @classmethod
@@ -80,7 +80,7 @@ class MemberUpdate(BaseModel):
     @field_validator('email')
     @classmethod
     def normalize_email(cls, v: str) -> str:
-        return v.lower() if v is not None else v
+        return v.strip().lower() if v is not None else v
 
 class PasswordResetRequest(BaseModel):
     new_password: str

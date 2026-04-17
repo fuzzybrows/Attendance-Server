@@ -5,7 +5,8 @@ from app.schemas.member import Member
 
 
 def _normalize_login(v: str) -> str:
-    """Lowercase email logins so lookups are case-insensitive."""
+    """Strip whitespace and lowercase email logins for case-insensitive lookups."""
+    v = v.strip()
     return v.lower() if "@" in v else v
 
 
