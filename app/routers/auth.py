@@ -1,5 +1,6 @@
 import re
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.models.member import Member
 from app.schemas.auth import MemberLogin, LoginResponse, OTPVerification, StatusResponse, Token, ForgotPasswordRequest, ResetPasswordRequest
@@ -32,7 +33,7 @@ def login(data: MemberLogin, request: Request, db: Session = Depends(get_db)):
         
     # Find member by email or phone
     member = db.query(Member).filter(
-        (Member.email == data.login) | (Member.phone_number == data.login)
+        (func.lower(Member.email) == data.login) | (Member.phone_number == data.login)
     ).first()
     
     if not member or not verify_password(data.password, member.password_hash) or not member.is_active:
@@ -65,7 +66,7 @@ def verify_otp(data: OTPVerification, db: Session = Depends(get_db)):
     
     # Find member and mark verified
     member = db.query(Member).filter(
-        (Member.email == data.login) | (Member.phone_number == data.login)
+        (func.lower(Member.email) == data.login) | (Member.phone_number == data.login)
     ).first()
     
     if "@" in data.login:
@@ -88,7 +89,7 @@ def forgot_password(data: ForgotPasswordRequest, request: Request, db: Session =
         raise HTTPException(status_code=400, detail="reCAPTCHA verification failed. Please complete the captcha.")
 
     member = db.query(Member).filter(
-        (Member.email == data.login) | (Member.phone_number == data.login)
+        (func.lower(Member.email) == data.login) | (Member.phone_number == data.login)
     ).first()
     
     if not member:
@@ -108,7 +109,7 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
         
     member = db.query(Member).filter(
-        (Member.email == data.login) | (Member.phone_number == data.login)
+        (func.lower(Member.email) == data.login) | (Member.phone_number == data.login)
     ).first()
     
     if not member:

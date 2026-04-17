@@ -11,6 +11,11 @@ class MemberBase(BaseModel):
     nfc_id: Optional[str] = None
     is_active: bool = True
 
+    @field_validator('email')
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        return v.lower()
+
     @field_validator('phone_number', 'nfc_id', mode='before')
     @classmethod
     def convert_empty_to_none(cls, v):
@@ -71,6 +76,11 @@ class MemberUpdate(BaseModel):
     roles: Optional[List[str]] = None
     permissions: Optional[List[str]] = None
     is_active: Optional[bool] = None
+
+    @field_validator('email')
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        return v.lower() if v is not None else v
 
 class PasswordResetRequest(BaseModel):
     new_password: str
