@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List
 from app.models.member import Member, Permission, Role
@@ -28,7 +29,7 @@ router = APIRouter(
 def create_member(member: MemberCreate, db: Session = Depends(get_db), current_member=Depends(get_members_create_manager)):
     logger.info("Creating member", extra={"type": "member_create_attempt", "email": member.email, "admin": current_member.email})
     # Check if already exists
-    existing = db.query(Member).filter(Member.email == member.email).first()
+    existing = db.query(Member).filter(func.lower(Member.email) == member.email).first()
     if existing:
         logger.warning("Registration failed - Email exists", extra={"type": "member_create_failed", "email": member.email, "reason": "duplicate_email"})
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -102,6 +103,15 @@ def update_member(member_id: int, member_update: MemberUpdate, db: Session = Dep
         raise HTTPException(status_code=404, detail="Member not found")
     
     update_data = member_update.model_dump(exclude_unset=True)
+    
+    # Check email uniqueness if email is being changed
+    if "email" in update_data and update_data["email"] != db_member.email:
+        existing = db.query(Member).filter(
+            func.lower(Member.email) == update_data["email"],
+            Member.id != member_id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
     
     # Handle M2M relationships separately
     if "roles" in update_data:
