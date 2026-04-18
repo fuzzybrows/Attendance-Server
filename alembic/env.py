@@ -26,8 +26,10 @@ from app.models.session_template import SessionTemplate
 # access to the values within the .ini file in use.
 config = context.config
 
-# Overwrite sqlalchemy.url with settings value
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# Prefer a direct (non-pooled) connection for migrations
+# Transaction-mode poolers can interfere with DDL and advisory locks
+migration_url = settings.database_url_direct or settings.database_url
+config.set_main_option("sqlalchemy.url", migration_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

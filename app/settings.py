@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     
     # Database
     database_url: str
+    database_url_direct: Optional[str] = None  # Non-pooled URL for migrations
     
     # CORS
     cors_origins: str = ""  # Comma-separated additional origins, e.g. "https://example.com,http://example.com"
