@@ -1,18 +1,24 @@
-from fastapi import FastAPI
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from app.settings import settings as app_settings
+from fastapi.responses import PlainTextResponse, JSONResponse
+
 import app.models
+from app.settings import settings as app_settings
 from app.core.database import engine
-from app.routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar
 from app.core.logging_config import setup_logging
+from app.core.scheduler import start_scheduler, stop_scheduler
+from app.core.websocket import attendance_ws
+from app.routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar, google_auth, session_templates
 
 # Setup logging before creating app or during startup
 setup_logging()
 
-# models.Base.metadata.create_all(bind=engine)
+logger = logging.getLogger("main")
 
-from contextlib import asynccontextmanager
-from app.core.scheduler import start_scheduler, stop_scheduler
+# models.Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,24 +63,22 @@ app.include_router(sessions.router)
 app.include_router(attendance.router)
 app.include_router(statistics.router)
 app.include_router(qr_attendance.router)
-from app.routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar, google_auth, session_templates
 app.include_router(calendar.router)
 app.include_router(google_auth.router)
 app.include_router(session_templates.router)
-
-from fastapi.responses import PlainTextResponse
 
 @app.api_route("/health", methods=["GET", "HEAD"], response_class=PlainTextResponse, status_code=200)
 def health_check():
     return "OK"
 
-# Static files serving removed - frontend is now separate
-
-import logging
-from fastapi import Request
-from fastapi.responses import JSONResponse
-
-logger = logging.getLogger("main")
+@app.websocket("/ws/attendance/{session_id}")
+async def attendance_websocket(websocket: WebSocket, session_id: int):
+    await attendance_ws.connect(websocket, session_id)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        attendance_ws.disconnect(websocket, session_id)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -83,4 +87,3 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"message": "Internal Server Error"},
     )
-

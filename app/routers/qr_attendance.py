@@ -3,7 +3,7 @@ QR code attendance endpoints.
 Generates short-lived tokens for session QR codes and verifies them
 when members scan and open the link.
 """
-from fastapi import APIRouter, Depends, HTTPException, Header, Body
+from fastapi import APIRouter, Depends, HTTPException, Header, Body, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import Optional
@@ -15,6 +15,7 @@ from app.schemas.qr import QRMarkResponse, QRMarkPayload
 from app.core.database import get_db
 from app.core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user, get_qr_token_manager
 from app.services.attendance import validate_attendance
+from app.core.websocket import attendance_ws
 from jose import JWTError, jwt
 import logging
 
@@ -52,6 +53,7 @@ def generate_qr_token(session_id: int, db: Session = Depends(get_db), _current_u
 def mark_qr_attendance(
     session_id: int,
     qr_token: str,
+    background_tasks: BackgroundTasks,
     payload: QRMarkPayload = Body(default=None),
     authorization: str = Header(...),
     db: Session = Depends(get_db)
@@ -123,6 +125,18 @@ def mark_qr_attendance(
     db.refresh(db_attendance)
 
     logger.info("QR Attendance marked", extra={"type": "qr_attendance_success", "member_id": member.id, "session_id": session_id})
+
+    # Broadcast to WebSocket clients watching this session
+    async def _broadcast():
+        await attendance_ws.broadcast(session_id, {
+            "event": "attendance_marked",
+            "session_id": session_id,
+            "member_id": member.id,
+            "member_name": member.full_name,
+            "attendance_id": db_attendance.id
+        })
+    background_tasks.add_task(_broadcast)
+
     return {
         "status": "success",
         "message": f"Attendance marked for {member.first_name} {member.last_name}",
