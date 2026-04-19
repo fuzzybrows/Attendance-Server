@@ -6,7 +6,7 @@ from app.models.member import Member
 from app.schemas.auth import MemberLogin, LoginResponse, OTPVerification, StatusResponse, Token, ForgotPasswordRequest, ResetPasswordRequest
 from app.schemas.member import Member as MemberSchema
 from app.core.database import get_db
-from app.core.auth import get_password_hash, verify_password, create_access_token
+from app.core.auth import get_password_hash, verify_password, create_access_token, get_current_active_member
 from app.services.twilio import send_sms_verification, send_email_verification, check_verification
 from app.services.recaptcha import verify_recaptcha
 from app.services.rate_limiter import check_login_rate, check_forgot_password_rate
@@ -132,3 +132,18 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "password_reset_success"}
 
+
+@router.post("/refresh", response_model=Token)
+def refresh_token(
+    current_member: Member = Depends(get_current_active_member),
+):
+    """Issue a fresh JWT for an already-authenticated user.
+    
+    Called silently by the frontend when the current token is
+    nearing expiry, keeping the session alive without requiring
+    the user to log in again.
+    """
+    access_token = create_access_token(data={"sub": current_member.email})
+    logger.info("Token refreshed", extra={"type": "token_refresh", "member_id": current_member.id})
+    member_data = MemberSchema.model_validate(current_member, from_attributes=True)
+    return {"access_token": access_token, "token_type": "bearer", "member": member_data}
