@@ -13,7 +13,7 @@ from app.models.member import Member
 from app.models.session import Session
 from app.schemas.qr import QRMarkResponse, QRMarkPayload
 from app.core.database import get_db
-from app.core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user
+from app.core.auth import create_access_token, SECRET_KEY, ALGORITHM, get_current_user, get_qr_token_manager
 from app.services.attendance import validate_attendance
 from jose import JWTError, jwt
 import logging
@@ -32,7 +32,7 @@ QR_TOKEN_EXPIRE_SECONDS = 30
 
 
 @router.get("/token/{session_id}")
-def generate_qr_token(session_id: int, db: Session = Depends(get_db), _current_user: str = Depends(get_current_user)):
+def generate_qr_token(session_id: int, db: Session = Depends(get_db), _current_user=Depends(get_qr_token_manager)):
     """Generate a short-lived token for QR attendance."""
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:

@@ -86,7 +86,7 @@ def get_assignments_edit_manager(member: Member = Depends(get_current_active_mem
 
 # Granular Session Permissions
 def get_sessions_read_manager(member: Member = Depends(get_current_active_member)) -> Member:
-    if not _has_any_permission(member, ["sessions_read"]):
+    if not _has_any_permission(member, ["sessions_read", "session_starter"]):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sessions Read permission required")
     return member
 
@@ -107,7 +107,7 @@ def get_sessions_delete_manager(member: Member = Depends(get_current_active_memb
 
 # Granular Attendance Permissions
 def get_attendance_read_manager(member: Member = Depends(get_current_active_member)) -> Member:
-    if not _has_any_permission(member, ["attendance_read"]):
+    if not _has_any_permission(member, ["attendance_read", "session_starter"]):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Attendance Read permission required")
     return member
 
@@ -123,8 +123,8 @@ def get_attendance_delete_manager(member: Member = Depends(get_current_active_me
 
 # Granular Member Permissions
 def get_members_read_manager(member: Member = Depends(get_current_active_member)) -> Member:
-    # schedule_generate and assignments_edit users also need the member list for assignment dropdowns
-    if not _has_any_permission(member, ["members_read", "schedule_generate", "assignments_edit"]):
+    # schedule_generate, assignments_edit, and session_starter users also need the member list
+    if not _has_any_permission(member, ["members_read", "schedule_generate", "assignments_edit", "session_starter"]):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Members Read permission required")
     return member
 
@@ -158,3 +158,16 @@ def get_schedule_export_manager(member: Member = Depends(get_current_active_memb
     if not _has_any_permission(member, ["schedule_export"]):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Schedule Export permission required")
     return member
+
+def get_session_starter(member: Member = Depends(get_current_active_member)) -> Member:
+    """Dependency for session_starter permission — limited dashboard access."""
+    if not _has_any_permission(member, ["session_starter"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Session Starter permission required")
+    return member
+
+def get_qr_token_manager(member: Member = Depends(get_current_active_member)) -> Member:
+    """Allow QR token generation for attendance_write OR session_starter users."""
+    if not _has_any_permission(member, ["attendance_write", "session_starter"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="QR token access requires attendance_write or session_starter permission")
+    return member
+
