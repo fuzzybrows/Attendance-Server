@@ -83,7 +83,7 @@ def get_member_metadata(db: Session = Depends(get_db)):
 def read_members(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_member=Depends(get_members_read_manager)):
     # Accessible to all authenticated members (needed for mobile app name resolution)
     # TODO: In future, return a limited "PublicMember" schema for non-admins to hide PII.
-    members = db.query(Member).offset(skip).limit(limit).all()
+    members = db.query(Member).order_by(Member.last_name, Member.first_name).offset(skip).limit(limit).all()
     return members
 
 @router.get("/{member_id}", response_model=MemberSchema)

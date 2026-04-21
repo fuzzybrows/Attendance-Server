@@ -48,6 +48,32 @@ class TestReadMembers:
         assert created_member["email"] in emails
         assert "test@example.com" in emails
 
+    def test_read_members_returns_results_sorted_by_last_name(self, client):
+        # Create members with different last names to verify sort order
+        client.post("/members/", json={
+            "first_name": "Zara", "last_name": "Williams",
+            "email": "zara@example.com", "phone_number": "+1111111111", "password": "pass123"
+        })
+        client.post("/members/", json={
+            "first_name": "Alice", "last_name": "Brown",
+            "email": "alice@example.com", "phone_number": "+2222222222", "password": "pass123"
+        })
+        client.post("/members/", json={
+            "first_name": "Bob", "last_name": "Brown",
+            "email": "bob@example.com", "phone_number": "+3333333333", "password": "pass123"
+        })
+
+        response = client.get("/members/")
+        assert response.status_code == 200
+        members = response.json()
+        last_names = [m["last_name"] for m in members]
+        # "Admin" < "Brown" < "Brown" < "Williams" (alphabetical)
+        assert last_names == sorted(last_names)
+        # For same last name "Brown", first names should be alphabetical: Alice < Bob
+        browns = [m for m in members if m["last_name"] == "Brown"]
+        assert browns[0]["first_name"] == "Alice"
+        assert browns[1]["first_name"] == "Bob"
+
     def test_read_member_returns_correct_details_when_searched_by_valid_id(self, client, created_member):
         response = client.get(f"/members/{created_member['id']}")
         assert response.status_code == 200

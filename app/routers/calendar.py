@@ -255,7 +255,7 @@ def get_team_availability(
     import calendar as cal_module
 
     # 1. Get all active members
-    all_members = db.query(Member).filter(Member.is_active == True).all()
+    all_members = db.query(Member).filter(Member.is_active == True).order_by(Member.last_name, Member.first_name).all()
     total_members = len(all_members)
     member_name_map = {m.id: f"{m.first_name} {m.last_name}" for m in all_members}
 
@@ -632,7 +632,7 @@ def export_availability_matrix_csv(
     Members as rows, sessions as columns, ✓/✗ indicators.
     (Admin only)
     """
-    all_members = db.query(Member).filter(Member.is_active == True).order_by(Member.first_name).all()
+    all_members = db.query(Member).filter(Member.is_active == True).order_by(Member.last_name, Member.first_name).all()
     total_members = len(all_members)
 
     if total_members == 0:
@@ -813,7 +813,7 @@ def export_availability_matrix_pdf(
     import calendar as cal_module
 
     # Get all active members
-    all_members = db.query(Member).filter(Member.is_active == True).order_by(Member.first_name).all()
+    all_members = db.query(Member).filter(Member.is_active == True).order_by(Member.last_name, Member.first_name).all()
     total_members = len(all_members)
 
     if total_members == 0:
