@@ -23,7 +23,7 @@ run:
 
 # Start backend in development mode (auto-reload)
 dev:
-	source $(VENV)/bin/activate && PYTHONPATH=. $(PYTHON) app/scripts/create_db.py && PYTHONPATH=. $(UVICORN) app.server:app --reload --host 192.168.0.173 --port $(PORT)
+	source $(VENV)/bin/activate && PYTHONPATH=. $(PYTHON) app/scripts/create_db.py && PYTHONPATH=. $(UVICORN) app.server:app --reload --host 0.0.0.0 --port $(PORT)
 
 # Clean up
 clean:
