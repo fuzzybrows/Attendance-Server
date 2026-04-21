@@ -2,6 +2,24 @@
 description: How to run tests and linting for the backend
 ---
 
+## Test Requirements
+
+**When making code changes, always add or update tests:**
+
+- **New endpoint** → Add test cases in the relevant `tests/test_*.py` file covering success, validation errors, and permission denials
+- **Modified endpoint** → Update existing tests to match the new behavior
+- **Bug fix** → Add a regression test that would have caught the bug
+- **Permission-gated routes** → Test both authorized and unauthorized access (403/401)
+- **Database model changes** → Ensure tests cover the migration and new fields
+
+### Test Conventions
+- All tests are in the `tests/` directory
+- Fixtures are defined in `tests/conftest.py` — reuse existing ones before creating new
+- Use `client.get/post/put/delete` from the test client fixture
+- Always check the response status code AND body content
+- For auth-required endpoints, use the `admin_token` or `member_token` fixtures
+- Always verify tests pass before committing: `.venv/bin/python -m pytest tests/ -x -q`
+
 ## Running Tests
 
 // turbo
