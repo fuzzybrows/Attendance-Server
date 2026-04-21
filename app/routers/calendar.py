@@ -239,6 +239,110 @@ def get_month_availability(
         ]
     }
 
+@router.get("/availability/team/{year}/{month}")
+def get_team_availability(
+    year: int,
+    month: int,
+    db: Session = Depends(get_db),
+    admin: Member = Depends(get_schedule_read_manager)
+):
+    """
+    Get aggregated team availability for a month.
+    Combines session-level opt-outs and day-level DayOff records.
+    Returns member list, per-session opt-outs, and per-day aggregates.
+    (Admin only)
+    """
+    import calendar as cal_module
+
+    # 1. Get all active members
+    all_members = db.query(Member).filter(Member.is_active == True).all()
+    total_members = len(all_members)
+    member_name_map = {m.id: f"{m.first_name} {m.last_name}" for m in all_members}
+
+    # 2. Get all sessions in that month
+    sessions = db.query(SessionModel).filter(
+        extract('year', SessionModel.start_time) == year,
+        extract('month', SessionModel.start_time) == month
+    ).order_by(SessionModel.start_time).all()
+
+    session_ids = [s.id for s in sessions]
+
+    # 3. Get all session-level opt-outs
+    availabilities = db.query(Availability).filter(
+        Availability.session_id.in_(session_ids)
+    ).all()
+
+    opt_outs_by_session = defaultdict(set)
+    for av in availabilities:
+        if not av.is_available:
+            opt_outs_by_session[av.session_id].add(av.member_id)
+
+    # 4. Get all day-level unavailability (DayOff records)
+    day_offs = db.query(DayOff).filter(
+        extract('year', DayOff.date) == year,
+        extract('month', DayOff.date) == month,
+        DayOff.is_available == False
+    ).all()
+
+    day_offs_by_date = defaultdict(set)
+    for do in day_offs:
+        day_offs_by_date[str(do.date)].add(do.member_id)
+
+    # 5. Build per-session response (combine session opt-outs with day-level)
+    sessions_response = []
+    for s in sessions:
+        session_date_str = s.start_time.strftime('%Y-%m-%d')
+        # Union of session-level and day-level opt-outs
+        combined_opted_out = opt_outs_by_session[s.id] | day_offs_by_date.get(session_date_str, set())
+        available_count = total_members - len(combined_opted_out)
+
+        sessions_response.append({
+            "id": s.id,
+            "title": s.title,
+            "start_time": s.start_time.isoformat(),
+            "opted_out_ids": list(combined_opted_out),
+            "opted_out_members": [
+                {"id": mid, "name": member_name_map.get(mid, "Unknown")}
+                for mid in combined_opted_out
+            ],
+            "available_count": max(available_count, 0),
+            "total": total_members
+        })
+
+    # 6. Build per-day aggregates
+    # Get all dates in the month that have either sessions or day-offs
+    num_days = cal_module.monthrange(year, month)[1]
+    days_response = {}
+    for day_num in range(1, num_days + 1):
+        date_str = f"{year}-{month:02d}-{day_num:02d}"
+        # Collect all unavailable member IDs for this day
+        unavailable_ids = set(day_offs_by_date.get(date_str, set()))
+        # Also check session-level opt-outs for sessions on this day
+        for s in sessions:
+            if s.start_time.strftime('%Y-%m-%d') == date_str:
+                unavailable_ids |= opt_outs_by_session[s.id]
+
+        if unavailable_ids:
+            days_response[date_str] = {
+                "available": total_members - len(unavailable_ids),
+                "unavailable": len(unavailable_ids),
+                "unavailable_members": [
+                    {"id": mid, "name": member_name_map.get(mid, "Unknown")}
+                    for mid in unavailable_ids
+                ]
+            }
+
+    return {
+        "total_members": total_members,
+        "members": [
+            {"id": m.id, "name": f"{m.first_name} {m.last_name}"}
+            for m in all_members
+        ],
+        "sessions": sessions_response,
+        "days": days_response
+    }
+
+
 @router.post("/schedule/generate", response_model=DraftScheduleResponse)
 def generate_schedule(
     request: DraftScheduleRequest,
@@ -516,6 +620,88 @@ def export_month_schedule_csv(
     return StreamingResponse(output, headers=headers, media_type="text/csv")
 
 
+@router.get("/availability/export_csv", response_class=StreamingResponse)
+def export_availability_matrix_csv(
+    year: int,
+    month: int,
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_schedule_read_manager)
+):
+    """
+    Export the availability matrix as a CSV document.
+    Members as rows, sessions as columns, ✓/✗ indicators.
+    (Admin only)
+    """
+    all_members = db.query(Member).filter(Member.is_active == True).order_by(Member.first_name).all()
+    total_members = len(all_members)
+
+    if total_members == 0:
+        raise HTTPException(status_code=404, detail="No active members found.")
+
+    sessions = db.query(SessionModel).filter(
+        extract('year', SessionModel.start_time) == year,
+        extract('month', SessionModel.start_time) == month
+    ).order_by(SessionModel.start_time).all()
+
+    if not sessions:
+        raise HTTPException(status_code=404, detail="No sessions found for this month.")
+
+    session_ids = [s.id for s in sessions]
+
+    availabilities = db.query(Availability).filter(
+        Availability.session_id.in_(session_ids)
+    ).all()
+
+    opt_outs_by_session = defaultdict(set)
+    for av in availabilities:
+        if not av.is_available:
+            opt_outs_by_session[av.session_id].add(av.member_id)
+
+    day_offs = db.query(DayOff).filter(
+        extract('year', DayOff.date) == year,
+        extract('month', DayOff.date) == month,
+        DayOff.is_available == False
+    ).all()
+
+    day_offs_by_date = defaultdict(set)
+    for do in day_offs:
+        day_offs_by_date[str(do.date)].add(do.member_id)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header row
+    header = ["Member"]
+    for s in sessions:
+        local_start = s.start_time.astimezone(ZoneInfo("America/Chicago"))
+        header.append(f"{local_start.strftime('%b %d')} - {s.title}")
+    writer.writerow(header)
+
+    # Member rows
+    for m in all_members:
+        row = [f"{m.first_name} {m.last_name}"]
+        for s in sessions:
+            session_date_str = s.start_time.strftime('%Y-%m-%d')
+            combined = opt_outs_by_session[s.id] | day_offs_by_date.get(session_date_str, set())
+            row.append("Unavailable" if m.id in combined else "Available")
+        writer.writerow(row)
+
+    # Summary row
+    summary = ["Available (Total)"]
+    for s in sessions:
+        session_date_str = s.start_time.strftime('%Y-%m-%d')
+        combined = opt_outs_by_session[s.id] | day_offs_by_date.get(session_date_str, set())
+        available_count = total_members - len(combined)
+        summary.append(f"{available_count}/{total_members}")
+    writer.writerow(summary)
+
+    output.seek(0)
+    headers = {
+        'Content-Disposition': f'attachment; filename="availability_matrix_{year}_{month}.csv"'
+    }
+    return StreamingResponse(output, headers=headers, media_type="text/csv")
+
+
 @router.get("/schedule/export_pdf", response_class=StreamingResponse)
 def export_month_schedule_pdf(
     year: int,
@@ -609,6 +795,149 @@ def export_month_schedule_pdf(
     
     headers = {
         'Content-Disposition': f'attachment; filename="choir_schedule_{year}_{month}.pdf"'
+    }
+    return StreamingResponse(buffer, headers=headers, media_type="application/pdf")
+
+@router.get("/availability/export_pdf", response_class=StreamingResponse)
+def export_availability_matrix_pdf(
+    year: int,
+    month: int,
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_schedule_read_manager)
+):
+    """
+    Export the availability matrix as a PDF document.
+    Shows members vs sessions with availability status.
+    (Admin only)
+    """
+    import calendar as cal_module
+
+    # Get all active members
+    all_members = db.query(Member).filter(Member.is_active == True).order_by(Member.first_name).all()
+    total_members = len(all_members)
+
+    if total_members == 0:
+        raise HTTPException(status_code=404, detail="No active members found.")
+
+    # Get sessions
+    sessions = db.query(SessionModel).filter(
+        extract('year', SessionModel.start_time) == year,
+        extract('month', SessionModel.start_time) == month
+    ).order_by(SessionModel.start_time).all()
+
+    if not sessions:
+        raise HTTPException(status_code=404, detail="No sessions found for this month.")
+
+    session_ids = [s.id for s in sessions]
+
+    # Get opt-outs
+    availabilities = db.query(Availability).filter(
+        Availability.session_id.in_(session_ids)
+    ).all()
+
+    opt_outs_by_session = defaultdict(set)
+    for av in availabilities:
+        if not av.is_available:
+            opt_outs_by_session[av.session_id].add(av.member_id)
+
+    # Get day-level offs
+    day_offs = db.query(DayOff).filter(
+        extract('year', DayOff.date) == year,
+        extract('month', DayOff.date) == month,
+        DayOff.is_available == False
+    ).all()
+
+    day_offs_by_date = defaultdict(set)
+    for do in day_offs:
+        day_offs_by_date[str(do.date)].add(do.member_id)
+
+    # Build PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.4*inch, bottomMargin=0.4*inch, leftMargin=0.3*inch, rightMargin=0.3*inch)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    title_style = styles['Heading1']
+    title_style.alignment = 1
+
+    month_name = calendar.month_name[month]
+    elements.append(Paragraph(f"Availability Matrix - {month_name} {year}", title_style))
+    elements.append(Spacer(1, 0.15*inch))
+
+    cell_style = ParagraphStyle('CellStyle', parent=styles['Normal'], fontSize=7, alignment=1, leading=9)
+    header_style = ParagraphStyle('HeaderStyle', parent=styles['Normal'], fontSize=7, alignment=1, leading=9, textColor=colors.whitesmoke)
+    name_style = ParagraphStyle('NameStyle', parent=styles['Normal'], fontSize=8, alignment=0, leading=10)
+
+    # Header row: Member + session columns
+    header = [Paragraph("Member", header_style)]
+    for s in sessions:
+        local_start = s.start_time.astimezone(ZoneInfo("America/Chicago"))
+        date_label = local_start.strftime("%b %d")
+        header.append(Paragraph(f"{date_label}<br/>{s.title[:12]}", header_style))
+    data = [header]
+
+    # Member rows
+    for m in all_members:
+        row = [Paragraph(f"{m.first_name} {m.last_name}", name_style)]
+        for s in sessions:
+            session_date_str = s.start_time.strftime('%Y-%m-%d')
+            combined_opted_out = opt_outs_by_session[s.id] | day_offs_by_date.get(session_date_str, set())
+            is_unavailable = m.id in combined_opted_out
+            row.append("✗" if is_unavailable else "✓")
+        data.append(row)
+
+    # Summary row
+    summary = [Paragraph("<b>Available</b>", name_style)]
+    for s in sessions:
+        session_date_str = s.start_time.strftime('%Y-%m-%d')
+        combined_opted_out = opt_outs_by_session[s.id] | day_offs_by_date.get(session_date_str, set())
+        available_count = total_members - len(combined_opted_out)
+        summary.append(Paragraph(f"<b>{available_count}/{total_members}</b>", cell_style))
+    data.append(summary)
+
+    # Calculate column widths
+    usable_width = 10.0 * inch  # landscape letter minus margins
+    name_col_width = 1.5 * inch
+    session_col_width = (usable_width - name_col_width) / len(sessions)
+    col_widths = [name_col_width] + [session_col_width] * len(sessions)
+
+    t = Table(data, repeatRows=1, colWidths=col_widths)
+
+    # Build cell-level styles for coloring
+    style_commands = [
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#475569')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 1), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.whitesmoke, colors.HexColor('#f1f5f9')]),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#e2e8f0')),
+    ]
+
+    # Color ✗ cells red, ✓ cells green
+    for row_idx in range(1, len(data) - 1):  # skip header and summary
+        for col_idx in range(1, len(sessions) + 1):
+            cell_val = data[row_idx][col_idx]
+            if cell_val == "✗":
+                style_commands.append(('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#dc2626')))
+                style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#fef2f2')))
+            elif cell_val == "✓":
+                style_commands.append(('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#16a34a')))
+
+    t.setStyle(TableStyle(style_commands))
+    elements.append(t)
+    doc.build(elements)
+
+    buffer.seek(0)
+    headers = {
+        'Content-Disposition': f'attachment; filename="availability_matrix_{year}_{month}.pdf"'
     }
     return StreamingResponse(buffer, headers=headers, media_type="application/pdf")
 
