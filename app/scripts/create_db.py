@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import psycopg2
@@ -8,10 +9,12 @@ from urllib.parse import urlparse
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from app.settings import settings
 
+logger = logging.getLogger(__name__)
+
 def create_database():
     db_url = settings.database_url
     if "sqlite" in db_url:
-        print("Using SQLite, skipping database creation.")
+        logger.info("Using SQLite, skipping database creation.", extra={"type": "db_create_skip", "reason": "sqlite"})
         return
 
     # Parse the database URL
@@ -44,21 +47,21 @@ def create_database():
         exists = cur.fetchone()
         
         if not exists:
-            print(f"Database '{dbname}' does not exist. Creating...")
+            logger.info(f"Database '{dbname}' does not exist. Creating...", extra={"type": "db_create_attempt", "dbname": dbname})
             # CREATE DATABASE cannot use parameters, but dbname is from config
             cur.execute(f"CREATE DATABASE {dbname}")
-            print(f"Database '{dbname}' created successfully.")
+            logger.info(f"Database '{dbname}' created successfully.", extra={"type": "db_create_success", "dbname": dbname})
         else:
-            print(f"Database '{dbname}' already exists.")
+            logger.info(f"Database '{dbname}' already exists.", extra={"type": "db_create_skip", "dbname": dbname, "reason": "already_exists"})
             
         cur.close()
         con.close()
 
     except psycopg2.OperationalError as e:
-        print(f"Warning: Could not connect to Postgres server to check database existence: {e}")
-        print("Ensure PostgreSQL is running and credentials are correct.")
+        logger.warning(f"Could not connect to Postgres server to check database existence: {e}", extra={"type": "db_connection_error", "host": host, "port": port})
+        logger.warning("Ensure PostgreSQL is running and credentials are correct.", extra={"type": "db_connection_error"})
     except Exception as e:
-        print(f"Error checking/creating database: {e}")
+        logger.error(f"Error checking/creating database: {e}", exc_info=True, extra={"type": "db_create_error"})
 
 if __name__ == "__main__":
     create_database()

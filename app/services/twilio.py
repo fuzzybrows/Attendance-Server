@@ -2,8 +2,12 @@
 Twilio Verify API service for OTP verification.
 Uses Twilio's managed Verify service instead of manually sending OTPs.
 """
+import logging
+
 from twilio.rest import Client
 from app.settings import settings
+
+logger = logging.getLogger(__name__)
 
 # Twilio API credentials from settings
 TWILIO_ACCOUNT_SID = settings.twilio_account_sid
@@ -29,7 +33,7 @@ def send_verification(to: str, channel: str = "sms") -> bool:
     """
     try:
         if TWILIO_ACCOUNT_SID == "placeholder_twilio_sid":
-            print(f"DEBUG: Would send {channel.upper()} verification to {to}")
+            logger.debug(f"Would send {channel.upper()} verification to {to}", extra={"type": "twilio_verify_mock", "channel": channel, "to": to})
             return True
         
         client = get_client()
@@ -37,10 +41,10 @@ def send_verification(to: str, channel: str = "sms") -> bool:
             .verifications \
             .create(to=to, channel=channel)
         
-        print(f"Verification sent: {verification.status}")
+        logger.info(f"Verification sent: {verification.status}", extra={"type": "twilio_verify_sent", "channel": channel, "to": to, "status": verification.status})
         return verification.status == "pending"
     except Exception as e:
-        print(f"Error sending verification: {e}")
+        logger.error(f"Error sending verification: {e}", exc_info=True, extra={"type": "twilio_verify_error", "channel": channel, "to": to})
         return False
 
 
@@ -57,7 +61,7 @@ def check_verification(to: str, code: str) -> bool:
     """
     try:
         if TWILIO_ACCOUNT_SID == "placeholder_twilio_sid":
-            print(f"DEBUG: Would verify code {code} for {to}")
+            logger.debug(f"Would verify code {code} for {to}", extra={"type": "twilio_check_mock", "to": to})
             # In debug mode, accept any 6-digit code
             return len(code) == 6 and code.isdigit()
         
@@ -66,10 +70,10 @@ def check_verification(to: str, code: str) -> bool:
             .verification_checks \
             .create(to=to, code=code)
         
-        print(f"Verification check: {verification_check.status}")
+        logger.info(f"Verification check: {verification_check.status}", extra={"type": "twilio_check_result", "to": to, "status": verification_check.status})
         return verification_check.status == "approved"
     except Exception as e:
-        print(f"Error checking verification: {e}")
+        logger.error(f"Error checking verification: {e}", exc_info=True, extra={"type": "twilio_check_error", "to": to})
         return False
 
 

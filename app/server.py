@@ -23,11 +23,11 @@ logger = logging.getLogger("main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Starting background services...")
+    logger.info("Starting background services...", extra={"type": "app_lifecycle", "action": "startup"})
     start_scheduler()
     yield
     # Shutdown
-    logger.info("Shutting down background services...")
+    logger.info("Shutting down background services...", extra={"type": "app_lifecycle", "action": "shutdown"})
     stop_scheduler()
 
 app = FastAPI(title="Choir Attendance Server", lifespan=lifespan)

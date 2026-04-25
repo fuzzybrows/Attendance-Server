@@ -23,7 +23,7 @@ def dispatch_24hr_reminders():
     target_start = now + timedelta(hours=24)
     target_end = target_start + timedelta(minutes=15)
     
-    logger.info(f"Checking for sessions between {target_start} and {target_end}")
+    logger.info(f"Checking for sessions between {target_start} and {target_end}", extra={"type": "reminder_check", "target_start": str(target_start), "target_end": str(target_end)})
 
     db = SessionLocal()
     try:
@@ -34,7 +34,7 @@ def dispatch_24hr_reminders():
         ).all()
 
         for session in upcoming_sessions:
-            logger.info(f"Dispatching reminders for upcoming session: {session.title}")
+            logger.info(f"Dispatching reminders for upcoming session: {session.title}", extra={"type": "reminder_dispatch", "session_id": session.id, "session_title": session.title})
             
             # Find assignments for this session
             assignments = db.query(Assignment).filter(Assignment.session_id == session.id).all()
@@ -43,7 +43,7 @@ def dispatch_24hr_reminders():
                 member = assignment.member
                 session_time_str = session.start_time.strftime("%A, %B %d at %I:%M %p")
                 
-                logger.info(f"Sent reminder to {member.first_name} for role {assignment.role}")
+                logger.info(f"Sent reminder to {member.first_name} for role {assignment.role}", extra={"type": "reminder_sent", "member_id": member.id, "member_name": member.first_name, "role": assignment.role, "session_id": session.id})
                 
                 # Send Email
                 if member.email:
@@ -73,7 +73,7 @@ def dispatch_24hr_reminders():
                         body=f"You are serving as {assignment.role.replace('_', ' ').title()} in 24 hours!"
                     )
     except Exception as e:
-        logger.error(f"Error in dispatch_24hr_reminders: {e}", exc_info=True)
+        logger.error(f"Error in dispatch_24hr_reminders: {e}", exc_info=True, extra={"type": "reminder_dispatch_error"})
     finally:
         db.close()
 
@@ -93,7 +93,7 @@ def update_session_statuses():
         ).all()
         for session in scheduled_sessions:
             session.status = SessionStatus.ACTIVE.value
-            logger.info(f"Auto-marked session {session.id} as ACTIVE")
+            logger.info(f"Auto-marked session {session.id} as ACTIVE", extra={"type": "session_status_update", "session_id": session.id, "new_status": "ACTIVE"})
 
         # Mark Concluded: when now >= end_time
         active_sessions = db.query(Session).filter(
@@ -102,7 +102,7 @@ def update_session_statuses():
         ).all()
         for session in active_sessions:
             session.status = SessionStatus.CONCLUDED.value
-            logger.info(f"Auto-marked session {session.id} as CONCLUDED")
+            logger.info(f"Auto-marked session {session.id} as CONCLUDED", extra={"type": "session_status_update", "session_id": session.id, "new_status": "CONCLUDED"})
 
         # Mark Archived: 7 days after start_time date at midnight
         concluded_sessions = db.query(Session).filter(
@@ -113,11 +113,11 @@ def update_session_statuses():
             archive_threshold = datetime.combine(session.start_time.date() + timedelta(days=7), time.min)
             if now >= archive_threshold:
                 session.status = SessionStatus.ARCHIVED.value
-                logger.info(f"Auto-marked session {session.id} as ARCHIVED")
+                logger.info(f"Auto-marked session {session.id} as ARCHIVED", extra={"type": "session_status_update", "session_id": session.id, "new_status": "ARCHIVED"})
                 
         db.commit()
     except Exception as e:
-        logger.error(f"Error in update_session_statuses: {e}", exc_info=True)
+        logger.error(f"Error in update_session_statuses: {e}", exc_info=True, extra={"type": "session_status_update_error"})
     finally:
         db.close()
 
@@ -143,10 +143,10 @@ def start_scheduler():
         )
         
         scheduler.start()
-        logger.info("Background scheduler started.")
+        logger.info("Background scheduler started.", extra={"type": "scheduler_lifecycle", "action": "start"})
 
 def stop_scheduler():
     """Stops the APScheduler."""
     if scheduler.running:
         scheduler.shutdown()
-        logger.info("Background scheduler stopped.")
+        logger.info("Background scheduler stopped.", extra={"type": "scheduler_lifecycle", "action": "stop"})

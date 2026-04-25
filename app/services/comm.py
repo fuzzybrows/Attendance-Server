@@ -1,4 +1,6 @@
+import logging
 import random
+
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from twilio.rest import Client
@@ -6,6 +8,8 @@ import firebase_admin
 from firebase_admin import credentials, messaging
 import os
 from app.settings import settings
+
+logger = logging.getLogger(__name__)
 
 # API credentials from settings
 SENDGRID_API_KEY = settings.sendgrid_api_key
@@ -21,9 +25,9 @@ def init_firebase():
                 cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
                 firebase_admin.initialize_app(cred)
             except Exception as e:
-                print(f"Failed to initialize Firebase: {e}")
+                logger.error(f"Failed to initialize Firebase: {e}", exc_info=True, extra={"type": "firebase_init_error"})
         else:
-            print("INFO: Firebase credentials not configured. Push notifications will be mocked.")
+            logger.info("Firebase credentials not configured. Push notifications will be mocked.", extra={"type": "firebase_init_skip"})
 
 init_firebase()
 
@@ -35,19 +39,19 @@ def send_email_otp(to_email: str, otp: str):
         html_content=f'<strong>Welcome! Your OTP is: {otp}</strong>')
     try:
         if SENDGRID_API_KEY == "placeholder_sendgrid_key":
-            print(f"DEBUG: Would send EMAIL OTP {otp} to {to_email}")
+            logger.debug(f"Would send EMAIL OTP {otp} to {to_email}", extra={"type": "email_otp_mock", "to_email": to_email})
             return True
         sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
         return True
     except Exception as e:
-        print(f"Error sending email: {e}")
+        logger.error(f"Error sending email: {e}", exc_info=True, extra={"type": "email_otp_error", "to_email": to_email})
         return False
 
 def send_sms_otp(to_phone: str, otp: str):
     try:
         if TWILIO_ACCOUNT_SID == "placeholder_twilio_sid":
-            print(f"DEBUG: Would send SMS OTP {otp} to {to_phone}")
+            logger.debug(f"Would send SMS OTP {otp} to {to_phone}", extra={"type": "sms_otp_mock", "to_phone": to_phone})
             return True
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         message = client.messages.create(
@@ -57,7 +61,7 @@ def send_sms_otp(to_phone: str, otp: str):
         )
         return True
     except Exception as e:
-        print(f"Error sending SMS: {e}")
+        logger.error(f"Error sending SMS: {e}", exc_info=True, extra={"type": "sms_otp_error", "to_phone": to_phone})
         return False
 
 def generate_otp():
@@ -78,13 +82,13 @@ def send_reminder_email(to_email: str, member_name: str, session_title: str, rol
     )
     try:
         if SENDGRID_API_KEY == "placeholder_sendgrid_key":
-            print(f"DEBUG: Would send REMINDER EMAIL to {to_email} for {session_title}")
+            logger.debug(f"Would send REMINDER EMAIL to {to_email} for {session_title}", extra={"type": "reminder_email_mock", "to_email": to_email, "session_title": session_title})
             return True
         sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
         return True
     except Exception as e:
-        print(f"Error sending reminder email to {to_email}: {e}")
+        logger.error(f"Error sending reminder email to {to_email}: {e}", exc_info=True, extra={"type": "reminder_email_error", "to_email": to_email, "session_title": session_title})
         return False
 
 def send_reminder_sms(to_phone: str, member_name: str, session_title: str, role: str, session_time: str):
@@ -93,7 +97,7 @@ def send_reminder_sms(to_phone: str, member_name: str, session_title: str, role:
     body = f"Hi {member_name}, reminder: you are scheduled for {session_title} ({session_time}) as {role.replace('_', ' ').title()}."
     try:
         if TWILIO_ACCOUNT_SID == "placeholder_twilio_sid":
-            print(f"DEBUG: Would send REMINDER SMS to {to_phone}: {body}")
+            logger.debug(f"Would send REMINDER SMS to {to_phone}: {body}", extra={"type": "reminder_sms_mock", "to_phone": to_phone, "session_title": session_title})
             return True
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         message = client.messages.create(
@@ -103,7 +107,7 @@ def send_reminder_sms(to_phone: str, member_name: str, session_title: str, role:
         )
         return True
     except Exception as e:
-        print(f"Error sending reminder SMS to {to_phone}: {e}")
+        logger.error(f"Error sending reminder SMS to {to_phone}: {e}", exc_info=True, extra={"type": "reminder_sms_error", "to_phone": to_phone, "session_title": session_title})
         return False
 
 def send_push_notification(device_token: str, title: str, body: str):
@@ -114,7 +118,7 @@ def send_push_notification(device_token: str, title: str, body: str):
         return False
         
     if not firebase_admin._apps:
-        print(f"DEBUG: Mocking PUSH NOTIFICATION to device {device_token} -> {title}: {body}")
+        logger.debug(f"Mocking PUSH NOTIFICATION to device {device_token} -> {title}: {body}", extra={"type": "push_notification_mock", "device_token": device_token, "title": title})
         return True
         
     try:
@@ -128,6 +132,6 @@ def send_push_notification(device_token: str, title: str, body: str):
         response = messaging.send(message)
         return True
     except Exception as e:
-        print(f"Error sending push notification to {device_token}: {e}")
+        logger.error(f"Error sending push notification to {device_token}: {e}", exc_info=True, extra={"type": "push_notification_error", "device_token": device_token, "title": title})
         return False
 
