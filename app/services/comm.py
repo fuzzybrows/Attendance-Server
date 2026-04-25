@@ -17,6 +17,8 @@ TWILIO_ACCOUNT_SID = settings.twilio_account_sid
 TWILIO_AUTH_TOKEN = settings.twilio_auth_token
 TWILIO_PHONE_NUMBER = settings.twilio_phone_number
 FIREBASE_CREDENTIALS_PATH = settings.firebase_credentials_path
+EMAIL_FROM_ADDRESS = settings.email_from_address
+ROLE_PREPOSITION = settings.role_preposition
 
 def init_firebase():
     if not firebase_admin._apps:
@@ -33,9 +35,9 @@ init_firebase()
 
 def send_email_otp(to_email: str, otp: str):
     message = Mail(
-        from_email='noreply@choirattendance.com',
+        from_email=EMAIL_FROM_ADDRESS,
         to_emails=to_email,
-        subject='Your Choir Attendance Verification Code',
+        subject='Your Verification Code',
         html_content=f'<strong>Welcome! Your OTP is: {otp}</strong>')
     try:
         if SENDGRID_API_KEY == "placeholder_sendgrid_key":
@@ -55,7 +57,7 @@ def send_sms_otp(to_phone: str, otp: str):
             return True
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         message = client.messages.create(
-            body=f"Your Choir Attendance code is {otp}",
+            body=f"Your verification code is {otp}",
             from_=TWILIO_PHONE_NUMBER,
             to=to_phone
         )
@@ -69,12 +71,12 @@ def generate_otp():
 
 def send_reminder_email(to_email: str, member_name: str, session_title: str, role: str, session_time: str):
     message = Mail(
-        from_email='noreply@choirattendance.com',
+        from_email=EMAIL_FROM_ADDRESS,
         to_emails=to_email,
-        subject='Choir Attendance: Upcoming Session Reminder',
+        subject='Upcoming Session Reminder',
         html_content=f'''
         <p>Hi {member_name},</p>
-        <p>This is a reminder that you are scheduled to serve as <strong>{role.replace("_", " ").title()}</strong> 
+        <p>This is a reminder that you are scheduled to serve {ROLE_PREPOSITION} <strong>{role.replace("_", " ").title()}</strong> 
         for the upcoming session: <strong>{session_title}</strong>.</p>
         <p>Time: {session_time}</p>
         <p>Thank you for your service!</p>
@@ -94,7 +96,7 @@ def send_reminder_email(to_email: str, member_name: str, session_title: str, rol
 def send_reminder_sms(to_phone: str, member_name: str, session_title: str, role: str, session_time: str):
     if not to_phone:
         return False
-    body = f"Hi {member_name}, reminder: you are scheduled for {session_title} ({session_time}) as {role.replace('_', ' ').title()}."
+    body = f"Hi {member_name}, reminder: you are scheduled for {session_title} ({session_time}) {ROLE_PREPOSITION} {role.replace('_', ' ').title()}."
     try:
         if TWILIO_ACCOUNT_SID == "placeholder_twilio_sid":
             logger.debug(f"Would send REMINDER SMS to {to_phone}: {body}", extra={"type": "reminder_sms_mock", "to_phone": to_phone, "session_title": session_title})

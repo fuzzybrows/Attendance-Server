@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     
     # SendGrid
     sendgrid_api_key: str = "placeholder_sendgrid_key"
+
+    # Email
+    email_from_address: str = "noreply@example.com"
+    role_preposition: str = "as"
     
     # Firebase Cloud Messaging
     firebase_credentials_path: str = "placeholder_firebase_path"
