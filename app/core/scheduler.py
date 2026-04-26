@@ -8,6 +8,7 @@ from app.core.database import SessionLocal
 from app.models.session import Session, SessionStatus
 from app.models.assignment import Assignment
 from app.models.member import Member
+from app.models.attendance import Attendance  # noqa: F401 — needed for SQLAlchemy relationship resolution
 from app.services.comm import send_reminder_email, send_reminder_sms, send_push_notification
 from app.settings import settings
 

@@ -38,7 +38,20 @@ def send_email_otp(to_email: str, otp: str):
         from_email=EMAIL_FROM_ADDRESS,
         to_emails=to_email,
         subject='Your Verification Code',
-        html_content=f'<strong>Welcome! Your OTP is: {otp}</strong>')
+        plain_text_content=f'Welcome! Your verification code is: {otp}\n\nPlease enter this code to complete your verification. This code will expire shortly.\n\nIf you did not request this code, you can safely ignore this email. No changes will be made to your account.\n\nThank you.',
+        html_content=f'''<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;color:#333;line-height:1.6;padding:20px;">
+    <h2>Verification Code</h2>
+    <p>Welcome! Your verification code is:</p>
+    <p style="font-size:24px;font-weight:bold;letter-spacing:4px;padding:12px;text-align:center;">{otp}</p>
+    <p>Please enter this code to complete your verification. This code will expire shortly.</p>
+    <p>If you did not request this code, you can safely ignore this email. No changes will be made to your account.</p>
+    <p>Thank you for using our service.</p>
+    <p style="font-size:12px;color:#999;">This is an automated message. Please do not reply to this email.</p>
+</body>
+</html>''')
     try:
         if SENDGRID_API_KEY == "placeholder_sendgrid_key":
             logger.debug(f"Would send EMAIL OTP {otp} to {to_email}", extra={"type": "email_otp_mock", "to_email": to_email})
@@ -70,18 +83,28 @@ def generate_otp():
     return str(random.randint(100000, 999999))
 
 def send_reminder_email(to_email: str, member_name: str, session_title: str, role: str, session_time: str):
+    role_display = role.replace("_", " ").title()
     message = Mail(
         from_email=EMAIL_FROM_ADDRESS,
         to_emails=to_email,
         subject='Upcoming Session Reminder',
-        html_content=f'''
-        <p>Hi {member_name},</p>
-        <p>This is a reminder that you are scheduled to serve {ROLE_PREPOSITION} <strong>{role.replace("_", " ").title()}</strong> 
-        for the upcoming session: <strong>{session_title}</strong>.</p>
-        <p>Time: {session_time}</p>
-        <p>Thank you for your service!</p>
-        '''
-    )
+        plain_text_content=f'Hi {member_name},\n\nThis is a reminder that you are scheduled to serve {ROLE_PREPOSITION} {role_display} for the upcoming session: {session_title}.\n\nSession: {session_title}\nRole: {role_display}\nTime: {session_time}\n\nPlease arrive on time and be prepared for your role. Thank you for your service and dedication!\n\nIf you have any questions or need to make changes, please contact your team lead.',
+        html_content=f'''<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;color:#333;line-height:1.6;padding:20px;">
+    <h2>Upcoming Session Reminder</h2>
+    <p>Hi {member_name},</p>
+    <p>This is a reminder that you are scheduled to serve {ROLE_PREPOSITION} <strong>{role_display}</strong>
+    for the upcoming session: <strong>{session_title}</strong>.</p>
+    <p><strong>Session:</strong> {session_title}<br>
+    <strong>Role:</strong> {role_display}<br>
+    <strong>Time:</strong> {session_time}</p>
+    <p>Please arrive on time and be prepared for your role. Thank you for your service and dedication!</p>
+    <p>If you have any questions or need to make changes, please contact your team lead.</p>
+    <p style="font-size:12px;color:#999;">This is an automated message. Please do not reply to this email.</p>
+</body>
+</html>''')
     try:
         if SENDGRID_API_KEY == "placeholder_sendgrid_key":
             logger.debug(f"Would send REMINDER EMAIL to {to_email} for {session_title}", extra={"type": "reminder_email_mock", "to_email": to_email, "session_title": session_title})
