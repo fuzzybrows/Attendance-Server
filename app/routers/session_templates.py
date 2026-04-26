@@ -14,9 +14,12 @@ from app.core.auth import (
     get_templates_manager,
     get_schedule_generate_manager
 )
+from app.settings import settings
 import logging
 
 logger = logging.getLogger(__name__)
+
+LOCAL_TZ = ZoneInfo(settings.app_timezone)
 
 router = APIRouter(
     prefix="/session-templates",
@@ -122,10 +125,8 @@ def generate_sessions(request: SessionGenerationRequest, db: Session = Depends(g
                 else:
                     curr_month += 1
                     
-        LOCAL_TZ = ZoneInfo("America/Chicago")
-        
         for d in valid_dates:
-            # Create a localized datetime in Austin time
+            # Create a localized datetime in local time
             local_start = datetime.combine(d, t.start_time).replace(tzinfo=LOCAL_TZ)
             # Convert to UTC-aware for database storage
             start_time = local_start.astimezone(timezone.utc)

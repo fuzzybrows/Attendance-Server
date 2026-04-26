@@ -14,6 +14,7 @@ from collections import defaultdict
 from icalendar import Calendar, Event
 
 from app.core.database import get_db
+from app.settings import settings
 from app.core.auth import (
     get_current_active_member, 
     get_admin_member, 
@@ -40,6 +41,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 
+
+LOCAL_TZ = ZoneInfo(settings.app_timezone)
 
 def is_month_locked(db: Session, year: int, month: int) -> bool:
     """
@@ -602,7 +605,7 @@ def export_month_schedule_csv(
         for a in assignments_by_session[session.id]:
             role_map[a.role].append(f"{a.member.first_name} {a.member.last_name}")
         # Convert UTC to Austin time for export
-        local_start = session.start_time.astimezone(ZoneInfo("America/Chicago"))
+        local_start = session.start_time.astimezone(LOCAL_TZ)
         writer.writerow([
             local_start.strftime("%Y-%m-%d %H:%M"),
             session.title,
@@ -673,7 +676,7 @@ def export_availability_matrix_csv(
     # Header row
     header = ["Member"]
     for s in sessions:
-        local_start = s.start_time.astimezone(ZoneInfo("America/Chicago"))
+        local_start = s.start_time.astimezone(LOCAL_TZ)
         header.append(f"{local_start.strftime('%b %d')} - {s.title}")
     writer.writerow(header)
 
@@ -751,7 +754,7 @@ def export_month_schedule_pdf(
     for session in sessions:
         role_map = assignments_by_session[session.id]
         # Convert UTC to Austin time for export
-        local_start = session.start_time.astimezone(ZoneInfo("America/Chicago"))
+        local_start = session.start_time.astimezone(LOCAL_TZ)
         # Format date as "Wed, April 24 2026"
         date_str = local_start.strftime("%a, %B %d %Y")
 
@@ -871,7 +874,7 @@ def export_availability_matrix_pdf(
     # Header row: Member + session columns
     header = [Paragraph("Member", header_style)]
     for s in sessions:
-        local_start = s.start_time.astimezone(ZoneInfo("America/Chicago"))
+        local_start = s.start_time.astimezone(LOCAL_TZ)
         date_label = local_start.strftime("%b %d")
         header.append(Paragraph(f"{date_label}<br/>{s.title[:12]}", header_style))
     data = [header]

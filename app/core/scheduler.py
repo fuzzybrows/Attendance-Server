@@ -9,9 +9,11 @@ from app.models.session import Session, SessionStatus
 from app.models.assignment import Assignment
 from app.models.member import Member
 from app.services.comm import send_reminder_email, send_reminder_sms, send_push_notification
+from app.settings import settings
 
 logger = logging.getLogger("scheduler")
 scheduler = BackgroundScheduler()
+LOCAL_TZ = ZoneInfo(settings.app_timezone)
 
 def send_session_reminders(session: Session, db):
     """
@@ -24,7 +26,7 @@ def send_session_reminders(session: Session, db):
 
     for assignment in assignments:
         member = assignment.member
-        session_time_str = session.start_time.astimezone(ZoneInfo("America/Chicago")).strftime("%A, %B %d at %I:%M %p")
+        session_time_str = session.start_time.astimezone(LOCAL_TZ).strftime("%A, %B %d at %I:%M %p")
 
         logger.info(f"Sending reminder to {member.first_name} for role {assignment.role}", extra={"type": "reminder_sent", "member_id": member.id, "member_name": member.first_name, "role": assignment.role, "session_id": session.id})
 
