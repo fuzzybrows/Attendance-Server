@@ -2,6 +2,7 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime, timedelta, timezone, time
+from zoneinfo import ZoneInfo
 
 from app.core.database import SessionLocal
 from app.models.session import Session, SessionStatus
@@ -12,68 +13,83 @@ from app.services.comm import send_reminder_email, send_reminder_sms, send_push_
 logger = logging.getLogger("scheduler")
 scheduler = BackgroundScheduler()
 
-def dispatch_24hr_reminders():
+def send_session_reminders(session: Session, db):
     """
-    Job that runs periodically to find sessions starting in exactly 24 hours
-    and sends out reminders to the assigned members.
+    Send reminders to all assigned members for a given session.
+    This is the core logic reused by both the scheduled job and on-demand calls.
     """
-    # Use timezone-aware UTC times
-    now = datetime.now(timezone.utc)
-    # Looking for sessions starting between 24 hours and 24 hours + 15 mins from now
-    target_start = now + timedelta(hours=24)
-    target_end = target_start + timedelta(minutes=15)
-    
-    logger.info(f"Checking for sessions between {target_start} and {target_end}", extra={"type": "reminder_check", "target_start": str(target_start), "target_end": str(target_end)})
+    logger.info(f"Dispatching reminders for session: {session.title}", extra={"type": "reminder_dispatch", "session_id": session.id, "session_title": session.title})
 
+    assignments = db.query(Assignment).filter(Assignment.session_id == session.id).all()
+
+    for assignment in assignments:
+        member = assignment.member
+        session_time_str = session.start_time.astimezone(ZoneInfo("America/Chicago")).strftime("%A, %B %d at %I:%M %p")
+
+        logger.info(f"Sending reminder to {member.first_name} for role {assignment.role}", extra={"type": "reminder_sent", "member_id": member.id, "member_name": member.first_name, "role": assignment.role, "session_id": session.id})
+
+        # Send Email
+        if member.email:
+            send_reminder_email(
+                to_email=member.email,
+                member_name=member.first_name,
+                session_title=session.title,
+                role=assignment.role,
+                session_time=session_time_str
+            )
+
+        # Send SMS
+        if getattr(member, 'phone_number', None):
+            send_reminder_sms(
+                to_phone=member.phone_number,
+                member_name=member.first_name,
+                session_title=session.title,
+                role=assignment.role,
+                session_time=session_time_str
+            )
+
+        # Push Notification
+        if getattr(member, 'device_token', None):
+            send_push_notification(
+                device_token=member.device_token,
+                title="Upcoming Session Reminder",
+                body=f"You are serving as {assignment.role.replace('_', ' ').title()} in 24 hours!"
+            )
+
+
+def dispatch_24hr_reminders(session_id: int = None):
+    """
+    Send reminders to assigned members.
+
+    If session_id is provided, sends reminders for that specific session.
+    Otherwise, finds all sessions starting in ~24 hours (scheduled job mode).
+    """
     db = SessionLocal()
     try:
-        upcoming_sessions = db.query(Session).filter(
-            Session.start_time >= target_start,
-            Session.start_time < target_end,
-            Session.status == SessionStatus.SCHEDULED.value
-        ).all()
+        if session_id:
+            session = db.query(Session).filter(Session.id == session_id).first()
+            if not session:
+                logger.warning(f"Session {session_id} not found for reminders", extra={"type": "reminder_session_not_found", "session_id": session_id})
+                return
+            send_session_reminders(session, db)
+        else:
+            # Scheduled job: find sessions starting between 24h and 24h15m from now
+            now = datetime.now(timezone.utc)
+            target_start = now + timedelta(hours=24)
+            target_end = target_start + timedelta(minutes=15)
 
-        for session in upcoming_sessions:
-            logger.info(f"Dispatching reminders for upcoming session: {session.title}", extra={"type": "reminder_dispatch", "session_id": session.id, "session_title": session.title})
-            
-            # Find assignments for this session
-            assignments = db.query(Assignment).filter(Assignment.session_id == session.id).all()
-            
-            for assignment in assignments:
-                member = assignment.member
-                session_time_str = session.start_time.strftime("%A, %B %d at %I:%M %p")
-                
-                logger.info(f"Sent reminder to {member.first_name} for role {assignment.role}", extra={"type": "reminder_sent", "member_id": member.id, "member_name": member.first_name, "role": assignment.role, "session_id": session.id})
-                
-                # Send Email
-                if member.email:
-                    send_reminder_email(
-                        to_email=member.email,
-                        member_name=member.first_name,
-                        session_title=session.title,
-                        role=assignment.role,
-                        session_time=session_time_str
-                    )
-                
-                # Send SMS
-                if getattr(member, 'phone_number', None):
-                    send_reminder_sms(
-                        to_phone=member.phone_number,
-                        member_name=member.first_name,
-                        session_title=session.title,
-                        role=assignment.role,
-                        session_time=session_time_str
-                    )
-                
-                # Push Notification (Mocked)
-                if getattr(member, 'device_token', None):
-                    send_push_notification(
-                        device_token=member.device_token,
-                        title="Upcoming Session Reminder",
-                        body=f"You are serving as {assignment.role.replace('_', ' ').title()} in 24 hours!"
-                    )
+            logger.info(f"Checking for sessions between {target_start} and {target_end}", extra={"type": "reminder_check", "target_start": str(target_start), "target_end": str(target_end)})
+
+            upcoming_sessions = db.query(Session).filter(
+                Session.start_time >= target_start,
+                Session.start_time < target_end,
+                Session.status == SessionStatus.SCHEDULED.value
+            ).all()
+
+            for session in upcoming_sessions:
+                send_session_reminders(session, db)
     except Exception as e:
-        logger.error(f"Error in dispatch_24hr_reminders: {e}", exc_info=True, extra={"type": "reminder_dispatch_error"})
+        logger.error(f"Error in dispatch_24hr_reminders: {e}", exc_info=True, extra={"type": "reminder_dispatch_error", "session_id": session_id})
     finally:
         db.close()
 
@@ -82,7 +98,7 @@ def update_session_statuses():
     Job that runs every 5 minutes to sweep all sessions and update their 
     statuses to active, concluded, or archived based on their start_time and end_time.
     """
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(timezone.utc)
     db = SessionLocal()
     try:
         # Mark Active: 30 mins before start_time
@@ -110,7 +126,9 @@ def update_session_statuses():
         ).all()
         
         for session in concluded_sessions:
-            archive_threshold = datetime.combine(session.start_time.date() + timedelta(days=7), time.min)
+            archive_threshold = datetime.combine(
+                session.start_time.date() + timedelta(days=7), time.min, tzinfo=timezone.utc
+            )
             if now >= archive_threshold:
                 session.status = SessionStatus.ARCHIVED.value
                 logger.info(f"Auto-marked session {session.id} as ARCHIVED", extra={"type": "session_status_update", "session_id": session.id, "new_status": "ARCHIVED"})
