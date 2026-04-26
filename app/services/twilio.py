@@ -1,6 +1,6 @@
 """
 Twilio Verify API service for OTP verification.
-Uses Twilio's managed Verify service instead of manually sending OTPs.
+Uses Twilio's managed Verify service for SMS, call, and email channels.
 """
 import logging
 
@@ -76,41 +76,3 @@ def check_verification(to: str, code: str) -> bool:
         logger.error(f"Error checking verification: {e}", exc_info=True, extra={"type": "twilio_check_error", "to": to})
         return False
 
-
-def send_email_verification(to_email: str) -> bool:
-    """
-    Send email verification using Twilio Verify.
-    
-    Args:
-        to_email: Email address to send verification to
-    
-    Returns:
-        True if sent successfully
-    """
-    return send_verification(to_email, channel="email")
-
-
-def send_sms_verification(to_phone: str) -> bool:
-    """
-    Send SMS verification using Twilio Verify.
-    
-    Args:
-        to_phone: Phone number to send verification to
-    
-    Returns:
-        True if sent successfully
-    """
-    return send_verification(to_phone, channel="sms")
-
-
-def send_call_verification(to_phone: str) -> bool:
-    """
-    Send voice call verification using Twilio Verify.
-    
-    Args:
-        to_phone: Phone number to call with verification code
-    
-    Returns:
-        True if call initiated successfully
-    """
-    return send_verification(to_phone, channel="call")

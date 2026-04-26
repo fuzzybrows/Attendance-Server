@@ -1,6 +1,8 @@
 """SendGrid email provider."""
 import logging
 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from app.settings import settings
 from app.services.email_providers import EmailProvider, MockEmailProvider
 
@@ -21,8 +23,6 @@ class SendGridProvider(EmailProvider):
         if not self.is_configured():
             return MockEmailProvider().send(to_email, subject, plain_text, html)
         try:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail
             message = Mail(
                 from_email=self.from_email,
                 to_emails=to_email,

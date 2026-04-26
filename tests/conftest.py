@@ -48,7 +48,7 @@ from fastapi.testclient import TestClient
 
 from app.core.database import Base, get_db
 from app.models.member import Member, Permission
-from app.services.twilio import send_sms_verification
+from app.services.verification import send_sms_verification
 from app.core.auth import get_password_hash, get_current_user
 
 

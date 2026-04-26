@@ -1,6 +1,7 @@
 """Mailgun email provider."""
 import logging
 
+import requests as http_requests
 from app.settings import settings
 from app.services.email_providers import EmailProvider, MockEmailProvider
 
@@ -22,7 +23,6 @@ class MailgunProvider(EmailProvider):
         if not self.is_configured():
             return MockEmailProvider().send(to_email, subject, plain_text, html)
         try:
-            import requests as http_requests
             response = http_requests.post(
                 f"https://api.mailgun.net/v3/{self.domain}/messages",
                 auth=("api", self.api_key),

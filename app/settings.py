@@ -22,6 +22,11 @@ class EmailProviderType(str, Enum):
     MOCK = "mock"
 
 
+class VerificationProviderType(str, Enum):
+    TWILIO_VERIFY = "twilio_verify"
+    LOCAL = "local"
+
+
 class Settings(BaseSettings):
     """
     Application settings loaded from environment variables.
@@ -41,6 +46,10 @@ class Settings(BaseSettings):
     twilio_auth_token: str
     twilio_verify_service_sid: str
     twilio_phone_number: str
+
+    # Verification
+    verification_provider: VerificationProviderType = VerificationProviderType.TWILIO_VERIFY
+    otp_expiry_seconds: int = 300  # 5 minutes
     
     # SendGrid
     sendgrid_api_key: str = "placeholder_sendgrid_key"

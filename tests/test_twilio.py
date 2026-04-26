@@ -142,20 +142,37 @@ class TestCheckVerification:
 
 
 class TestConvenienceFunctions:
-    def test_send_email_verification_successfully_delegates_to_base_send_function_with_email_channel(self):
-        with patch.object(twilio_mod, "send_verification", return_value=True) as mock:
-            result = twilio_mod.send_email_verification("test@example.com")
+    @patch("app.services.twilio.send_verification", return_value=True)
+    def test_send_email_verification_delegates_to_twilio_when_twilio_provider(self, mock_send):
+        import app.services.verification as verify_mod
+        from app.services.verification_providers.twilio_verify import TwilioVerificationProvider
+        original = verify_mod._provider
+        verify_mod._provider = TwilioVerificationProvider()
+        try:
+            result = verify_mod.send_email_verification("test@example.com")
             assert result is True
-            mock.assert_called_once_with("test@example.com", channel="email")
+            mock_send.assert_called_once_with("test@example.com", channel="email")
+        finally:
+            verify_mod._provider = original
 
-    def test_send_sms_verification_successfully_delegates_to_base_send_function_with_sms_channel(self):
-        with patch.object(twilio_mod, "send_verification", return_value=True) as mock:
-            result = twilio_mod.send_sms_verification("+15551234567")
+    @patch("app.services.local_otp.send_local_email_otp", return_value=True)
+    def test_send_email_verification_delegates_to_local_otp_when_local_provider(self, mock_local):
+        import app.services.verification as verify_mod
+        from app.services.verification_providers.local import LocalVerificationProvider
+        original = verify_mod._provider
+        verify_mod._provider = LocalVerificationProvider()
+        try:
+            result = verify_mod.send_email_verification("test@example.com")
             assert result is True
-            mock.assert_called_once_with("+15551234567", channel="sms")
+            mock_local.assert_called_once_with("test@example.com")
+        finally:
+            verify_mod._provider = original
 
-    def test_send_call_verification_successfully_delegates_to_base_send_function_with_call_channel(self):
-        with patch.object(twilio_mod, "send_verification", return_value=True) as mock:
-            result = twilio_mod.send_call_verification("+15559876543")
-            assert result is True
-            mock.assert_called_once_with("+15559876543", channel="call")
+    @patch("app.services.twilio.send_verification", return_value=True)
+    def test_send_sms_verification_always_delegates_to_twilio(self, mock_send):
+        import app.services.verification as verify_mod
+        result = verify_mod.send_sms_verification("+15551234567")
+        assert result is True
+        mock_send.assert_called_once_with("+15551234567", channel="sms")
+
+

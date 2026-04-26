@@ -6,7 +6,7 @@ from app.schemas.auth import MemberLogin, LoginResponse, OTPVerification, Status
 from app.schemas.member import Member as MemberSchema
 from app.core.database import get_db
 from app.core.auth import get_password_hash, verify_password, create_access_token, get_current_active_member
-from app.services.twilio import send_sms_verification, send_email_verification, check_verification
+from app.services.verification import send_sms_verification, send_email_verification, check_verification
 from app.services.recaptcha import verify_recaptcha
 from app.services.rate_limiter import check_login_rate, check_forgot_password_rate
 import logging
