@@ -142,7 +142,7 @@ class TestCheckVerification:
 
 
 class TestConvenienceFunctions:
-    @patch("app.services.twilio.send_verification", return_value=True)
+    @patch("app.services.verification_providers.twilio_verify.send_verification", return_value=True)
     def test_send_email_verification_delegates_to_twilio_when_twilio_provider(self, mock_send):
         import app.services.verification as verify_mod
         from app.services.verification_providers.twilio_verify import TwilioVerificationProvider
@@ -155,7 +155,7 @@ class TestConvenienceFunctions:
         finally:
             verify_mod._provider = original
 
-    @patch("app.services.local_otp.send_local_email_otp", return_value=True)
+    @patch("app.services.verification_providers.local.send_local_email_otp", return_value=True)
     def test_send_email_verification_delegates_to_local_otp_when_local_provider(self, mock_local):
         import app.services.verification as verify_mod
         from app.services.verification_providers.local import LocalVerificationProvider
@@ -168,7 +168,7 @@ class TestConvenienceFunctions:
         finally:
             verify_mod._provider = original
 
-    @patch("app.services.twilio.send_verification", return_value=True)
+    @patch("app.services.verification_providers.twilio_verify.send_verification", return_value=True)
     def test_send_sms_verification_always_delegates_to_twilio(self, mock_send):
         import app.services.verification as verify_mod
         result = verify_mod.send_sms_verification("+15551234567")

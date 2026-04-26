@@ -1,29 +1,32 @@
 import logging
 import random
 
-from twilio.rest import Client
 import firebase_admin
 from firebase_admin import credentials, messaging
 import os
 from app.settings import settings
 from app.services.email_providers import get_email_provider
+from app.services.sms_providers import get_sms_provider
 
 logger = logging.getLogger(__name__)
 
 # API credentials from settings
-TWILIO_ACCOUNT_SID = settings.twilio_account_sid
-TWILIO_AUTH_TOKEN = settings.twilio_auth_token
-TWILIO_PHONE_NUMBER = settings.twilio_phone_number
 FIREBASE_CREDENTIALS_PATH = settings.firebase_credentials_path
 ROLE_PREPOSITION = settings.role_preposition
 
-# Module-level email provider singleton
+# Module-level provider singletons
 _email_provider = get_email_provider()
+_sms_provider = get_sms_provider()
 
 
 def _send_email(to_email: str, subject: str, plain_text: str, html: str) -> bool:
     """Send an email using the configured provider."""
     return _email_provider.send(to_email, subject, plain_text, html)
+
+
+def _send_sms(to_phone: str, body: str) -> bool:
+    """Send an SMS using the configured provider."""
+    return _sms_provider.send(to_phone, body)
 
 
 # ── Firebase ────────────────────────────────────────────────────────────────
@@ -67,20 +70,7 @@ def send_email_otp(to_email: str, otp: str):
     return _send_email(to_email, "Your Verification Code", plain_text, html)
 
 def send_sms_otp(to_phone: str, otp: str):
-    try:
-        if TWILIO_ACCOUNT_SID == "placeholder_twilio_sid":
-            logger.debug(f"Would send SMS OTP {otp} to {to_phone}", extra={"type": "sms_otp_mock", "to_phone": to_phone})
-            return True
-        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        message = client.messages.create(
-            body=f"Your verification code is {otp}",
-            from_=TWILIO_PHONE_NUMBER,
-            to=to_phone
-        )
-        return True
-    except Exception as e:
-        logger.error(f"Error sending SMS: {e}", exc_info=True, extra={"type": "sms_otp_error", "to_phone": to_phone})
-        return False
+    return _send_sms(to_phone, f"Your verification code is {otp}")
 
 def generate_otp():
     return str(random.randint(100000, 999999))
@@ -118,20 +108,7 @@ def send_reminder_sms(to_phone: str, member_name: str, session_title: str, role:
     if not to_phone:
         return False
     body = f"Hi {member_name}, reminder: you are scheduled for {session_title} ({session_time}) {ROLE_PREPOSITION} {role.replace('_', ' ').title()}."
-    try:
-        if TWILIO_ACCOUNT_SID == "placeholder_twilio_sid":
-            logger.debug(f"Would send REMINDER SMS to {to_phone}: {body}", extra={"type": "reminder_sms_mock", "to_phone": to_phone, "session_title": session_title})
-            return True
-        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        message = client.messages.create(
-            body=body,
-            from_=TWILIO_PHONE_NUMBER,
-            to=to_phone
-        )
-        return True
-    except Exception as e:
-        logger.error(f"Error sending reminder SMS to {to_phone}: {e}", exc_info=True, extra={"type": "reminder_sms_error", "to_phone": to_phone, "session_title": session_title})
-        return False
+    return _send_sms(to_phone, body)
 
 def send_push_notification(device_token: str, title: str, body: str):
     """
