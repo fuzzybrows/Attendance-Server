@@ -21,11 +21,13 @@ def _make_session(id=1, title="Sunday Service", status="scheduled", hours_from_n
     return session
 
 
-def _make_member(id=1, first_name="Jane", email="jane@example.com", phone_number="+15551234567", device_token=None):
+def _make_member(id=1, first_name="Jane", last_name="Doe", email="jane@example.com", phone_number="+15551234567", device_token=None):
     """Create a mock Member."""
     member = MagicMock(spec=Member)
     member.id = id
     member.first_name = first_name
+    member.last_name = last_name
+    member.full_name = f"{first_name} {last_name}"
     member.email = email
     member.phone_number = phone_number
     member.device_token = device_token
@@ -60,7 +62,7 @@ class TestSendSessionReminders:
         send_session_reminders(session, mock_db)
 
         mock_email.assert_called_once()
-        assert mock_email.call_args.kwargs["to_email"] == "jane@example.com"
+        assert mock_email.call_args.kwargs["to_email"] == "Jane Doe <jane@example.com>"
         assert mock_email.call_args.kwargs["role"] == "alto"
 
         mock_sms.assert_called_once()

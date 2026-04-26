@@ -16,6 +16,12 @@ class Environment(str, Enum):
     TEST = "test"
 
 
+class EmailProviderType(str, Enum):
+    SENDGRID = "sendgrid"
+    MAILGUN = "mailgun"
+    MOCK = "mock"
+
+
 class Settings(BaseSettings):
     """
     Application settings loaded from environment variables.
@@ -39,7 +45,12 @@ class Settings(BaseSettings):
     # SendGrid
     sendgrid_api_key: str = "placeholder_sendgrid_key"
 
+    # Mailgun
+    mailgun_api_key: str = "placeholder_mailgun_key"
+    mailgun_domain: str = ""
+
     # Email
+    email_provider: EmailProviderType = EmailProviderType.SENDGRID
     email_from_address: str = "noreply@example.com"
     role_preposition: str = "as"
     

@@ -34,8 +34,8 @@ def send_session_reminders(session: Session, db):
         # Send Email
         if member.email:
             send_reminder_email(
-                to_email=member.email,
-                member_name=member.first_name,
+                to_email=f"{member.full_name} <{member.email}>",
+                member_first_name=member.first_name,
                 session_title=session.title,
                 role=assignment.role,
                 session_time=session_time_str
