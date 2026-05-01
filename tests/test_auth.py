@@ -82,7 +82,8 @@ class TestLogin:
 
 
 class TestVerifyOTP:
-    def test_verify_otp_succeeds_with_valid_code_and_returns_token(self, client, created_member, sample_member_data):
+    @patch("app.routers.auth.check_verification", return_value=True)
+    def test_verify_otp_succeeds_with_valid_code_and_returns_token(self, mock_check, client, created_member, sample_member_data):
         response = client.post("/auth/verify-otp", json={
             "login": sample_member_data["email"],
             "otp": "123456",
@@ -117,7 +118,8 @@ class TestPasswordReset:
         assert response.status_code == 200
         assert "account matching" in response.json()["status"]
 
-    def test_reset_password_succeeds_and_marks_member_as_verified(self, client, db_session, created_member, sample_member_data):
+    @patch("app.routers.auth.check_verification", return_value=True)
+    def test_reset_password_succeeds_and_marks_member_as_verified(self, mock_check, client, db_session, created_member, sample_member_data):
         response = client.post(
             "/auth/reset-password",
             json={
@@ -158,7 +160,8 @@ class TestPhoneAuth:
         assert data["status"] == "unverified"
         assert data["method"] == "phone"
 
-    def test_verify_otp_via_phone_number_successfully_marks_phone_as_verified(self, client, db_session):
+    @patch("app.routers.auth.check_verification", return_value=True)
+    def test_verify_otp_via_phone_number_successfully_marks_phone_as_verified(self, mock_check, client, db_session):
         db_session.add(Member(
             first_name="Phone", last_name="OTP",
             email="phone_otp@test.com",
@@ -194,7 +197,8 @@ class TestPhoneAuth:
         assert response.status_code == 200
         assert "account matching" in response.json()["status"]
 
-    def test_reset_password_via_phone_number_successfully_marks_phone_as_verified(self, client, db_session):
+    @patch("app.routers.auth.check_verification", return_value=True)
+    def test_reset_password_via_phone_number_successfully_marks_phone_as_verified(self, mock_check, client, db_session):
         db_session.add(Member(
             first_name="Phone", last_name="ResetPw",
             email="phone_resetpw@test.com",
