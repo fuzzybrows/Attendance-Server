@@ -83,7 +83,7 @@ def read_attendance(session_id: int, db: Session = Depends(get_db), current_memb
     # However, for administrative lists, we should use get_attendance_read_manager.
     # For now, we'll keep this as-is for mobile app compatibility but update the stats route below.
     # Allow all authenticated members to view session attendance (for mobile app)
-    attendance = db.query(AttendanceModel).filter(AttendanceModel.session_id == session_id).all()
+    attendance = db.query(AttendanceModel).filter(AttendanceModel.session_id == session_id).order_by(AttendanceModel.timestamp.desc()).all()
     return attendance
 
 @router.get("/member/{member_id}", response_model=List[AttendanceWithSession])

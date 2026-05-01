@@ -5,7 +5,7 @@ SHELL := /bin/bash
 .PHONY: install run dev clean migrations migrate test coverage
 
 # Default port
-PORT ?= 8001
+PORT ?= 8002
 VENV = .venv
 PYTHON = $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
