@@ -47,6 +47,23 @@ class TestLogin:
         })
         assert response.status_code == 401
 
+    def test_login_fails_and_returns_401_when_password_hash_is_null(self, client, db_session):
+        db_session.add(Member(
+            first_name="No", last_name="Password",
+            email="nopw@example.com",
+            phone_number="+15550009999",
+            password_hash=None,
+        ))
+        db_session.commit()
+
+        response = client.post("/auth/login", json={
+            "login": "nopw@example.com",
+            "password": "anything",
+            "recaptcha_token": "test-token"
+        })
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Invalid credentials or account disabled"
+
     def test_login_succeeds_and_returns_token_for_verified_user(self, client, db_session, created_member, sample_member_data):
         member = db_session.query(Member).filter_by(email=sample_member_data["email"]).first()
         member.email_verified = True

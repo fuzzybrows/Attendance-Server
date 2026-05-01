@@ -35,7 +35,7 @@ def login(data: MemberLogin, request: Request, db: Session = Depends(get_db)):
         (Member.email == data.login) | (Member.phone_number == data.login)
     ).first()
     
-    if not member or not verify_password(data.password, member.password_hash) or not member.is_active:
+    if not member or not member.password_hash or not verify_password(data.password, member.password_hash) or not member.is_active:
         logger.warning("Login failed - Invalid credentials or disabled", extra={"type": "login_failed", "login": data.login, "reason": "invalid_credentials_or_disabled"})
         raise HTTPException(status_code=401, detail="Invalid credentials or account disabled")
     
