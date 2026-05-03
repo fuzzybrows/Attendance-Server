@@ -65,7 +65,8 @@ class TestLoginRateLimiting:
         yield
         auth_limiter._hits.clear()
 
-    def test_login_returns_429_after_exceeding_rate_limit(self, client, created_member, sample_member_data):
+    @patch("app.routers.auth.send_email_verification", return_value=True)
+    def test_login_returns_429_after_exceeding_rate_limit(self, mock_send, client, created_member, sample_member_data):
         """Hammer the login endpoint and verify a 429 is returned."""
         payload = {
             "login": sample_member_data["email"],
@@ -86,7 +87,8 @@ class TestLoginRateLimiting:
         assert responses[3].status_code == 429
         assert "Too many login attempts" in responses[3].json()["detail"]
 
-    def test_login_without_recaptcha_token_succeeds_when_recaptcha_disabled(self, client, created_member, sample_member_data):
+    @patch("app.routers.auth.send_email_verification", return_value=True)
+    def test_login_without_recaptcha_token_succeeds_when_recaptcha_disabled(self, mock_send, client, created_member, sample_member_data):
         """Mobile clients don't send recaptcha_token. With recaptcha_enabled=false, login still works."""
         payload = {
             "login": sample_member_data["email"],
@@ -96,7 +98,8 @@ class TestLoginRateLimiting:
         response = client.post("/auth/login", json=payload)
         assert response.status_code == 200
 
-    def test_login_without_recaptcha_token_fails_when_recaptcha_enabled(self, client, created_member, sample_member_data):
+    @patch("app.routers.auth.send_email_verification", return_value=True)
+    def test_login_without_recaptcha_token_fails_when_recaptcha_enabled(self, mock_send, client, created_member, sample_member_data):
         """When recaptcha is enabled and no token is sent, verify_recaptcha returns False."""
         payload = {
             "login": sample_member_data["email"],
@@ -121,7 +124,8 @@ class TestForgotPasswordRateLimiting:
         yield
         auth_limiter._hits.clear()
 
-    def test_forgot_password_returns_429_after_exceeding_rate_limit(self, client, created_member, sample_member_data):
+    @patch("app.routers.auth.send_email_verification", return_value=True)
+    def test_forgot_password_returns_429_after_exceeding_rate_limit(self, mock_send, client, created_member, sample_member_data):
         payload = {
             "login": sample_member_data["email"],
             "recaptcha_token": "test-token"
