@@ -5,7 +5,8 @@ from app.core.auth import get_password_hash
 
 
 class TestLogin:
-    def test_login_succeeds_with_valid_credentials_and_returns_unverified_status(self, client, created_member, sample_member_data):
+    @patch("app.routers.auth.send_email_verification", return_value=True)
+    def test_login_succeeds_with_valid_credentials_and_returns_unverified_status(self, mock_send, client, created_member, sample_member_data):
         response = client.post("/auth/login", json={
             "login": sample_member_data["email"],
             "password": sample_member_data["password"],
@@ -102,7 +103,8 @@ class TestVerifyOTP:
 
 
 class TestPasswordReset:
-    def test_forgot_password_successfully_initiates_otp_delivery(self, client, created_member, sample_member_data):
+    @patch("app.routers.auth.send_email_verification", return_value=True)
+    def test_forgot_password_successfully_initiates_otp_delivery(self, mock_send, client, created_member, sample_member_data):
         response = client.post(
             "/auth/forgot-password",
             json={"login": sample_member_data["email"], "recaptcha_token": "test-token"}
@@ -140,7 +142,8 @@ class TestPasswordReset:
 class TestPhoneAuth:
     """Tests for phone-number-based auth paths (covers SMS branches)."""
 
-    def test_login_with_unverified_phone_number_triggers_sms_otp_delivery(self, client, db_session, sample_member_data):
+    @patch("app.routers.auth.send_sms_verification", return_value=True)
+    def test_login_with_unverified_phone_number_triggers_sms_otp_delivery(self, mock_send, client, db_session, sample_member_data):
         # Create member with phone number
         db_session.add(Member(
             first_name="Phone", last_name="User",
@@ -181,7 +184,8 @@ class TestPhoneAuth:
         member = db_session.query(Member).filter_by(phone_number="+15559876543").first()
         assert member.phone_number_verified is True
 
-    def test_forgot_password_request_via_phone_number_triggers_sms_otp(self, client, db_session):
+    @patch("app.routers.auth.send_sms_verification", return_value=True)
+    def test_forgot_password_request_via_phone_number_triggers_sms_otp(self, mock_send, client, db_session):
         db_session.add(Member(
             first_name="Phone", last_name="Reset",
             email="phone_reset@test.com",
