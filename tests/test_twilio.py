@@ -6,6 +6,9 @@ from unittest.mock import patch, MagicMock
 import importlib
 import os
 import app.services.twilio as twilio_mod
+import app.services.verification as verify_mod
+from app.services.verification_providers.twilio_verify import TwilioVerificationProvider
+from app.services.verification_providers.local import LocalVerificationProvider
 
 
 def _reload_twilio_with_real_sid():
@@ -144,8 +147,6 @@ class TestCheckVerification:
 class TestConvenienceFunctions:
     @patch("app.services.verification_providers.twilio_verify.send_verification", return_value=True)
     def test_send_email_verification_delegates_to_twilio_when_twilio_provider(self, mock_send):
-        import app.services.verification as verify_mod
-        from app.services.verification_providers.twilio_verify import TwilioVerificationProvider
         original = verify_mod._provider
         verify_mod._provider = TwilioVerificationProvider()
         try:
@@ -157,8 +158,6 @@ class TestConvenienceFunctions:
 
     @patch("app.services.verification_providers.local.send_local_email_otp", return_value=True)
     def test_send_email_verification_delegates_to_local_otp_when_local_provider(self, mock_local):
-        import app.services.verification as verify_mod
-        from app.services.verification_providers.local import LocalVerificationProvider
         original = verify_mod._provider
         verify_mod._provider = LocalVerificationProvider()
         try:
@@ -170,8 +169,6 @@ class TestConvenienceFunctions:
 
     @patch("app.services.verification_providers.twilio_verify.send_verification", return_value=True)
     def test_send_sms_verification_delegates_to_twilio_when_twilio_provider(self, mock_send):
-        import app.services.verification as verify_mod
-        from app.services.verification_providers.twilio_verify import TwilioVerificationProvider
         original = verify_mod._provider
         verify_mod._provider = TwilioVerificationProvider()
         try:
