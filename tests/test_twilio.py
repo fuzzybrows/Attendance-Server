@@ -169,10 +169,16 @@ class TestConvenienceFunctions:
             verify_mod._provider = original
 
     @patch("app.services.verification_providers.twilio_verify.send_verification", return_value=True)
-    def test_send_sms_verification_always_delegates_to_twilio(self, mock_send):
+    def test_send_sms_verification_delegates_to_twilio_when_twilio_provider(self, mock_send):
         import app.services.verification as verify_mod
-        result = verify_mod.send_sms_verification("+15551234567")
-        assert result is True
-        mock_send.assert_called_once_with("+15551234567", channel="sms")
+        from app.services.verification_providers.twilio_verify import TwilioVerificationProvider
+        original = verify_mod._provider
+        verify_mod._provider = TwilioVerificationProvider()
+        try:
+            result = verify_mod.send_sms_verification("+15551234567")
+            assert result is True
+            mock_send.assert_called_once_with("+15551234567", channel="sms")
+        finally:
+            verify_mod._provider = original
 
 

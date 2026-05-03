@@ -1,4 +1,6 @@
 from app.core.auth import create_access_token
+from unittest.mock import patch
+from app.settings import DeviceIdMode
 import pytest
 
 # Reuse fixtures from conftest.py
@@ -6,6 +8,7 @@ import pytest
 
 class TestFraudPrevention:
 
+    @patch("app.services.attendance.settings.device_id_mode", DeviceIdMode.LOCAL_STORAGE)
     def test_device_lock_blocks_multiple_members_from_same_device_in_same_session(self, client, created_member, created_session):
         session_id = created_session["id"]
         
