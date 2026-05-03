@@ -4,7 +4,9 @@ from typing import Optional
 import logging
 from app.models.session import Session as SessionModel
 from app.models.attendance import Attendance
+from app.models.member import Member
 from app.core.utils import calculate_distance
+from app.settings import settings, DeviceIdMode
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +42,29 @@ def validate_attendance(
         ).first()
 
         if existing_device_usage:
-            logger.warning("Device Lock triggered", extra={
+            current_member = db.query(Member).filter(Member.id == member_id).first()
+            other_member = db.query(Member).filter(Member.id == existing_device_usage.member_id).first()
+            log_extra = {
                 "type": "fraud_prevented",
                 "subtype": "device_lock",
                 "device_id": device_id,
-                "session_id": session.id
-            })
-            raise HTTPException(status_code=403, detail="This device has already been used to mark attendance for another member in this session.")
+                "session_id": session.id,
+                "member_id": member_id,
+                "member_name": f"{current_member.first_name} {current_member.last_name}" if current_member else "Unknown",
+                "other_member_id": existing_device_usage.member_id,
+                "other_member_name": f"{other_member.first_name} {other_member.last_name}" if other_member else "Unknown",
+                "mode": settings.device_id_mode.value,
+            }
+
+            if settings.device_id_mode == DeviceIdMode.FINGERPRINT:
+                # Fingerprint mode: possible false positive on identical
+                # hardware — log for review but let the user through.
+                logger.warning("Device Lock collision (fingerprint mode, allowing)", extra=log_extra)
+            else:
+                # localStorage mode: IDs are unique per browser install,
+                # so a collision is a genuine buddy-punch attempt.
+                logger.warning("Device Lock triggered (blocking)", extra=log_extra)
+                raise HTTPException(status_code=403, detail="This device has already been used to mark attendance for another member in this session.")
 
     # 2. Geofence Check – skip for admin overrides
     if not is_admin_override and session.latitude is not None and session.longitude is not None and session.radius:

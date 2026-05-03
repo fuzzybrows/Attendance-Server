@@ -27,6 +27,11 @@ class VerificationProviderType(str, Enum):
     LOCAL = "local"
 
 
+class DeviceIdMode(str, Enum):
+    FINGERPRINT = "fingerprint"
+    LOCAL_STORAGE = "localStorage"
+
+
 class Settings(BaseSettings):
     """
     Application settings loaded from environment variables.
@@ -102,6 +107,9 @@ class Settings(BaseSettings):
     # Recaptcha
     recaptcha_secret_key: Optional[str] = None
     recaptcha_enabled: bool = True
+
+    # Device fingerprinting mode
+    device_id_mode: DeviceIdMode = DeviceIdMode.FINGERPRINT
     
     model_config = SettingsConfigDict(
         env_file=[".env", "../.env"],
