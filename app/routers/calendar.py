@@ -225,9 +225,11 @@ def get_unavailable_days(
     current_user: Member = Depends(get_current_active_member)
 ):
     """
-    Get all dates in a specific month that the current user has explicitly marked as unavailable.
+    Get all dates in a specific month that the current user is unavailable.
+    Combines day-level DayOff records with session-level Availability opt-outs.
     Returns a list of ISO date strings (e.g. ['2026-03-29']).
     """
+    # Day-level unavailability
     day_offs = db.query(DayOff).filter(
         DayOff.member_id == current_user.id,
         extract('year', DayOff.date) == year,
@@ -235,8 +237,23 @@ def get_unavailable_days(
         DayOff.is_available == False
     ).all()
 
+    unavailable_dates = {str(d.date) for d in day_offs}
+
+    # Session-level unavailability (opted out of individual sessions)
+    session_opt_outs = db.query(SessionModel.start_time).join(
+        Availability, Availability.session_id == SessionModel.id
+    ).filter(
+        Availability.member_id == current_user.id,
+        Availability.is_available == False,
+        extract('year', SessionModel.start_time) == year,
+        extract('month', SessionModel.start_time) == month,
+    ).all()
+
+    for (start_time,) in session_opt_outs:
+        unavailable_dates.add(str(start_time.date()))
+
     return {
-        "unavailable_days": [str(d.date) for d in day_offs]
+        "unavailable_days": sorted(unavailable_dates)
     }
 
 
