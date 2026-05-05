@@ -70,6 +70,9 @@ def update_availability(
 ):
     """
     Update the current member's availability for a specific session.
+    Marking a session as unavailable also marks the whole day as unavailable
+    (upserts a DayOff record and updates all other sessions on that day).
+    Marking available reverses the day-off.
     """
     # Check if session exists
     db_session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
@@ -86,7 +89,7 @@ def update_availability(
                 detail="Availability is locked for this month because the schedule has been finalized."
             )
     
-    # Check if an availability record already exists
+    # Update the target session's availability
     availability = db.query(Availability).filter(
         Availability.member_id == current_user.id,
         Availability.session_id == session_id
@@ -101,7 +104,46 @@ def update_availability(
             is_available=availability_data.is_available
         )
         db.add(availability)
-    
+
+    # Promote to day-level: upsert a DayOff record for the session's date
+    target_date = db_session.start_time.date()
+    day_off = db.query(DayOff).filter(
+        DayOff.member_id == current_user.id,
+        DayOff.date == target_date
+    ).first()
+    if day_off:
+        day_off.is_available = availability_data.is_available
+    else:
+        day_off = DayOff(
+            member_id=current_user.id,
+            date=target_date,
+            is_available=availability_data.is_available
+        )
+        db.add(day_off)
+
+    # Also update all other sessions on the same day
+    same_day_sessions = db.query(SessionModel).filter(
+        SessionModel.id != session_id,
+        extract('year', SessionModel.start_time) == target_date.year,
+        extract('month', SessionModel.start_time) == target_date.month,
+        extract('day', SessionModel.start_time) == target_date.day,
+    ).all()
+
+    for other_session in same_day_sessions:
+        other_avail = db.query(Availability).filter(
+            Availability.member_id == current_user.id,
+            Availability.session_id == other_session.id
+        ).first()
+        if other_avail:
+            other_avail.is_available = availability_data.is_available
+        else:
+            other_avail = Availability(
+                member_id=current_user.id,
+                session_id=other_session.id,
+                is_available=availability_data.is_available
+            )
+            db.add(other_avail)
+
     db.commit()
     db.refresh(availability)
     return availability
@@ -207,6 +249,7 @@ def get_month_availability(
 ):
     """
     Get a matrix of all member availabilities for a specific month.
+    Combines session-level opt-outs with day-level DayOff records.
     (Admin only)
     """
     # 1. Get all sessions in that month
@@ -222,11 +265,22 @@ def get_month_availability(
         Availability.session_id.in_(session_ids)
     ).all()
 
-    # Determine who opted out
-    opt_outs_by_session = {s.id: [] for s in sessions}
+    # Determine who opted out at session level
+    opt_outs_by_session = {s.id: set() for s in sessions}
     for av in availabilities:
         if not av.is_available:
-            opt_outs_by_session[av.session_id].append(av.member_id)
+            opt_outs_by_session[av.session_id].add(av.member_id)
+
+    # 3. Get all day-level unavailability (DayOff records)
+    day_offs = db.query(DayOff).filter(
+        extract('year', DayOff.date) == year,
+        extract('month', DayOff.date) == month,
+        DayOff.is_available == False
+    ).all()
+
+    day_offs_by_date = defaultdict(set)
+    for do in day_offs:
+        day_offs_by_date[str(do.date)].add(do.member_id)
 
     # Note: If a record doesn't exist, we assume they ARE available (default=True).
 
@@ -236,7 +290,9 @@ def get_month_availability(
                 "id": s.id,
                 "title": s.title,
                 "start_time": s.start_time.isoformat(),
-                "opted_out_member_ids": opt_outs_by_session[s.id]
+                "opted_out_member_ids": list(
+                    opt_outs_by_session[s.id] | day_offs_by_date.get(s.start_time.strftime('%Y-%m-%d'), set())
+                )
             }
             for s in sessions
         ]

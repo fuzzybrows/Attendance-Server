@@ -1,8 +1,9 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from app.models.session import Session as SessionModel
 from app.models.assignment import Assignment
 from app.models.member import Member, Role
+from app.models.day_off import DayOff
 import io
 
 def test_calendar_export_as_pdf_returns_valid_pdf_response(client, db_session):
@@ -159,3 +160,45 @@ def test_generate_schedule_enforces_sunday_lead_singer_role_restriction_on_sunda
     # Must be Member B
     assert lead_assignment["member_id"] == member_b.id
     assert "Sunday" in lead_assignment["member_name"]
+
+
+def test_month_availability_includes_day_off_records(client, db_session):
+    """Regression: DayOff records should appear in opted_out_member_ids
+    for sessions on that day."""
+    # Setup: a session on May 10, 2026
+    session = SessionModel(
+        title="Saturday Practice",
+        type="rehearsal",
+        start_time=datetime(2026, 5, 10, 10, 0, 0),
+        end_time=datetime(2026, 5, 10, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+
+    # Mark the whole day as unavailable via DayOff (no per-session Availability record)
+    day_off = DayOff(
+        member_id=admin.id,
+        date=date(2026, 5, 10),
+        is_available=False
+    )
+    db_session.add(day_off)
+    db_session.commit()
+
+    # Fetch month availability
+    response = client.get("/calendar/availability/2026/5")
+    assert response.status_code == 200
+    data = response.json()
+
+    # Find the session
+    session_data = next(
+        (s for s in data["sessions"] if s["id"] == session.id), None
+    )
+    assert session_data is not None, "Session not found in availability response"
+
+    # Admin should appear in opted_out_member_ids due to DayOff
+    assert admin.id in session_data["opted_out_member_ids"], (
+        f"Member {admin.id} marked the day off but is not in opted_out_member_ids"
+    )
