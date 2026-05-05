@@ -10,6 +10,7 @@ Revises: b4d8e1f2a356
 Create Date: 2026-05-04 19:16:00.000000
 
 """
+import os
 from typing import Sequence, Union
 
 from alembic import op
@@ -22,15 +23,17 @@ down_revision: Union[str, None] = 'b4d8e1f2a356'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+APP_TIMEZONE = os.environ.get("APP_TIMEZONE", "America/Chicago")
+
 
 def upgrade() -> None:
     """Insert DayOff records for session-level unavailability that has
     no matching day-level record yet."""
-    op.execute("""
+    op.execute(f"""
         INSERT INTO day_offs (member_id, date, is_available)
         SELECT DISTINCT
             a.member_id,
-            CAST(s.start_time AS DATE),
+            CAST((s.start_time AT TIME ZONE '{APP_TIMEZONE}') AS DATE),
             FALSE
         FROM availabilities a
         JOIN sessions s ON s.id = a.session_id
@@ -38,7 +41,7 @@ def upgrade() -> None:
           AND NOT EXISTS (
               SELECT 1 FROM day_offs d
               WHERE d.member_id = a.member_id
-                AND d.date = CAST(s.start_time AS DATE)
+                AND d.date = CAST((s.start_time AT TIME ZONE '{APP_TIMEZONE}') AS DATE)
           )
     """)
 
@@ -50,7 +53,7 @@ def downgrade() -> None:
     and were not independently created via the day-level API
     (i.e. they have no other source of truth besides the backfill).
     """
-    op.execute("""
+    op.execute(f"""
         DELETE FROM day_offs d
         WHERE d.is_available = FALSE
           AND EXISTS (
@@ -58,6 +61,6 @@ def downgrade() -> None:
               JOIN sessions s ON s.id = a.session_id
               WHERE a.member_id = d.member_id
                 AND a.is_available = FALSE
-                AND CAST(s.start_time AS DATE) = d.date
+                AND CAST((s.start_time AT TIME ZONE '{APP_TIMEZONE}') AS DATE) = d.date
           )
     """)

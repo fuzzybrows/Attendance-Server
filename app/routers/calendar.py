@@ -106,7 +106,7 @@ def update_availability(
         db.add(availability)
 
     # Promote to day-level: upsert a DayOff record for the session's date
-    target_date = db_session.start_time.date()
+    target_date = db_session.start_time.astimezone(LOCAL_TZ).date()
     day_off = db.query(DayOff).filter(
         DayOff.member_id == current_user.id,
         DayOff.date == target_date
@@ -121,13 +121,16 @@ def update_availability(
         )
         db.add(day_off)
 
-    # Also update all other sessions on the same day
-    same_day_sessions = db.query(SessionModel).filter(
+    # Also update all other sessions on the same day (compare in local tz)
+    all_month_sessions = db.query(SessionModel).filter(
         SessionModel.id != session_id,
         extract('year', SessionModel.start_time) == target_date.year,
         extract('month', SessionModel.start_time) == target_date.month,
-        extract('day', SessionModel.start_time) == target_date.day,
     ).all()
+    same_day_sessions = [
+        s for s in all_month_sessions
+        if s.start_time.astimezone(LOCAL_TZ).date() == target_date
+    ]
 
     for other_session in same_day_sessions:
         other_avail = db.query(Availability).filter(
@@ -250,7 +253,7 @@ def get_unavailable_days(
     ).all()
 
     for (start_time,) in session_opt_outs:
-        unavailable_dates.add(str(start_time.date()))
+        unavailable_dates.add(str(start_time.astimezone(LOCAL_TZ).date()))
 
     return {
         "unavailable_days": sorted(unavailable_dates)
@@ -308,7 +311,7 @@ def get_month_availability(
                 "title": s.title,
                 "start_time": s.start_time.isoformat(),
                 "opted_out_member_ids": list(
-                    opt_outs_by_session[s.id] | day_offs_by_date.get(s.start_time.strftime('%Y-%m-%d'), set())
+                    opt_outs_by_session[s.id] | day_offs_by_date.get(str(s.start_time.astimezone(LOCAL_TZ).date()), set())
                 )
             }
             for s in sessions
@@ -367,7 +370,7 @@ def get_team_availability(
     # 5. Build per-session response (combine session opt-outs with day-level)
     sessions_response = []
     for s in sessions:
-        session_date_str = s.start_time.strftime('%Y-%m-%d')
+        session_date_str = str(s.start_time.astimezone(LOCAL_TZ).date())
         # Union of session-level and day-level opt-outs
         combined_opted_out = opt_outs_by_session[s.id] | day_offs_by_date.get(session_date_str, set())
         available_count = total_members - len(combined_opted_out)
@@ -395,7 +398,7 @@ def get_team_availability(
         unavailable_ids = set(day_offs_by_date.get(date_str, set()))
         # Also check session-level opt-outs for sessions on this day
         for s in sessions:
-            if s.start_time.strftime('%Y-%m-%d') == date_str:
+            if str(s.start_time.astimezone(LOCAL_TZ).date()) == date_str:
                 unavailable_ids |= opt_outs_by_session[s.id]
 
         if unavailable_ids:
