@@ -11,7 +11,7 @@ from app.core.database import engine
 from app.core.logging_config import setup_logging
 from app.core.scheduler import start_scheduler, stop_scheduler
 from app.core.websocket import attendance_ws
-from app.routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar, google_auth, session_templates
+from app.routers import auth, members, sessions, attendance, statistics, qr_attendance, calendar, google_auth, session_templates, cron
 
 # Setup logging before creating app or during startup
 setup_logging()
@@ -23,12 +23,18 @@ logger = logging.getLogger("main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Starting background services...", extra={"type": "app_lifecycle", "action": "startup"})
-    start_scheduler()
+    if app_settings.cron_secret:
+        # External cron jobs handle scheduling — skip APScheduler
+        logger.info("CRON_SECRET is set — using HTTP cron endpoints instead of APScheduler", extra={"type": "app_lifecycle", "action": "startup", "scheduler": "external_cron"})
+    else:
+        # Fallback: use APScheduler for local dev when no CRON_SECRET is configured
+        logger.info("Starting APScheduler (no CRON_SECRET configured)...", extra={"type": "app_lifecycle", "action": "startup", "scheduler": "apscheduler"})
+        start_scheduler()
     yield
     # Shutdown
-    logger.info("Shutting down background services...", extra={"type": "app_lifecycle", "action": "shutdown"})
-    stop_scheduler()
+    if not app_settings.cron_secret:
+        logger.info("Shutting down APScheduler...", extra={"type": "app_lifecycle", "action": "shutdown"})
+        stop_scheduler()
 
 app = FastAPI(title="Choir Attendance Server", lifespan=lifespan)
 
@@ -66,6 +72,7 @@ app.include_router(qr_attendance.router)
 app.include_router(calendar.router)
 app.include_router(google_auth.router)
 app.include_router(session_templates.router)
+app.include_router(cron.router)
 
 @app.api_route("/health", methods=["GET", "HEAD"], response_class=PlainTextResponse, status_code=200)
 def health_check():

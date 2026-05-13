@@ -110,6 +110,9 @@ class Settings(BaseSettings):
 
     # Device fingerprinting mode
     device_id_mode: DeviceIdMode = DeviceIdMode.FINGERPRINT
+
+    # Cron job secret for external triggers (Render, GitHub Actions, Vercel)
+    cron_secret: Optional[str] = None
     
     model_config = SettingsConfigDict(
         env_file=[".env", "../.env"],

@@ -1,0 +1,92 @@
+name: Cron Jobs
+
+on:
+  schedule:
+    # Every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - reminders
+          - update-statuses
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    strategy:
+      matrix:
+        deployment:
+          - name: CTC
+            url_secret: API_BASE_URL_CTC
+            cron_secret: CRON_SECRET_CTC
+          - name: AVD
+            url_secret: API_BASE_URL_AVD
+            cron_secret: CRON_SECRET_AVD
+      fail-fast: false
+    name: "Cron — ${{ matrix.deployment.name }}"
+    steps:
+      - name: Determine jobs to run
+        id: jobs
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual trigger — run what the user selected
+            echo "run_statuses=true" >> $GITHUB_OUTPUT
+            echo "run_reminders=true" >> $GITHUB_OUTPUT
+            JOB="${{ github.event.inputs.job }}"
+            if [ "$JOB" = "update-statuses" ]; then
+              echo "run_reminders=false" >> $GITHUB_OUTPUT
+            elif [ "$JOB" = "reminders" ]; then
+              echo "run_statuses=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            # Scheduled trigger — always run statuses (every 5 min)
+            echo "run_statuses=true" >> $GITHUB_OUTPUT
+            # Only run reminders at :00, :15, :30, :45 (every 15 min)
+            MINUTE=$(date -u +%M)
+            if [ $((10#$MINUTE % 15)) -eq 0 ]; then
+              echo "run_reminders=true" >> $GITHUB_OUTPUT
+            else
+              echo "run_reminders=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: "Update statuses — ${{ matrix.deployment.name }}"
+        if: steps.jobs.outputs.run_statuses == 'true'
+        env:
+          API_BASE_URL: ${{ secrets[matrix.deployment.url_secret] }}
+          CRON_SECRET: ${{ secrets[matrix.deployment.cron_secret] }}
+        run: |
+          if [ -z "$API_BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::warning::Secrets not configured for ${{ matrix.deployment.name }}, skipping"
+            exit 0
+          fi
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "${API_BASE_URL}/cron/update-statuses")
+          echo "update-statuses: $HTTP_CODE"
+          [ "$HTTP_CODE" -eq 200 ] || { echo "::error::Failed ($HTTP_CODE)"; exit 1; }
+
+      - name: "Send reminders — ${{ matrix.deployment.name }}"
+        if: steps.jobs.outputs.run_reminders == 'true'
+        env:
+          API_BASE_URL: ${{ secrets[matrix.deployment.url_secret] }}
+          CRON_SECRET: ${{ secrets[matrix.deployment.cron_secret] }}
+        run: |
+          if [ -z "$API_BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::warning::Secrets not configured for ${{ matrix.deployment.name }}, skipping"
+            exit 0
+          fi
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "${API_BASE_URL}/cron/reminders")
+          echo "reminders: $HTTP_CODE"
+          [ "$HTTP_CODE" -eq 200 ] || { echo "::error::Failed ($HTTP_CODE)"; exit 1; }
