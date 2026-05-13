@@ -15,6 +15,19 @@ on:
           - all
           - reminders
           - update-statuses
+      deployment:
+        description: 'Which deployment to target'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - CTC
+          - AVD
+      session_id:
+        description: 'Session ID for targeted reminders (optional)'
+        required: false
+        type: string
 
 jobs:
   cron:
@@ -32,7 +45,20 @@ jobs:
       fail-fast: false
     name: "Cron — ${{ matrix.deployment.name }}"
     steps:
+      - name: Check if this deployment should run
+        id: gate
+        run: |
+          SELECTED="${{ github.event.inputs.deployment }}"
+          CURRENT="${{ matrix.deployment.name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$SELECTED" != "both" ] && [ "$SELECTED" != "$CURRENT" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping $CURRENT (targeted: $SELECTED)"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Determine jobs to run
+        if: steps.gate.outputs.skip != 'true'
         id: jobs
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -58,7 +84,7 @@ jobs:
           fi
 
       - name: "Update statuses — ${{ matrix.deployment.name }}"
-        if: steps.jobs.outputs.run_statuses == 'true'
+        if: steps.gate.outputs.skip != 'true' && steps.jobs.outputs.run_statuses == 'true'
         env:
           API_BASE_URL: ${{ secrets[matrix.deployment.url_secret] }}
           CRON_SECRET: ${{ secrets[matrix.deployment.cron_secret] }}
@@ -75,7 +101,7 @@ jobs:
           [ "$HTTP_CODE" -eq 200 ] || { echo "::error::Failed ($HTTP_CODE)"; exit 1; }
 
       - name: "Send reminders — ${{ matrix.deployment.name }}"
-        if: steps.jobs.outputs.run_reminders == 'true'
+        if: steps.gate.outputs.skip != 'true' && steps.jobs.outputs.run_reminders == 'true'
         env:
           API_BASE_URL: ${{ secrets[matrix.deployment.url_secret] }}
           CRON_SECRET: ${{ secrets[matrix.deployment.cron_secret] }}
@@ -84,9 +110,13 @@ jobs:
             echo "::warning::Secrets not configured for ${{ matrix.deployment.name }}, skipping"
             exit 0
           fi
+          ENDPOINT="${API_BASE_URL}/cron/reminders"
+          if [ -n "${{ github.event.inputs.session_id }}" ]; then
+            ENDPOINT="${ENDPOINT}?session_id=${{ github.event.inputs.session_id }}"
+          fi
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
-            "${API_BASE_URL}/cron/reminders")
+            "$ENDPOINT")
           echo "reminders: $HTTP_CODE"
           [ "$HTTP_CODE" -eq 200 ] || { echo "::error::Failed ($HTTP_CODE)"; exit 1; }
