@@ -21,7 +21,7 @@ def send_session_reminders(session: Session, db):
     Send reminders to all assigned members for a given session.
     This is the core logic reused by both the scheduled job and on-demand calls.
     """
-    logger.info(f"Dispatching reminders for session: {session.title}", extra={"type": "reminder_dispatch", "session_id": session.id, "session_title": session.title})
+    logger.info(f"Dispatching reminders for session: {session.title}", extra={"type": "reminder_dispatch", "session_id": session.id, "session_name": session.title, "session_start_date": str(session.start_time)})
 
     assignments = db.query(Assignment).filter(Assignment.session_id == session.id).all()
 
@@ -29,7 +29,7 @@ def send_session_reminders(session: Session, db):
         member = assignment.member
         session_time_str = session.start_time.astimezone(LOCAL_TZ).strftime("%A, %B %d at %I:%M %p")
 
-        logger.info(f"Sending reminder to {member.first_name} for role {assignment.role}", extra={"type": "reminder_sent", "member_id": member.id, "member_name": member.first_name, "role": assignment.role, "session_id": session.id})
+        logger.info(f"Sending reminder to {member.first_name} for role {assignment.role}", extra={"type": "reminder_sent", "member_id": member.id, "member_name": member.first_name, "role": assignment.role, "session_id": session.id, "session_name": session.title, "session_start_date": str(session.start_time)})
 
         # Send Email
         if member.email:
@@ -121,7 +121,7 @@ def update_session_statuses():
         ).all()
         for session in scheduled_sessions:
             session.status = SessionStatus.ACTIVE.value
-            logger.info(f"Auto-marked session {session.id} as ACTIVE", extra={"type": "session_status_update", "session_id": session.id, "new_status": "ACTIVE"})
+            logger.info(f"Auto-marked session {session.id} as ACTIVE", extra={"type": "session_status_update", "session_id": session.id, "session_name": session.title, "session_start_date": str(session.start_time), "new_status": "ACTIVE"})
 
         # Mark Concluded: when now >= end_time
         active_sessions = db.query(Session).filter(
@@ -130,7 +130,7 @@ def update_session_statuses():
         ).all()
         for session in active_sessions:
             session.status = SessionStatus.CONCLUDED.value
-            logger.info(f"Auto-marked session {session.id} as CONCLUDED", extra={"type": "session_status_update", "session_id": session.id, "new_status": "CONCLUDED"})
+            logger.info(f"Auto-marked session {session.id} as CONCLUDED", extra={"type": "session_status_update", "session_id": session.id, "session_name": session.title, "session_start_date": str(session.start_time), "new_status": "CONCLUDED"})
 
         # Mark Archived: 7 days after start_time date at midnight
         concluded_sessions = db.query(Session).filter(
@@ -143,7 +143,7 @@ def update_session_statuses():
             )
             if now >= archive_threshold:
                 session.status = SessionStatus.ARCHIVED.value
-                logger.info(f"Auto-marked session {session.id} as ARCHIVED", extra={"type": "session_status_update", "session_id": session.id, "new_status": "ARCHIVED"})
+                logger.info(f"Auto-marked session {session.id} as ARCHIVED", extra={"type": "session_status_update", "session_id": session.id, "session_name": session.title, "session_start_date": str(session.start_time), "new_status": "ARCHIVED"})
                 
         db.commit()
     except Exception as e:
