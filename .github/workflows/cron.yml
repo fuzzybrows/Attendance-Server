@@ -1,9 +1,8 @@
 name: Cron Jobs
 
 on:
-  schedule:
-    # Every 5 minutes
-    - cron: '*/5 * * * *'
+  # schedule:
+  #   - cron: '*/5 * * * *'  # Disabled — using UptimeRobot instead
   workflow_dispatch:
     inputs:
       job:
@@ -61,26 +60,13 @@ jobs:
         if: steps.gate.outputs.skip != 'true'
         id: jobs
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Manual trigger — run what the user selected
-            echo "run_statuses=true" >> $GITHUB_OUTPUT
-            echo "run_reminders=true" >> $GITHUB_OUTPUT
-            JOB="${{ github.event.inputs.job }}"
-            if [ "$JOB" = "update-statuses" ]; then
-              echo "run_reminders=false" >> $GITHUB_OUTPUT
-            elif [ "$JOB" = "reminders" ]; then
-              echo "run_statuses=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            # Scheduled trigger — always run statuses (every 5 min)
-            echo "run_statuses=true" >> $GITHUB_OUTPUT
-            # Only run reminders at :00, :15, :30, :45 (every 15 min)
-            MINUTE=$(date -u +%M)
-            if [ $((10#$MINUTE % 15)) -eq 0 ]; then
-              echo "run_reminders=true" >> $GITHUB_OUTPUT
-            else
-              echo "run_reminders=false" >> $GITHUB_OUTPUT
-            fi
+          echo "run_statuses=true" >> $GITHUB_OUTPUT
+          echo "run_reminders=true" >> $GITHUB_OUTPUT
+          JOB="${{ github.event.inputs.job }}"
+          if [ "$JOB" = "update-statuses" ]; then
+            echo "run_reminders=false" >> $GITHUB_OUTPUT
+          elif [ "$JOB" = "reminders" ]; then
+            echo "run_statuses=false" >> $GITHUB_OUTPUT
           fi
 
       - name: "Update statuses — ${{ matrix.deployment.name }}"
