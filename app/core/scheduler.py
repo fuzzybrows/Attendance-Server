@@ -60,12 +60,17 @@ def send_session_reminders(session: Session, db):
             )
 
 
+_reminded_sessions: set = set()  # Track session IDs that already got reminders
+
 def dispatch_24hr_reminders(session_id: int = None):
     """
     Send reminders to assigned members.
 
     If session_id is provided, sends reminders for that specific session.
     Otherwise, finds all sessions starting in ~24 hours (scheduled job mode).
+
+    Uses an in-memory set to skip sessions that already received reminders,
+    so it's safe to call from a 5-minute cron without duplicate sends.
     """
     db = SessionLocal()
     try:
@@ -76,10 +81,10 @@ def dispatch_24hr_reminders(session_id: int = None):
                 return
             send_session_reminders(session, db)
         else:
-            # Scheduled job: find sessions starting between 24h and 24h15m from now
+            # Scan a wider window (24h to 24h30m) since we deduplicate by session ID
             now = datetime.now(timezone.utc)
             target_start = now + timedelta(hours=24)
-            target_end = target_start + timedelta(minutes=15)
+            target_end = target_start + timedelta(minutes=30)
 
             logger.info(f"Checking for sessions between {target_start} and {target_end}", extra={"type": "reminder_check", "target_start": str(target_start), "target_end": str(target_end)})
 
@@ -90,7 +95,11 @@ def dispatch_24hr_reminders(session_id: int = None):
             ).all()
 
             for session in upcoming_sessions:
+                if session.id in _reminded_sessions:
+                    logger.debug(f"Skipping session {session.id} — already reminded")
+                    continue
                 send_session_reminders(session, db)
+                _reminded_sessions.add(session.id)
     except Exception as e:
         logger.error(f"Error in dispatch_24hr_reminders: {e}", exc_info=True, extra={"type": "reminder_dispatch_error", "session_id": session_id})
     finally:

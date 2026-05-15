@@ -62,7 +62,7 @@ def _verify_cron_secret(
         )
 
 
-@router.post("/reminders")
+@router.api_route("/reminders", methods=["GET", "POST"])
 def trigger_reminders(
     authorization: Optional[str] = Header(None),
     secret: Optional[str] = Query(None),
@@ -82,7 +82,7 @@ def trigger_reminders(
     return {"status": "ok", "job": "reminders", "session_id": session_id}
 
 
-@router.post("/update-statuses")
+@router.api_route("/update-statuses", methods=["GET", "POST"])
 def trigger_update_statuses(
     authorization: Optional[str] = Header(None),
     secret: Optional[str] = Query(None),
@@ -99,7 +99,7 @@ def trigger_update_statuses(
     return {"status": "ok", "job": "update_statuses"}
 
 
-@router.post("/all")
+@router.api_route("/all", methods=["GET", "POST"])
 def trigger_all_jobs(
     authorization: Optional[str] = Header(None),
     secret: Optional[str] = Query(None),
