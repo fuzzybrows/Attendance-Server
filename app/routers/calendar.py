@@ -815,7 +815,7 @@ def export_month_schedule_pdf(
 
     assignments_by_session = defaultdict(lambda: defaultdict(list))
     for a in assignments:
-        assignments_by_session[a.session_id][a.role].append(f"{a.member.first_name} {a.member.last_name}")
+        assignments_by_session[a.session_id][a.role].append(f"{a.member.first_name} {a.member.last_name[0]}.")
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.5*inch, bottomMargin=0.5*inch)
