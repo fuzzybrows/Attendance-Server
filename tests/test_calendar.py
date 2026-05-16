@@ -350,3 +350,87 @@ class TestMemberFilteringInScheduling:
         assert "Export Singer" in csv_text
         assert "Gone Singer" not in csv_text
         assert "Roleless Person" not in csv_text
+
+
+class TestPDFNameFormatting:
+    """Verify PDF export uses 'FirstName L.' name format."""
+
+    def test_pdf_export_uses_abbreviated_last_name(self, client, db_session):
+        session = SessionModel(
+            title="PDF Name Test",
+            type="program",
+            start_time=datetime(2026, 7, 12, 10, 0),
+            end_time=datetime(2026, 7, 12, 12, 0),
+            status="scheduled"
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        member = Member(
+            first_name="Jessica", last_name="Williams",
+            email="jessica@test.com", is_active=True
+        )
+        db_session.add(member)
+        db_session.commit()
+
+        assignment = Assignment(session_id=session.id, member_id=member.id, role="soprano")
+        db_session.add(assignment)
+        db_session.commit()
+
+        response = client.get("/calendar/schedule/export_pdf?year=2026&month=7")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/pdf"
+
+    def test_pdf_export_handles_empty_last_name(self, client, db_session):
+        session = SessionModel(
+            title="Empty Last Name Test",
+            type="program",
+            start_time=datetime(2026, 8, 9, 10, 0),
+            end_time=datetime(2026, 8, 9, 12, 0),
+            status="scheduled"
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        member = Member(
+            first_name="Cher", last_name="",
+            email="cher@test.com", is_active=True
+        )
+        db_session.add(member)
+        db_session.commit()
+
+        assignment = Assignment(session_id=session.id, member_id=member.id, role="alto")
+        db_session.add(assignment)
+        db_session.commit()
+
+        # Should not crash with IndexError
+        response = client.get("/calendar/schedule/export_pdf?year=2026&month=8")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/pdf"
+
+    def test_pdf_export_handles_none_last_name(self, client, db_session):
+        session = SessionModel(
+            title="None Last Name Test",
+            type="program",
+            start_time=datetime(2026, 9, 13, 10, 0),
+            end_time=datetime(2026, 9, 13, 12, 0),
+            status="scheduled"
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        member = Member(
+            first_name="Prince", last_name=None,
+            email="prince@test.com", is_active=True
+        )
+        db_session.add(member)
+        db_session.commit()
+
+        assignment = Assignment(session_id=session.id, member_id=member.id, role="tenor")
+        db_session.add(assignment)
+        db_session.commit()
+
+        # Should not crash with TypeError
+        response = client.get("/calendar/schedule/export_pdf?year=2026&month=9")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/pdf"
