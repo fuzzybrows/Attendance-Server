@@ -202,3 +202,151 @@ def test_month_availability_includes_day_off_records(client, db_session):
     assert admin.id in session_data["opted_out_member_ids"], (
         f"Member {admin.id} marked the day off but is not in opted_out_member_ids"
     )
+
+
+def _create_assignable_role(db_session, name="soprano", display_order=1):
+    """Create or get a role with display_order set (i.e. assignable)."""
+    role = db_session.query(Role).filter_by(name=name).first()
+    if not role:
+        role = Role(name=name, display_order=display_order)
+        db_session.add(role)
+        db_session.commit()
+    return role
+
+
+class TestMemberFilteringInScheduling:
+    """Ensure disabled and roleless members are excluded from scheduling views."""
+
+    def test_team_availability_excludes_inactive_members(self, client, db_session):
+        role = _create_assignable_role(db_session)
+
+        active_member = Member(
+            first_name="Active", last_name="Singer",
+            email="active@test.com", is_active=True, roles=[role]
+        )
+        inactive_member = Member(
+            first_name="Inactive", last_name="Singer",
+            email="inactive@test.com", is_active=False, roles=[role]
+        )
+        db_session.add_all([active_member, inactive_member])
+        db_session.commit()
+
+        session = SessionModel(
+            title="Test Service", type="program",
+            start_time=datetime(2026, 6, 14, 10, 0),
+            end_time=datetime(2026, 6, 14, 12, 0),
+            status="scheduled"
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        response = client.get("/calendar/availability/team/2026/6")
+        assert response.status_code == 200
+        data = response.json()
+
+        member_ids = [m["id"] for m in data["members"]]
+        assert active_member.id in member_ids
+        assert inactive_member.id not in member_ids
+
+    def test_team_availability_excludes_members_without_assignable_roles(self, client, db_session):
+        role = _create_assignable_role(db_session)
+
+        member_with_role = Member(
+            first_name="Assigned", last_name="Singer",
+            email="assigned@test.com", is_active=True, roles=[role]
+        )
+        member_no_role = Member(
+            first_name="NoRole", last_name="Person",
+            email="norole@test.com", is_active=True, roles=[]
+        )
+        db_session.add_all([member_with_role, member_no_role])
+        db_session.commit()
+
+        session = SessionModel(
+            title="Role Check Service", type="program",
+            start_time=datetime(2026, 6, 14, 10, 0),
+            end_time=datetime(2026, 6, 14, 12, 0),
+            status="scheduled"
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        response = client.get("/calendar/availability/team/2026/6")
+        assert response.status_code == 200
+        data = response.json()
+
+        member_ids = [m["id"] for m in data["members"]]
+        assert member_with_role.id in member_ids
+        assert member_no_role.id not in member_ids
+
+    def test_generate_schedule_excludes_inactive_members(self, client, db_session):
+        role = _create_assignable_role(db_session, name="alto", display_order=2)
+
+        active_member = Member(
+            first_name="Active", last_name="Alto",
+            email="activealt@test.com", is_active=True, roles=[role]
+        )
+        inactive_member = Member(
+            first_name="Ghost", last_name="Alto",
+            email="ghostalt@test.com", is_active=False, roles=[role]
+        )
+        db_session.add_all([active_member, inactive_member])
+        db_session.commit()
+
+        session = SessionModel(
+            title="Schedule Test", type="program",
+            start_time=datetime(2026, 6, 15, 10, 0),
+            end_time=datetime(2026, 6, 15, 12, 0),
+            status="scheduled"
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        response = client.post("/calendar/schedule/generate", json={
+            "year": 2026, "month": 6
+        })
+        assert response.status_code == 200
+        data = response.json()
+
+        # Collect all assigned member IDs
+        assigned_ids = set()
+        for s in data["sessions"]:
+            for a in s["assignments"]:
+                assigned_ids.add(a["member_id"])
+
+        assert inactive_member.id not in assigned_ids
+
+    def test_availability_export_csv_excludes_inactive_and_roleless_members(self, client, db_session):
+        role = _create_assignable_role(db_session)
+
+        active_member = Member(
+            first_name="Export", last_name="Singer",
+            email="export@test.com", is_active=True, roles=[role]
+        )
+        inactive_member = Member(
+            first_name="Gone", last_name="Singer",
+            email="gone@test.com", is_active=False, roles=[role]
+        )
+        roleless_member = Member(
+            first_name="Roleless", last_name="Person",
+            email="roleless@test.com", is_active=True, roles=[]
+        )
+        db_session.add_all([active_member, inactive_member, roleless_member])
+        db_session.commit()
+
+        session = SessionModel(
+            title="Export Session", type="program",
+            start_time=datetime(2026, 6, 14, 10, 0),
+            end_time=datetime(2026, 6, 14, 12, 0),
+            status="scheduled"
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        response = client.get("/calendar/availability/export_csv?year=2026&month=6")
+        assert response.status_code == 200
+
+        csv_text = response.text
+        assert "Export Singer" in csv_text
+        assert "Gone Singer" not in csv_text
+        assert "Roleless Person" not in csv_text

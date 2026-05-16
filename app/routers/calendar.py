@@ -333,8 +333,11 @@ def get_team_availability(
     """
     import calendar as cal_module
 
-    # 1. Get all active members
-    all_members = db.query(Member).filter(Member.is_active == True).order_by(Member.first_name, Member.last_name).all()
+    # 1. Get all active members with at least one assignable role
+    all_members = db.query(Member).filter(
+        Member.is_active == True,
+        Member.roles.any(Role.display_order.isnot(None))
+    ).order_by(Member.first_name, Member.last_name).all()
     total_members = len(all_members)
     member_name_map = {m.id: f"{m.first_name} {m.last_name}" for m in all_members}
 
@@ -472,9 +475,11 @@ def generate_schedule(
     for do in day_offs:
         day_offs_by_date[do.date].add(do.member_id)
 
-    # 3. Get all members and their roles
-    # We only care about members who have at least one of the REQUIRED_ROLES
-    members = db.query(Member).all()
+    # 3. Get all active members who have at least one of the REQUIRED_ROLES
+    members = db.query(Member).filter(
+        Member.is_active == True,
+        Member.roles.any(Role.name.in_(REQUIRED_ROLES))
+    ).all()
     
     # Map roles to members
     members_by_role = defaultdict(list)
@@ -711,7 +716,10 @@ def export_availability_matrix_csv(
     Members as rows, sessions as columns, ✓/✗ indicators.
     (Admin only)
     """
-    all_members = db.query(Member).filter(Member.is_active == True).order_by(Member.first_name, Member.last_name).all()
+    all_members = db.query(Member).filter(
+        Member.is_active == True,
+        Member.roles.any(Role.display_order.isnot(None))
+    ).order_by(Member.first_name, Member.last_name).all()
     total_members = len(all_members)
 
     if total_members == 0:
