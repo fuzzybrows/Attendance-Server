@@ -16,7 +16,7 @@ logger = logging.getLogger("scheduler")
 scheduler = BackgroundScheduler()
 LOCAL_TZ = ZoneInfo(settings.app_timezone)
 
-def send_session_reminders(session: Session, db):
+def send_session_reminders(session: Session, db, send_email=True, send_sms=False, send_push=True):
     """
     Send reminders to all assigned members for a given session.
     This is the core logic reused by both the scheduled job and on-demand calls.
@@ -32,7 +32,7 @@ def send_session_reminders(session: Session, db):
         logger.info(f"Sending reminder to {member.first_name} for role {assignment.role}", extra={"type": "reminder_sent", "member_id": member.id, "member_name": member.first_name, "role": assignment.role, "session_id": session.id, "session_name": session.title, "session_start_date": str(session.start_time)})
 
         # Send Email
-        if member.email:
+        if member.email and send_email:
             send_reminder_email(
                 to_email=f"{member.full_name} <{member.email}>",
                 member_first_name=member.first_name,
@@ -42,7 +42,7 @@ def send_session_reminders(session: Session, db):
             )
 
         # Send SMS
-        if getattr(member, 'phone_number', None):
+        if getattr(member, 'phone_number', None) and send_sms:
             send_reminder_sms(
                 to_phone=member.phone_number,
                 member_name=member.first_name,
@@ -52,7 +52,7 @@ def send_session_reminders(session: Session, db):
             )
 
         # Push Notification
-        if getattr(member, 'device_token', None):
+        if getattr(member, 'device_token', None) and send_push:
             send_push_notification(
                 device_token=member.device_token,
                 title="Upcoming Session Reminder",
