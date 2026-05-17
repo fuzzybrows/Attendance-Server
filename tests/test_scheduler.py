@@ -65,7 +65,7 @@ class TestSendSessionReminders:
         mock_db = MagicMock()
         mock_db.query.return_value.filter.return_value.all.return_value = [assignment]
 
-        send_session_reminders(session, mock_db)
+        send_session_reminders(session, mock_db, send_sms=True)
 
         mock_email.assert_called_once()
         assert mock_email.call_args.kwargs["to_email"] == "Jane Doe <jane@example.com>"
@@ -87,7 +87,7 @@ class TestSendSessionReminders:
         mock_db = MagicMock()
         mock_db.query.return_value.filter.return_value.all.return_value = [assignment]
 
-        send_session_reminders(session, mock_db)
+        send_session_reminders(session, mock_db, send_sms=True)
 
         mock_email.assert_called_once()
         mock_sms.assert_not_called()

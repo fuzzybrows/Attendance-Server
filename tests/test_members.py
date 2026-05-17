@@ -402,7 +402,7 @@ class TestPhoneChangeEdgeCases:
         user.phone_number = "+1555999888"
         db_session.commit()
 
-        with __import__('unittest.mock', fromlist=['patch']).patch(
+        with patch(
             'app.services.verification.send_sms_verification', return_value=True
         ):
             response = client.post("/members/me/change-phone", json={
@@ -412,7 +412,7 @@ class TestPhoneChangeEdgeCases:
 
     def test_verify_phone_persists_and_marks_verified(self, client):
         """After verify, GET /me should show new phone and verified=true."""
-        with __import__('unittest.mock', fromlist=['patch']).patch(
+        with patch(
             'app.services.verification.check_verification', return_value=True
         ):
             client.post("/members/me/verify-phone", json={
