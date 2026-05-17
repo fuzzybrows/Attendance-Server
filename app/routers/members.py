@@ -3,7 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List
 from app.models.member import Member, Permission, Role
-from app.schemas.member import Member as MemberSchema, MemberCreate, MemberUpdate, MemberMetadata, PasswordResetRequest
+from app.schemas.member import Member as MemberSchema, MemberCreate, MemberUpdate, MemberMetadata, PasswordResetRequest, ProfileUpdate, PhoneChangeRequest, PhoneVerifyRequest
 from app.core.database import get_db
 from app.core.auth import (
     get_password_hash, 
@@ -78,6 +78,66 @@ def get_member_metadata(db: Session = Depends(get_db)):
         "assignable_roles": [r.name for r in assignable]
     }
 
+
+@router.get("/me", response_model=MemberSchema)
+def get_my_profile(current_member: Member = Depends(get_current_active_member)):
+    """Return the current authenticated user's full profile."""
+    return current_member
+
+@router.put("/me", response_model=MemberSchema)
+def update_my_profile(
+    profile_update: ProfileUpdate,
+    db: Session = Depends(get_db),
+    current_member: Member = Depends(get_current_active_member)
+):
+    """Update the current user's own profile (non-privileged fields only)."""
+    update_data = profile_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(current_member, key, value)
+    db.commit()
+    db.refresh(current_member)
+    logger.info("Profile updated", extra={"type": "profile_self_update", "member_id": current_member.id})
+    return current_member
+
+@router.post("/me/change-phone")
+def request_phone_change(
+    payload: PhoneChangeRequest,
+    db: Session = Depends(get_db),
+    current_member: Member = Depends(get_current_active_member)
+):
+    """Send an OTP to the new phone number for verification."""
+    from app.services.verification import send_sms_verification
+    new_phone = payload.phone_number.strip()
+    if not new_phone:
+        raise HTTPException(status_code=400, detail="Phone number is required")
+    # Check if phone is already taken by another member
+    existing = db.query(Member).filter(
+        Member.phone_number == new_phone,
+        Member.id != current_member.id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Phone number already in use")
+    send_sms_verification(new_phone)
+    logger.info("Phone change OTP sent", extra={"type": "phone_change_otp", "member_id": current_member.id})
+    return {"status": "otp_sent", "message": "Verification code sent to the new number"}
+
+@router.post("/me/verify-phone", response_model=MemberSchema)
+def verify_phone_change(
+    payload: PhoneVerifyRequest,
+    db: Session = Depends(get_db),
+    current_member: Member = Depends(get_current_active_member)
+):
+    """Verify the OTP and update the phone number."""
+    from app.services.verification import check_verification
+    new_phone = payload.phone_number.strip()
+    if not check_verification(new_phone, payload.otp):
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+    current_member.phone_number = new_phone
+    current_member.phone_number_verified = True
+    db.commit()
+    db.refresh(current_member)
+    logger.info("Phone number changed", extra={"type": "phone_change_success", "member_id": current_member.id, "new_phone": new_phone})
+    return current_member
 
 @router.get("/", response_model=List[MemberSchema])
 def read_members(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_member=Depends(get_members_read_manager)):

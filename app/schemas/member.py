@@ -10,6 +10,14 @@ class MemberBase(BaseModel):
     phone_number: Optional[str] = None
     nfc_id: Optional[str] = None
     is_active: bool = True
+    birth_month: Optional[int] = None
+    birth_day: Optional[int] = None
+    birth_year: Optional[int] = None
+    tshirt_size: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
 
     @field_validator('email')
     @classmethod
@@ -20,6 +28,26 @@ class MemberBase(BaseModel):
     @classmethod
     def convert_empty_to_none(cls, v):
         return None if (v == "" or str(v).strip() == "") else v
+
+    @field_validator('birth_month', mode='before')
+    @classmethod
+    def validate_birth_month(cls, v):
+        if v is None or v == '':
+            return None
+        v = int(v)
+        if not 1 <= v <= 12:
+            raise ValueError('Birth month must be between 1 and 12')
+        return v
+
+    @field_validator('birth_day', mode='before')
+    @classmethod
+    def validate_birth_day(cls, v):
+        if v is None or v == '':
+            return None
+        v = int(v)
+        if not 1 <= v <= 31:
+            raise ValueError('Birth day must be between 1 and 31')
+        return v
 
 
 class MemberCreate(MemberBase):
@@ -76,11 +104,72 @@ class MemberUpdate(BaseModel):
     roles: Optional[List[str]] = None
     permissions: Optional[List[str]] = None
     is_active: Optional[bool] = None
+    birth_month: Optional[int] = None
+    birth_day: Optional[int] = None
+    birth_year: Optional[int] = None
+    tshirt_size: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
 
     @field_validator('email')
     @classmethod
     def normalize_email(cls, v: str) -> str:
         return v.strip().lower() if v is not None else v
+
+    @field_validator('birth_month', mode='before')
+    @classmethod
+    def validate_birth_month(cls, v):
+        if v is None or v == '':
+            return None
+        v = int(v)
+        if not 1 <= v <= 12:
+            raise ValueError('Birth month must be between 1 and 12')
+        return v
+
+    @field_validator('birth_day', mode='before')
+    @classmethod
+    def validate_birth_day(cls, v):
+        if v is None or v == '':
+            return None
+        v = int(v)
+        if not 1 <= v <= 31:
+            raise ValueError('Birth day must be between 1 and 31')
+        return v
+
+
+class ProfileUpdate(BaseModel):
+    """Self-service profile update — users can only change their own non-privileged fields."""
+    birth_month: Optional[int] = None
+    birth_day: Optional[int] = None
+    birth_year: Optional[int] = None
+    tshirt_size: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+
+    @field_validator('birth_month', mode='before')
+    @classmethod
+    def validate_birth_month(cls, v):
+        if v is None or v == '':
+            return None
+        v = int(v)
+        if not 1 <= v <= 12:
+            raise ValueError('Birth month must be between 1 and 12')
+        return v
+
+    @field_validator('birth_day', mode='before')
+    @classmethod
+    def validate_birth_day(cls, v):
+        if v is None or v == '':
+            return None
+        v = int(v)
+        if not 1 <= v <= 31:
+            raise ValueError('Birth day must be between 1 and 31')
+        return v
+
 
 class PasswordResetRequest(BaseModel):
     new_password: str
@@ -90,3 +179,12 @@ class MemberMetadata(BaseModel):
     roles: List[str]
     permissions: List[str]
     assignable_roles: List[str]
+
+
+class PhoneChangeRequest(BaseModel):
+    phone_number: str
+
+
+class PhoneVerifyRequest(BaseModel):
+    phone_number: str
+    otp: str

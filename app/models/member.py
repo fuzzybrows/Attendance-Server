@@ -1,4 +1,5 @@
 """Role, Permission, and Member ORM models."""
+from datetime import date
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -27,28 +28,47 @@ class Permission(Base):
 class Member(Base):
     __tablename__ = "members"
 
+    # ── Columns ──
     id = Column(Integer, primary_key=True, index=True)
     first_name = Column(String)
     last_name = Column(String)
-
-    @property
-    def full_name(self):
-        return f"{self.first_name} {self.last_name}"
-
     email = Column(String, unique=True, index=True)
     phone_number = Column(String, unique=True, index=True, nullable=True)
     password_hash = Column(String, nullable=True)
     nfc_id = Column(String, unique=True, index=True, nullable=True)
-
-    # Relationships
-    roles = relationship("Role", secondary=member_roles, backref="members")
-    permissions = relationship("Permission", secondary=member_permissions, backref="members")
-
     email_verified = Column(Boolean, default=False)
     phone_number_verified = Column(Boolean, default=False)
-
-    attendance = relationship("Attendance", back_populates="member", foreign_keys="[Attendance.member_id]")
-
+    is_active = Column(Boolean, default=True)
     sync_token = Column(String, unique=True, index=True, nullable=True)
     google_refresh_token = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True)
+
+    # Profile fields
+    birth_month = Column(Integer, nullable=True)
+    birth_day = Column(Integer, nullable=True)
+    birth_year = Column(Integer, nullable=True)
+    tshirt_size = Column(String, nullable=True)
+    address_street = Column(String, nullable=True)
+    address_city = Column(String, nullable=True)
+    address_state = Column(String, nullable=True)
+    address_zip = Column(String, nullable=True)
+
+    # ── Relationships ──
+    roles = relationship("Role", secondary=member_roles, backref="members")
+    permissions = relationship("Permission", secondary=member_permissions, backref="members")
+    attendance = relationship("Attendance", back_populates="member", foreign_keys="[Attendance.member_id]")
+
+    # ── Properties ──
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def date_of_birth(self):
+        """Return a date object if month and day are set, using year if available."""
+        if self.birth_month and self.birth_day:
+            year = self.birth_year or 1900  # fallback year when not provided
+            try:
+                return date(year, self.birth_month, self.birth_day)
+            except ValueError:
+                return None
+        return None

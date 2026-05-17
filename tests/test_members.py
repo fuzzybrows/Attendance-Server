@@ -112,3 +112,212 @@ class TestUpdateMember:
     def test_update_member_raises_404_when_id_is_nonexistent(self, client):
         response = client.put("/members/9999", json={"first_name": "Jane"})
         assert response.status_code == 404
+
+    def test_update_member_sets_profile_fields(self, client, created_member):
+        response = client.put(f"/members/{created_member['id']}", json={
+            "birth_month": 6,
+            "birth_day": 15,
+            "birth_year": 1995,
+            "tshirt_size": "L",
+            "address_street": "123 Oak St",
+            "address_city": "Austin",
+            "address_state": "TX",
+            "address_zip": "78701"
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert data["birth_month"] == 6
+        assert data["birth_day"] == 15
+        assert data["birth_year"] == 1995
+        assert data["tshirt_size"] == "L"
+        assert data["address_city"] == "Austin"
+        assert data["address_state"] == "TX"
+
+
+class TestProfileEndpoints:
+    """Tests for self-service GET/PUT /members/me endpoints."""
+
+    def test_get_my_profile_returns_current_user(self, client):
+        response = client.get("/members/me")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["email"] == "test@example.com"
+        assert "id" in data
+        assert "first_name" in data
+
+    def test_get_my_profile_includes_profile_fields(self, client):
+        response = client.get("/members/me")
+        assert response.status_code == 200
+        data = response.json()
+        # New profile fields should be present (null by default)
+        for field in ["birth_month", "birth_day", "birth_year", "tshirt_size",
+                       "address_street", "address_city", "address_state", "address_zip"]:
+            assert field in data
+
+    def test_update_my_profile_sets_dob_and_address(self, client):
+        response = client.put("/members/me", json={
+            "birth_month": 3,
+            "birth_day": 22,
+            "tshirt_size": "M",
+            "address_street": "456 Elm St",
+            "address_city": "Dallas",
+            "address_state": "TX",
+            "address_zip": "75201"
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert data["birth_month"] == 3
+        assert data["birth_day"] == 22
+        assert data["tshirt_size"] == "M"
+        assert data["address_city"] == "Dallas"
+
+    def test_update_my_profile_dob_year_is_optional(self, client):
+        response = client.put("/members/me", json={
+            "birth_month": 12,
+            "birth_day": 25
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert data["birth_month"] == 12
+        assert data["birth_day"] == 25
+        assert data["birth_year"] is None
+
+    def test_update_my_profile_rejects_invalid_month(self, client):
+        response = client.put("/members/me", json={"birth_month": 13})
+        assert response.status_code == 422
+
+    def test_update_my_profile_rejects_invalid_day(self, client):
+        response = client.put("/members/me", json={"birth_day": 32})
+        assert response.status_code == 422
+
+    def test_update_my_profile_does_not_accept_email(self, client):
+        """ProfileUpdate schema should not include email field."""
+        response = client.put("/members/me", json={"email": "hacker@evil.com"})
+        assert response.status_code == 200
+        # Email should not have changed
+        profile = client.get("/members/me").json()
+        assert profile["email"] == "test@example.com"
+
+    def test_update_my_profile_does_not_accept_roles_or_permissions(self, client):
+        """ProfileUpdate schema should not include roles/permissions fields."""
+        response = client.put("/members/me", json={
+            "roles": ["admin"],
+            "permissions": ["admin"]
+        })
+        assert response.status_code == 200
+        profile = client.get("/members/me").json()
+        # Should not have elevated privileges
+        assert profile["permissions"] == ["admin"]  # unchanged from test fixture
+
+    def test_update_my_profile_does_not_accept_first_name(self, client):
+        """ProfileUpdate schema should not allow name changes."""
+        response = client.put("/members/me", json={"first_name": "Hacked"})
+        assert response.status_code == 200
+        profile = client.get("/members/me").json()
+        assert profile["first_name"] == "Test"  # unchanged
+
+    def test_update_my_profile_does_not_accept_last_name(self, client):
+        """ProfileUpdate schema should not allow name changes."""
+        response = client.put("/members/me", json={"last_name": "Hacked"})
+        assert response.status_code == 200
+        profile = client.get("/members/me").json()
+        assert profile["last_name"] == "Admin"  # unchanged
+
+    def test_update_my_profile_does_not_accept_phone_number(self, client):
+        """Phone changes require OTP verification, not direct update."""
+        response = client.put("/members/me", json={"phone_number": "+9999999999"})
+        assert response.status_code == 200
+        profile = client.get("/members/me").json()
+        assert profile["phone_number"] is None  # unchanged (was never set)
+
+
+class TestPhoneChangeFlow:
+    """Tests for the two-step phone change verification endpoints."""
+
+    def test_change_phone_sends_otp(self, client):
+        """POST /members/me/change-phone should send OTP and return success."""
+        with __import__('unittest.mock', fromlist=['patch']).patch(
+            'app.services.verification.send_sms_verification', return_value=True
+        ):
+            response = client.post("/members/me/change-phone", json={
+                "phone_number": "+1555000111"
+            })
+        assert response.status_code == 200
+        assert response.json()["status"] == "otp_sent"
+
+    def test_change_phone_rejects_empty_number(self, client):
+        response = client.post("/members/me/change-phone", json={
+            "phone_number": "   "
+        })
+        assert response.status_code == 400
+
+    def test_change_phone_rejects_duplicate_number(self, client, created_member):
+        """Should reject if the phone number is already in use by another member."""
+        response = client.post("/members/me/change-phone", json={
+            "phone_number": created_member["phone_number"]
+        })
+        assert response.status_code == 400
+        assert "already in use" in response.json()["detail"]
+
+    def test_verify_phone_updates_number(self, client):
+        """POST /members/me/verify-phone should update phone after valid OTP."""
+        with __import__('unittest.mock', fromlist=['patch']).patch(
+            'app.services.verification.check_verification', return_value=True
+        ):
+            response = client.post("/members/me/verify-phone", json={
+                "phone_number": "+1555000222",
+                "otp": "123456"
+            })
+        assert response.status_code == 200
+        data = response.json()
+        assert data["phone_number"] == "+1555000222"
+        assert data["phone_number_verified"] is True
+
+    def test_verify_phone_rejects_invalid_otp(self, client):
+        """Should reject with 400 on bad OTP."""
+        with __import__('unittest.mock', fromlist=['patch']).patch(
+            'app.services.verification.check_verification', return_value=False
+        ):
+            response = client.post("/members/me/verify-phone", json={
+                "phone_number": "+1555000333",
+                "otp": "000000"
+            })
+        assert response.status_code == 400
+        assert "Invalid" in response.json()["detail"]
+
+
+class TestDateOfBirthProperty:
+    """Tests for the Member.date_of_birth computed property."""
+
+    def test_date_of_birth_with_full_date(self, db_session):
+        from app.models.member import Member
+        from datetime import date
+        m = Member(first_name="A", last_name="B", email="dob@test.com",
+                   birth_month=6, birth_day=15, birth_year=1990)
+        db_session.add(m)
+        db_session.commit()
+        assert m.date_of_birth == date(1990, 6, 15)
+
+    def test_date_of_birth_without_year_uses_fallback(self, db_session):
+        from app.models.member import Member
+        from datetime import date
+        m = Member(first_name="A", last_name="B", email="dob2@test.com",
+                   birth_month=12, birth_day=25)
+        db_session.add(m)
+        db_session.commit()
+        assert m.date_of_birth == date(1900, 12, 25)
+
+    def test_date_of_birth_returns_none_when_missing(self, db_session):
+        from app.models.member import Member
+        m = Member(first_name="A", last_name="B", email="dob3@test.com")
+        db_session.add(m)
+        db_session.commit()
+        assert m.date_of_birth is None
+
+    def test_date_of_birth_returns_none_for_invalid_date(self, db_session):
+        from app.models.member import Member
+        m = Member(first_name="A", last_name="B", email="dob4@test.com",
+                   birth_month=2, birth_day=30, birth_year=2000)
+        db_session.add(m)
+        db_session.commit()
+        assert m.date_of_birth is None  # Feb 30 doesn't exist
