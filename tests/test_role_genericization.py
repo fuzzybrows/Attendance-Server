@@ -157,8 +157,7 @@ class TestGenerateScheduleSundayQualifier:
                                 [lead, qualifier])
         self._setup_sunday_session(db_session)
 
-        with patch.object(type(settings), "enable_sunday_pool_filter",
-                          new_callable=lambda: property(lambda self: True)):
+        with patch.object(settings, 'enable_sunday_pool_filter', True):
             response = client.post("/calendar/schedule/generate",
                                    json={"year": 2026, "month": 4})
         assert response.status_code == 200
@@ -178,8 +177,7 @@ class TestGenerateScheduleSundayQualifier:
                                 [lead, qualifier])
         self._setup_sunday_session(db_session)
 
-        with patch.object(type(settings), "enable_sunday_pool_filter",
-                          new_callable=lambda: property(lambda self: False)):
+        with patch.object(settings, 'enable_sunday_pool_filter', False):
             response = client.post("/calendar/schedule/generate",
                                    json={"year": 2026, "month": 4})
         assert response.status_code == 200
@@ -198,8 +196,7 @@ class TestGenerateScheduleSundayQualifier:
         regular = make_member(db_session, "Regular", "C", "regular_c@test.com", [lead])
         self._setup_weekday_session(db_session)
 
-        with patch.object(type(settings), "enable_sunday_pool_filter",
-                          new_callable=lambda: property(lambda self: True)):
+        with patch.object(settings, 'enable_sunday_pool_filter', True):
             response = client.post("/calendar/schedule/generate",
                                    json={"year": 2026, "month": 4})
         assert response.status_code == 200
@@ -216,8 +213,7 @@ class TestGenerateScheduleSundayQualifier:
         member = make_member(db_session, "Any", "Soprano", "any_soprano@test.com", [soprano])
         self._setup_sunday_session(db_session)
 
-        with patch.object(type(settings), "enable_sunday_pool_filter",
-                          new_callable=lambda: property(lambda self: True)):
+        with patch.object(settings, 'enable_sunday_pool_filter', True):
             response = client.post("/calendar/schedule/generate",
                                    json={"year": 2026, "month": 4})
         assert response.status_code == 200
@@ -225,6 +221,7 @@ class TestGenerateScheduleSundayQualifier:
         assigned_ids = {a["member_id"] for s in response.json()["sessions"]
                         for a in s["assignments"]}
         assert member.id in assigned_ids
+
 
 
 class TestGenerateScheduleNoRoles:
