@@ -113,7 +113,17 @@ class Settings(BaseSettings):
 
     # Cron job secret for external triggers (Render, GitHub Actions, Vercel)
     cron_secret: Optional[str] = None
-    
+
+    # ── Scheduling Feature Flags ──────────────────────────────────────────────
+    # Scenario 1: During auto-generation, narrow the eligible member pool on
+    # Sundays to those who also hold the role's sunday_qualifier_role.
+    enable_sunday_pool_filter: bool = True
+
+    # Scenario 2: In the preview modal, pre-select all roles for Sunday programs
+    # and only the primary role (lowest display_order) for weekday programs.
+    # When False: all roles are pre-selected for every program.
+    enable_sunday_preview_defaults: bool = True
+
     model_config = SettingsConfigDict(
         env_file=[".env", "../.env"],
         env_file_encoding="utf-8",

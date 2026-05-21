@@ -1,6 +1,6 @@
 """Role, Permission, and Member ORM models."""
 from datetime import date
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.models.associations import member_roles, member_permissions
@@ -12,6 +12,21 @@ class Role(Base):
     name = Column(String, unique=True, index=True)
     description = Column(String, nullable=True)
     display_order = Column(Integer, nullable=True, comment="Display order for assignable roles. If set, the role is assignable in session scheduling.")
+
+    # Self-referential: on Sundays, members filling this role must ALSO hold the qualifier role.
+    # Null means no Sunday restriction. Controlled by ENABLE_SUNDAY_POOL_FILTER setting.
+    sunday_qualifier_id = Column(
+        Integer,
+        ForeignKey("roles.id", ondelete="SET NULL"),
+        nullable=True,
+        comment="FK to another Role. If set, members must also hold that role to fill this slot on Sundays."
+    )
+    sunday_qualifier_role = relationship(
+        "Role",
+        foreign_keys=[sunday_qualifier_id],
+        remote_side="Role.id",
+        uselist=False,
+    )
 
     @property
     def is_assignable(self):

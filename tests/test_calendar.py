@@ -111,17 +111,21 @@ def test_calendar_save_schedule_updates_assignments_correctly_in_database(client
 def test_generate_schedule_enforces_sunday_lead_singer_role_restriction_on_sundays(client, db_session):
     # 1. Setup Roles
     lead_role = Role(name="lead_singer", display_order=1)
-    sunday_lead_role = Role(name="Sunday Lead Singer")
+    sunday_lead_role = Role(name="Sunday Lead Singer")  # no display_order = not assignable itself
     db_session.add_all([lead_role, sunday_lead_role])
+    db_session.flush()
+
+    # Wire the FK: lead_singer on Sundays requires "Sunday Lead Singer"
+    lead_role.sunday_qualifier_role = sunday_lead_role
     db_session.commit()
 
-    # Member A: Has choir role lead_singer but NOT Sunday Lead Singer
+    # Member A: Has lead_singer role but NOT "Sunday Lead Singer"
     member_a = Member(
         first_name="Regular", last_name="Lead",
         email="regular@test.com", password_hash="hash",
         roles=[lead_role]
     )
-    # Member B: Has BOTH roles
+    # Member B: Has BOTH roles → eligible on Sundays
     member_b = Member(
         first_name="Sunday", last_name="Pro",
         email="sunday@test.com", password_hash="hash",
@@ -130,7 +134,6 @@ def test_generate_schedule_enforces_sunday_lead_singer_role_restriction_on_sunda
     db_session.add_all([member_a, member_b])
     db_session.commit()
 
-    # 3. Setup Sessions for a Sunday
     # Sunday, April 12, 2026
     sunday_session = SessionModel(
         title="Sunday Service",
@@ -142,24 +145,22 @@ def test_generate_schedule_enforces_sunday_lead_singer_role_restriction_on_sunda
     db_session.add(sunday_session)
     db_session.commit()
 
-    # Call generate-schedule (Correct route is /calendar/schedule/generate)
     response = client.post("/calendar/schedule/generate", json={
         "year": 2026,
         "month": 4
     })
     assert response.status_code == 200
     data = response.json()
-    
-    # Find our Sunday session in the response
+
     session_data = next((s for s in data["sessions"] if s["id"] == sunday_session.id), None)
     assert session_data is not None
-    
-    # Find lead_singer assignment
+
     lead_assignment = next((a for a in session_data["assignments"] if a["role"] == "lead_singer"), None)
     assert lead_assignment is not None
-    # Must be Member B
+    # Must be Member B (the qualifier holder) — FK-driven, not hardcoded name
     assert lead_assignment["member_id"] == member_b.id
     assert "Sunday" in lead_assignment["member_name"]
+
 
 
 def test_month_availability_includes_day_off_records(client, db_session):

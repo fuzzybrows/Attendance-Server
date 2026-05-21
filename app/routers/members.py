@@ -15,6 +15,7 @@ from app.core.auth import (
     get_members_edit_manager,
     get_members_delete_manager
 )
+from app.settings import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -68,14 +69,26 @@ def create_member(member: MemberCreate, db: Session = Depends(get_db), current_m
 
 @router.get("/metadata", response_model=MemberMetadata)
 def get_member_metadata(db: Session = Depends(get_db)):
-    """Returns all available roles and permissions from the database."""
+    """Returns all available roles, permissions, assignable roles, and scheduling feature flags."""
     roles = db.query(Role).all()
     permissions = db.query(Permission).all()
     assignable = db.query(Role).filter(Role.display_order.isnot(None)).order_by(Role.display_order.asc()).all()
+
+    # Always expose qualifier relationships from the DB;
+    # the flags tell clients whether to apply them.
+    sunday_qualifiers = {
+        r.name: r.sunday_qualifier_role.name
+        for r in assignable
+        if r.sunday_qualifier_role is not None
+    }
+
     return {
         "roles": [r.name for r in roles],
         "permissions": [p.name for p in permissions],
-        "assignable_roles": [r.name for r in assignable]
+        "assignable_roles": [r.name for r in assignable],
+        "sunday_qualifiers": sunday_qualifiers,
+        "enable_sunday_pool_filter": settings.enable_sunday_pool_filter,
+        "enable_sunday_preview_defaults": settings.enable_sunday_preview_defaults,
     }
 
 

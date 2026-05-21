@@ -437,10 +437,20 @@ def generate_schedule(
     Roles: lead_singer, soprano, alto, tenor
     """
     assignable_roles = db.query(Role).filter(Role.display_order.isnot(None)).order_by(Role.display_order.asc()).all()
-    REQUIRED_ROLES = [r.name for r in assignable_roles]
-    if not REQUIRED_ROLES:
-        # Fallback to defaults if none marked to avoid empty schedule
-        REQUIRED_ROLES = ["lead_singer", "soprano", "alto", "tenor"]
+    ALL_ROLES = [r.name for r in assignable_roles]
+    if not ALL_ROLES:
+        raise HTTPException(
+            status_code=422,
+            detail="No assignable roles are configured. Set display_order on at least one Role."
+        )
+
+    # Apply global role filter from request (if provided)
+    REQUIRED_ROLES = [r for r in ALL_ROLES if r in request.roles] if request.roles else ALL_ROLES
+    # Normalise session_overrides keys to int
+    session_overrides: dict[int, list[str]] = {}
+    if request.session_overrides:
+        for sid, roles in request.session_overrides.items():
+            session_overrides[int(sid)] = [r for r in ALL_ROLES if r in roles]
 
     # 1. Get all non-rehearsal active sessions in that month
     sessions = db.query(SessionModel).filter(
@@ -503,11 +513,17 @@ def generate_schedule(
         scheduled_in_session = set()
         session_assignments = []
 
-        for role in REQUIRED_ROLES:
+        # Use per-session override if present, otherwise fall back to global list
+        session_roles = session_overrides.get(session.id, REQUIRED_ROLES)
+        for role in session_roles:
             pool = members_by_role[role]
             
-            if role == "lead_singer" and session_date.weekday() == 6:
-                pool = [m for m in pool if any(r.name == 'Sunday Lead Singer' for r in m.roles)]
+            # Scenario 1: if enabled, narrow pool on Sundays to qualifier-role holders
+            if settings.enable_sunday_pool_filter and session_date.weekday() == 6:
+                role_obj = next((r for r in assignable_roles if r.name == role), None)
+                if role_obj and role_obj.sunday_qualifier_role is not None:
+                    qualifier_id = role_obj.sunday_qualifier_role.id
+                    pool = [m for m in pool if any(r.id == qualifier_id for r in m.roles)]
                 
             # Filter pool: must not be opted out, must not be scheduled already this session
             valid_pool = [m for m in pool if m.id not in unavailable_members and m.id not in scheduled_in_session]
@@ -676,25 +692,30 @@ def export_month_schedule_csv(
     for a in assignments:
         assignments_by_session[a.session_id].append(a)
 
-    # Generate CSV in memory
+    # Fetch assignable roles dynamically for column headers
+    export_roles = db.query(Role).filter(
+        Role.display_order.isnot(None)
+    ).order_by(Role.display_order.asc()).all()
+
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Date", "Session Title", "Lead Singer", "Soprano", "Alto", "Tenor"])
+    writer.writerow(
+        ["Date", "Session Title"] +
+        [r.name.replace("_", " ").title() for r in export_roles]
+    )
 
     for session in sessions:
         role_map = defaultdict(list)
         for a in assignments_by_session[session.id]:
             role_map[a.role].append(f"{a.member.first_name} {a.member.last_name}")
-        # Convert UTC to Austin time for export
         local_start = session.start_time.astimezone(LOCAL_TZ)
-        writer.writerow([
-            local_start.strftime("%Y-%m-%d %H:%M"),
-            session.title,
-            "\n".join(role_map.get("lead_singer", [])) or "Unassigned",
-            "\n".join(role_map.get("soprano", [])) or "Unassigned",
-            "\n".join(role_map.get("alto", [])) or "Unassigned",
-            "\n".join(role_map.get("tenor", [])) or "Unassigned"
-        ])
+        writer.writerow(
+            [
+                local_start.strftime("%Y-%m-%d %H:%M"),
+                session.title,
+            ] +
+            ["\n".join(role_map.get(r.name, [])) or "Unassigned" for r in export_roles]
+        )
 
     output.seek(0)
     
@@ -833,14 +854,22 @@ def export_month_schedule_pdf(
     # Cell style for wrapping text in role columns
     cell_style = ParagraphStyle('CellStyle', parent=styles['Normal'], fontSize=10, alignment=1, leading=14)
 
+    # Fetch assignable roles dynamically for column headers and widths
+    export_roles = db.query(Role).filter(
+        Role.display_order.isnot(None)
+    ).order_by(Role.display_order.asc()).all()
+
+    # Landscape letter: 11 in wide, 0.5 in margins each side = 10 in usable.
+    # Fixed: Date (1.8 in) + Title (2.2 in). Remaining split equally among role columns.
+    fixed_width = 1.8 * inch + 2.2 * inch
+    role_col_w = (10.0 * inch - fixed_width) / max(len(export_roles), 1)
+
     # Table data header
-    data = [["Date", "Session Title", "Lead Singer", "Soprano", "Alto", "Tenor"]]
-    
+    data = [["Date", "Session Title"] + [r.name.replace("_", " ").title() for r in export_roles]]
+
     for session in sessions:
         role_map = assignments_by_session[session.id]
-        # Convert UTC to Austin time for export
         local_start = session.start_time.astimezone(LOCAL_TZ)
-        # Format date as "Wed, April 24 2026"
         date_str = local_start.strftime("%a, %B %d %Y")
 
         def role_cell(role_key):
@@ -851,18 +880,13 @@ def export_month_schedule_pdf(
                 return names[0]
             return Paragraph("<br/>".join(names), cell_style)
 
-        data.append([
-            date_str,
-            session.title,
-            role_cell("lead_singer"),
-            role_cell("soprano"),
-            role_cell("alto"),
-            role_cell("tenor")
-        ])
+        data.append(
+            [date_str, session.title] + [role_cell(r.name) for r in export_roles]
+        )
 
     # Table styling
     # Landscape letter is 11 inches wide. Left/right margin 0.5 each = 10 inches usable.
-    t = Table(data, repeatRows=1, colWidths=[1.8*inch, 2.2*inch, 1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
+    t = Table(data, repeatRows=1, colWidths=[1.8*inch, 2.2*inch] + [role_col_w] * len(export_roles))
     t.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#475569')), # Slate 600
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),

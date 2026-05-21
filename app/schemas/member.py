@@ -179,6 +179,32 @@ class MemberMetadata(BaseModel):
     roles: List[str]
     permissions: List[str]
     assignable_roles: List[str]
+    sunday_qualifiers: Dict[str, str] = Field(
+        default={},
+        description=(
+            "Maps each assignable role name to the qualifier role name a member must also hold "
+            "to fill that slot on Sundays (e.g. {\"lead_singer\": \"Sunday Lead Singer\"}). "
+            "Empty when no sunday_qualifier_role FK is configured on any role."
+        ),
+    )
+    enable_sunday_pool_filter: bool = Field(
+        default=True,
+        description=(
+            "Scenario 1 flag (ENABLE_SUNDAY_POOL_FILTER). "
+            "When true, the schedule generator narrows the eligible member pool on Sundays "
+            "to those who also hold the role's configured sunday_qualifier_role. "
+            "When false, all role-holders are eligible regardless of day."
+        ),
+    )
+    enable_sunday_preview_defaults: bool = Field(
+        default=True,
+        description=(
+            "Scenario 2 flag (ENABLE_SUNDAY_PREVIEW_DEFAULTS). "
+            "When true, the generation preview modal pre-selects all roles for Sunday programs "
+            "and only the primary role for weekday programs. "
+            "When false, all roles are pre-selected for every program session."
+        ),
+    )
 
 
 class PhoneChangeRequest(BaseModel):
