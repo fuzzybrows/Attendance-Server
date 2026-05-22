@@ -456,7 +456,8 @@ class TestProfileSchemaValidation:
         expected = {
             "birth_month", "birth_day", "birth_year",
             "tshirt_size",
-            "address_street", "address_city", "address_state", "address_zip"
+            "address_street", "address_city", "address_state", "address_zip",
+            "preferred_displayed_firstname"
         }
         assert fields == expected
 
