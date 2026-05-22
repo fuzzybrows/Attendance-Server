@@ -29,13 +29,13 @@ def send_session_reminders(session: Session, db, send_email=True, send_sms=False
         member = assignment.member
         session_time_str = session.start_time.astimezone(LOCAL_TZ).strftime("%A, %B %d at %I:%M %p")
 
-        logger.info(f"Sending reminder to {member.first_name} for role {assignment.role}", extra={"type": "reminder_sent", "member_id": member.id, "member_name": member.first_name, "role": assignment.role, "session_id": session.id, "session_name": session.title, "session_start_date": str(session.start_time)})
+        logger.info(f"Sending reminder to {member.display_first_name} for role {assignment.role}", extra={"type": "reminder_sent", "member_id": member.id, "member_name": member.display_first_name, "role": assignment.role, "session_id": session.id, "session_name": session.title, "session_start_date": str(session.start_time)})
 
         # Send Email
         if member.email and send_email:
             send_reminder_email(
                 to_email=f"{member.full_name} <{member.email}>",
-                member_first_name=member.first_name,
+                member_first_name=member.display_first_name,
                 session_title=session.title,
                 role=assignment.role,
                 session_time=session_time_str
@@ -45,7 +45,7 @@ def send_session_reminders(session: Session, db, send_email=True, send_sms=False
         if getattr(member, 'phone_number', None) and send_sms:
             send_reminder_sms(
                 to_phone=member.phone_number,
-                member_name=member.first_name,
+                member_name=member.display_first_name,
                 session_title=session.title,
                 role=assignment.role,
                 session_time=session_time_str

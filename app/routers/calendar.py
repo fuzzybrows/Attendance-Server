@@ -339,7 +339,7 @@ def get_team_availability(
         Member.roles.any(Role.display_order.isnot(None))
     ).order_by(Member.first_name, Member.last_name).all()
     total_members = len(all_members)
-    member_name_map = {m.id: f"{m.first_name} {m.last_name}" for m in all_members}
+    member_name_map = {m.id: f"{m.display_first_name} {m.last_name}" for m in all_members}
 
     # 2. Get all sessions in that month
     sessions = db.query(SessionModel).filter(
@@ -417,7 +417,7 @@ def get_team_availability(
     return {
         "total_members": total_members,
         "members": [
-            {"id": m.id, "name": f"{m.first_name} {m.last_name}"}
+            {"id": m.id, "name": f"{m.display_first_name} {m.last_name}"}
             for m in all_members
         ],
         "sessions": sessions_response,
@@ -543,7 +543,7 @@ def generate_schedule(
             
             session_assignments.append(DraftAssignment(
                 member_id=selected_member.id,
-                member_name=f"{selected_member.first_name} {selected_member.last_name}",
+                member_name=f"{selected_member.display_first_name} {selected_member.last_name}",
                 role=role
             ))
 
@@ -604,7 +604,7 @@ def get_session_schedule(
     for a in assignments:
         session_assignments.append(DraftAssignment(
             member_id=a.member_id,
-            member_name=f"{a.member.first_name} {a.member.last_name}",
+            member_name=f"{a.member.display_first_name} {a.member.last_name}",
             role=a.role
         ))
 
@@ -649,7 +649,7 @@ def get_schedule(
         for a in assignments_by_session[session.id]:
             session_assignments.append(DraftAssignment(
                 member_id=a.member_id,
-                member_name=f"{a.member.first_name} {a.member.last_name}",
+                member_name=f"{a.member.display_first_name} {a.member.last_name}",
                 role=a.role
             ))
         
@@ -707,7 +707,7 @@ def export_month_schedule_csv(
     for session in sessions:
         role_map = defaultdict(list)
         for a in assignments_by_session[session.id]:
-            role_map[a.role].append(f"{a.member.first_name} {a.member.last_name}")
+            role_map[a.role].append(f"{a.member.display_first_name} {a.member.last_name}")
         local_start = session.start_time.astimezone(LOCAL_TZ)
         writer.writerow(
             [
@@ -787,7 +787,7 @@ def export_availability_matrix_csv(
 
     # Member rows
     for m in all_members:
-        row = [f"{m.first_name} {m.last_name}"]
+        row = [f"{m.display_first_name} {m.last_name}"]
         for s in sessions:
             session_date_str = s.start_time.strftime('%Y-%m-%d')
             combined = opt_outs_by_session[s.id] | day_offs_by_date.get(session_date_str, set())
@@ -837,7 +837,7 @@ def export_month_schedule_pdf(
     assignments_by_session = defaultdict(lambda: defaultdict(list))
     for a in assignments:
         short_last = f" {a.member.last_name[0]}." if a.member.last_name else ""
-        assignments_by_session[a.session_id][a.role].append(f"{a.member.first_name}{short_last}")
+        assignments_by_session[a.session_id][a.role].append(f"{a.member.display_first_name}{short_last}")
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.5*inch, bottomMargin=0.5*inch)
@@ -990,7 +990,7 @@ def export_availability_matrix_pdf(
 
     # Member rows
     for m in all_members:
-        row = [Paragraph(f"{m.first_name} {m.last_name}", name_style)]
+        row = [Paragraph(f"{m.display_first_name} {m.last_name}", name_style)]
         for s in sessions:
             session_date_str = s.start_time.strftime('%Y-%m-%d')
             combined_opted_out = opt_outs_by_session[s.id] | day_offs_by_date.get(session_date_str, set())
@@ -1096,8 +1096,8 @@ def sync_member_calendar(
     cal = Calendar()
     cal.add('prodid', '-//Choir Attendance//Calendar Sync//EN')
     cal.add('version', '2.0')
-    cal.add('name', f"{member.first_name}'s Choir Schedule")
-    cal.add('x-wr-calname', f"{member.first_name}'s Choir Schedule")
+    cal.add('name', f"{member.display_first_name}'s Choir Schedule")
+    cal.add('x-wr-calname', f"{member.display_first_name}'s Choir Schedule")
 
     for assignment in assignments:
         session = assignment.session

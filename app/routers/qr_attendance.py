@@ -139,7 +139,7 @@ def mark_qr_attendance(
 
     return {
         "status": "success",
-        "message": f"Attendance marked for {member.first_name} {member.last_name}",
+        "message": f"Attendance marked for {member.display_first_name} {member.last_name}",
         "member_name": member.full_name,
         "attendance_id": db_attendance.id
     }

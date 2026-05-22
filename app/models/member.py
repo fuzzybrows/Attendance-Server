@@ -56,6 +56,7 @@ class Member(Base):
     is_active = Column(Boolean, default=True)
     sync_token = Column(String, unique=True, index=True, nullable=True)
     google_refresh_token = Column(String, nullable=True)
+    preferred_displayed_firstname = Column(String, nullable=True)
 
     # Profile fields
     birth_month = Column(Integer, nullable=True)
@@ -74,8 +75,13 @@ class Member(Base):
 
     # ── Properties ──
     @property
+    def display_first_name(self):
+        """Return preferred display name if set, otherwise fall back to first_name."""
+        return self.preferred_displayed_firstname or self.first_name
+
+    @property
     def full_name(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.display_first_name} {self.last_name}"
 
     @property
     def date_of_birth(self):

@@ -1,6 +1,19 @@
 """Member-related Pydantic schemas."""
 from pydantic import BaseModel, field_validator, Field, ConfigDict
 from typing import Optional, List, Dict
+import re
+
+
+def _validate_preferred_firstname(v):
+    """Shared validation for preferred_displayed_firstname."""
+    if v is None or (isinstance(v, str) and v.strip() == ''):
+        return None
+    v = v.strip()
+    if len(v) < 3:
+        raise ValueError('Preferred first name must be at least 3 characters')
+    if not re.match(r'^[A-Za-z\s\-]+$', v):
+        raise ValueError('Preferred first name must contain only letters, spaces, or hyphens')
+    return v.title()
 
 
 class MemberBase(BaseModel):
@@ -18,6 +31,12 @@ class MemberBase(BaseModel):
     address_city: Optional[str] = None
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
+    preferred_displayed_firstname: Optional[str] = None
+
+    @field_validator('preferred_displayed_firstname', mode='before')
+    @classmethod
+    def validate_preferred_firstname(cls, v):
+        return _validate_preferred_firstname(v)
 
     @field_validator('email')
     @classmethod
@@ -63,6 +82,8 @@ class Member(MemberBase):
     permissions: List[str] = ["member"]
     email_verified: Optional[bool] = False
     phone_number_verified: Optional[bool] = False
+    display_first_name: str = ''
+    preferred_displayed_firstname: Optional[str] = None
 
     @field_validator('email_verified', 'phone_number_verified', mode='before')
     @classmethod
@@ -112,6 +133,12 @@ class MemberUpdate(BaseModel):
     address_city: Optional[str] = None
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
+    preferred_displayed_firstname: Optional[str] = None
+
+    @field_validator('preferred_displayed_firstname', mode='before')
+    @classmethod
+    def validate_preferred_firstname(cls, v):
+        return _validate_preferred_firstname(v)
 
     @field_validator('email')
     @classmethod
@@ -149,6 +176,12 @@ class ProfileUpdate(BaseModel):
     address_city: Optional[str] = None
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
+    preferred_displayed_firstname: Optional[str] = None
+
+    @field_validator('preferred_displayed_firstname', mode='before')
+    @classmethod
+    def validate_preferred_firstname(cls, v):
+        return _validate_preferred_firstname(v)
 
     @field_validator('birth_month', mode='before')
     @classmethod

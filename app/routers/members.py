@@ -34,6 +34,14 @@ def create_member(member: MemberCreate, db: Session = Depends(get_db), current_m
     if existing:
         logger.warning("Registration failed - Email exists", extra={"type": "member_create_failed", "email": member.email, "reason": "duplicate_email"})
         raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Check preferred_displayed_firstname uniqueness
+    if member.preferred_displayed_firstname:
+        dup = db.query(Member).filter(
+            func.lower(Member.preferred_displayed_firstname) == member.preferred_displayed_firstname.lower()
+        ).first()
+        if dup:
+            raise HTTPException(status_code=400, detail="This preferred first name is already in use by another member")
     
     # Look up permissions
     db_perms = []
@@ -60,6 +68,7 @@ def create_member(member: MemberCreate, db: Session = Depends(get_db), current_m
         roles=db_roles,
         permissions=db_perms,
         is_active=member.is_active,
+        preferred_displayed_firstname=member.preferred_displayed_firstname,
     )
     db.add(db_member)
     db.commit()
@@ -105,6 +114,16 @@ def update_my_profile(
 ):
     """Update the current user's own profile (non-privileged fields only)."""
     update_data = profile_update.model_dump(exclude_unset=True)
+
+    # Check preferred_displayed_firstname uniqueness
+    if 'preferred_displayed_firstname' in update_data and update_data['preferred_displayed_firstname']:
+        dup = db.query(Member).filter(
+            func.lower(Member.preferred_displayed_firstname) == update_data['preferred_displayed_firstname'].lower(),
+            Member.id != current_member.id
+        ).first()
+        if dup:
+            raise HTTPException(status_code=400, detail="This preferred first name is already in use by another member")
+
     for key, value in update_data.items():
         setattr(current_member, key, value)
     db.commit()
@@ -185,6 +204,15 @@ def update_member(member_id: int, member_update: MemberUpdate, db: Session = Dep
         ).first()
         if existing:
             raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Check preferred_displayed_firstname uniqueness
+    if "preferred_displayed_firstname" in update_data and update_data["preferred_displayed_firstname"]:
+        dup = db.query(Member).filter(
+            func.lower(Member.preferred_displayed_firstname) == update_data["preferred_displayed_firstname"].lower(),
+            Member.id != member_id
+        ).first()
+        if dup:
+            raise HTTPException(status_code=400, detail="This preferred first name is already in use by another member")
     
     # Handle M2M relationships separately
     if "roles" in update_data:
