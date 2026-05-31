@@ -183,7 +183,7 @@ def send_leader_summary_email(
     <div style="max-width:600px;margin:20px auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
 
         <!-- Header -->
-        <div style="background:linear-gradient(135deg,#4f46e5,#6366f1);padding:28px 32px;color:white;">
+        <div style="background:#4f46e5;padding:28px 32px;color:white;">
             <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em;">📋 Session Summary</h1>
             <p style="margin:6px 0 0;font-size:15px;opacity:0.9;">{session_title}</p>
             <p style="margin:4px 0 0;font-size:14px;opacity:0.75;">🕐 {session_time}</p>
@@ -192,7 +192,11 @@ def send_leader_summary_email(
         <div style="padding:28px 32px;">
 
             <!-- Greeting -->
-            <p style="margin:0 0 20px;font-size:15px;">Hi {leader_name}, here's the overview for the upcoming session:</p>
+            <p style="margin:0 0 6px;font-size:15px;">Hi {leader_name}, here's the overview for the upcoming session:</p>
+            <p style="margin:0 0 24px;font-size:18px;font-weight:700;color:#1e293b;">
+                {session_title}<br>
+                <span style="font-size:14px;font-weight:400;color:#64748b;">{session_time}</span>
+            </p>
 
             <!-- On Duty -->
             <h2 style="margin:0 0 12px;font-size:16px;color:#4f46e5;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">
