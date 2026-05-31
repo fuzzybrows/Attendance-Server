@@ -28,6 +28,7 @@ def _make_member(id=1, first_name="Jane", last_name="Doe", email="jane@example.c
     member.first_name = first_name
     member.last_name = last_name
     member.full_name = f"{first_name} {last_name}"
+    member.display_first_name = first_name
     member.email = email
     member.phone_number = phone_number
     member.device_token = device_token
@@ -271,3 +272,188 @@ class TestDispatch24hrReminders:
         # Targeted call should still send
         dispatch_24hr_reminders(session_id=10)
         mock_send.assert_called_once_with(mock_session, mock_db)
+
+
+class TestLeaderSummary:
+    """Tests for the leader summary email feature in send_session_reminders."""
+
+    def _patch_settings(self, enabled=True, leader_ids="1"):
+        """Return a context manager that patches notify_leaders settings."""
+        return patch.multiple(
+            "app.core.scheduler.settings",
+            notify_leaders_enabled=enabled,
+            notify_leader_ids=leader_ids,
+        )
+
+    @patch("app.core.scheduler.send_leader_summary_email")
+    @patch("app.core.scheduler.send_push_notification")
+    @patch("app.core.scheduler.send_reminder_sms")
+    @patch("app.core.scheduler.send_reminder_email")
+    def test_sends_leader_summary_when_enabled(self, mock_email, mock_sms, mock_push, mock_leader_email):
+        from app.core.scheduler import send_session_reminders
+
+        session = _make_session()
+        member = _make_member(id=2, first_name="Alice", last_name="Smith")
+        assignment = _make_assignment(member, role="soprano")
+
+        leader = _make_member(id=1, first_name="Pastor", last_name="Jones", email="pastor@example.com")
+
+        mock_db = MagicMock()
+
+        member_query_count = [0]
+
+        def query_side_effect(model):
+            q = MagicMock()
+            if model is Assignment:
+                q.filter.return_value.all.return_value = [assignment]
+            elif model.__name__ == "Availability":
+                q.filter.return_value.all.return_value = []
+            elif model.__name__ == "DayOff":
+                q.filter.return_value.all.return_value = []
+            elif model is Member:
+                member_query_count[0] += 1
+                if member_query_count[0] == 1:
+                    # First Member query: all active members with assignable roles
+                    q.filter.return_value.all.return_value = [member, leader]
+                else:
+                    # Second Member query: leaders by ID
+                    q.filter.return_value.all.return_value = [leader]
+            return q
+
+        mock_db.query.side_effect = query_side_effect
+
+        with self._patch_settings(enabled=True, leader_ids="1"):
+            send_session_reminders(session, mock_db)
+
+        # Member reminder should still be sent
+        mock_email.assert_called_once()
+
+        # Leader summary should be sent to leader only
+        mock_leader_email.assert_called_once()
+        call_kwargs = mock_leader_email.call_args.kwargs
+        assert call_kwargs["leader_name"] == "Pastor"
+        assert call_kwargs["session_title"] == "Sunday Service"
+        assert len(call_kwargs["assignments"]) == 1
+        assert call_kwargs["assignments"][0]["role"] == "soprano"
+
+    @patch("app.core.scheduler.send_leader_summary_email")
+    @patch("app.core.scheduler.send_push_notification")
+    @patch("app.core.scheduler.send_reminder_sms")
+    @patch("app.core.scheduler.send_reminder_email")
+    def test_skips_leader_summary_when_disabled(self, mock_email, mock_sms, mock_push, mock_leader_email):
+        from app.core.scheduler import send_session_reminders
+
+        session = _make_session()
+        member = _make_member()
+        assignment = _make_assignment(member)
+
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.all.return_value = [assignment]
+
+        with self._patch_settings(enabled=False, leader_ids=""):
+            send_session_reminders(session, mock_db)
+
+        # Member reminder sent
+        mock_email.assert_called_once()
+        # Leader summary NOT sent
+        mock_leader_email.assert_not_called()
+
+    @patch("app.core.scheduler.send_leader_summary_email")
+    @patch("app.core.scheduler.send_push_notification")
+    @patch("app.core.scheduler.send_reminder_sms")
+    @patch("app.core.scheduler.send_reminder_email")
+    def test_skips_leader_without_email(self, mock_email, mock_sms, mock_push, mock_leader_email):
+        from app.core.scheduler import send_session_reminders
+
+        session = _make_session()
+        member = _make_member(id=2)
+        assignment = _make_assignment(member)
+
+        leader_no_email = _make_member(id=1, first_name="Pastor", last_name="Jones", email=None)
+
+        mock_db = MagicMock()
+
+        def query_side_effect(model):
+            q = MagicMock()
+            if model is Assignment:
+                q.filter.return_value.all.return_value = [assignment]
+            elif model is Member:
+                q.filter.return_value.all.return_value = [leader_no_email]
+            else:
+                q.filter.return_value.all.return_value = []
+            return q
+
+        mock_db.query.side_effect = query_side_effect
+
+        with self._patch_settings(enabled=True, leader_ids="1"):
+            send_session_reminders(session, mock_db)
+
+        # Leader has no email — summary should NOT be sent
+        mock_leader_email.assert_not_called()
+
+    @patch("app.core.scheduler.send_leader_summary_email")
+    @patch("app.core.scheduler.send_push_notification")
+    @patch("app.core.scheduler.send_reminder_sms")
+    @patch("app.core.scheduler.send_reminder_email")
+    def test_leader_summary_includes_unavailable_members(self, mock_email, mock_sms, mock_push, mock_leader_email):
+        from app.core.scheduler import send_session_reminders
+        from app.models.availability import Availability
+
+        session = _make_session()
+        member = _make_member(id=2, first_name="Alice", last_name="Smith")
+        assignment = _make_assignment(member, role="alto")
+
+        unavailable_member = _make_member(id=3, first_name="Bob", last_name="Brown")
+        leader = _make_member(id=1, first_name="Pastor", last_name="Jones", email="pastor@example.com")
+
+        # Create a mock opt-out
+        opt_out = MagicMock(spec=Availability)
+        opt_out.member_id = 3
+
+        mock_db = MagicMock()
+        member_query_count = [0]
+
+        def query_side_effect(model):
+            q = MagicMock()
+            if model is Assignment:
+                q.filter.return_value.all.return_value = [assignment]
+            elif model.__name__ == "Availability":
+                q.filter.return_value.all.return_value = [opt_out]
+            elif model.__name__ == "DayOff":
+                q.filter.return_value.all.return_value = []
+            elif model is Member:
+                member_query_count[0] += 1
+                if member_query_count[0] == 1:
+                    q.filter.return_value.all.return_value = [member, unavailable_member, leader]
+                else:
+                    q.filter.return_value.all.return_value = [leader]
+            return q
+
+        mock_db.query.side_effect = query_side_effect
+
+        with self._patch_settings(enabled=True, leader_ids="1"):
+            send_session_reminders(session, mock_db)
+
+        mock_leader_email.assert_called_once()
+        call_kwargs = mock_leader_email.call_args.kwargs
+        # Bob should be in unavailable list
+        assert "Bob Brown" in call_kwargs["unavailable_members"]
+        # Alice and Pastor should be available
+        assert "Alice Smith" in call_kwargs["available_members"]
+
+    @patch("app.core.scheduler.send_leader_summary_email")
+    @patch("app.core.scheduler.send_push_notification")
+    @patch("app.core.scheduler.send_reminder_sms")
+    @patch("app.core.scheduler.send_reminder_email")
+    def test_no_leader_summary_when_leader_ids_empty(self, mock_email, mock_sms, mock_push, mock_leader_email):
+        from app.core.scheduler import send_session_reminders
+
+        session = _make_session()
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+
+        with self._patch_settings(enabled=True, leader_ids=""):
+            send_session_reminders(session, mock_db)
+
+        mock_leader_email.assert_not_called()
+

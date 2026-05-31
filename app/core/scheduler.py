@@ -7,9 +7,11 @@ from zoneinfo import ZoneInfo
 from app.core.database import SessionLocal
 from app.models.session import Session, SessionStatus
 from app.models.assignment import Assignment
-from app.models.member import Member
+from app.models.member import Member, Role
+from app.models.availability import Availability
+from app.models.day_off import DayOff
 from app.models.attendance import Attendance  # noqa: F401 — needed for SQLAlchemy relationship resolution
-from app.services.comm import send_reminder_email, send_reminder_sms, send_push_notification
+from app.services.comm import send_reminder_email, send_reminder_sms, send_push_notification, send_leader_summary_email
 from app.settings import settings
 
 logger = logging.getLogger("scheduler")
@@ -19,7 +21,7 @@ LOCAL_TZ = ZoneInfo(settings.app_timezone)
 def send_session_reminders(session: Session, db, send_email=True, send_sms=False, send_push=True):
     """
     Send reminders to all assigned members for a given session.
-    This is the core logic reused by both the scheduled job and on-demand calls.
+    Optionally sends a leader summary email if notify_leaders_enabled is set.
     """
     logger.info(f"Dispatching reminders for session: {session.title}", extra={"type": "reminder_dispatch", "session_id": session.id, "session_name": session.title, "session_start_date": str(session.start_time)})
 
@@ -59,6 +61,72 @@ def send_session_reminders(session: Session, db, send_email=True, send_sms=False
                 body=f"You are serving as {assignment.role.replace('_', ' ').title()} in 24 hours!"
             )
 
+    # ── Leader Summary Email ────────────────────────────────────────────
+    if settings.notify_leaders_enabled and settings.notify_leader_ids_list:
+        _send_leader_summary(session, db, assignments)
+
+
+def _send_leader_summary(session: Session, db, assignments):
+    """Build availability data and send a summary email to each configured leader."""
+    from collections import defaultdict
+
+    session_time_str = session.start_time.astimezone(LOCAL_TZ).strftime("%A, %B %d at %I:%M %p")
+    session_date = session.start_time.astimezone(LOCAL_TZ).date()
+
+    # Build duty roster
+    assignment_data = [
+        {"member_name": a.member.full_name, "role": a.role}
+        for a in assignments
+    ]
+
+    # Get all active members with at least one assignable role
+    all_members = db.query(Member).filter(
+        Member.is_active == True,
+        Member.roles.any(Role.display_order.isnot(None))
+    ).all()
+
+    # Determine who is unavailable — session-level opt-outs
+    session_opt_outs = db.query(Availability).filter(
+        Availability.session_id == session.id,
+        Availability.is_available == False
+    ).all()
+    unavailable_ids = {a.member_id for a in session_opt_outs}
+
+    # Day-level unavailability (DayOff records)
+    day_offs = db.query(DayOff).filter(
+        DayOff.date == session_date,
+        DayOff.is_available == False
+    ).all()
+    unavailable_ids |= {d.member_id for d in day_offs}
+
+    available_members = []
+    unavailable_members = []
+    for m in all_members:
+        name = m.full_name
+        if m.id in unavailable_ids:
+            unavailable_members.append(name)
+        else:
+            available_members.append(name)
+
+    # Send to each leader
+    leaders = db.query(Member).filter(
+        Member.id.in_(settings.notify_leader_ids_list)
+    ).all()
+
+    for leader in leaders:
+        if not leader.email:
+            logger.warning(f"Leader {leader.id} has no email — skipping summary", extra={"type": "leader_summary_skip", "member_id": leader.id})
+            continue
+        logger.info(f"Sending leader summary to {leader.full_name}", extra={"type": "leader_summary_sent", "member_id": leader.id, "session_id": session.id})
+        send_leader_summary_email(
+            to_email=f"{leader.full_name} <{leader.email}>",
+            leader_name=leader.display_first_name,
+            session_title=session.title,
+            session_time=session_time_str,
+            assignments=assignment_data,
+            available_members=available_members,
+            unavailable_members=unavailable_members,
+        )
 
 _reminded_sessions: set = set()  # Track session IDs that already got reminders
 

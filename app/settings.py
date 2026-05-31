@@ -124,6 +124,20 @@ class Settings(BaseSettings):
     # When False: all roles are pre-selected for every program.
     enable_sunday_preview_defaults: bool = True
 
+    # ── Leader Notification ───────────────────────────────────────────────
+    # When True, leader(s) receive a summary email alongside member reminders
+    # showing all duty assignments and team availability for the session.
+    notify_leaders_enabled: bool = False
+    # Comma-separated member IDs to receive leader summary emails, e.g. "1,5,12"
+    notify_leader_ids: str = ""
+
+    @property
+    def notify_leader_ids_list(self) -> list[int]:
+        """Parsed list of leader member IDs."""
+        if not self.notify_leader_ids.strip():
+            return []
+        return [int(x.strip()) for x in self.notify_leader_ids.split(",") if x.strip().isdigit()]
+
     model_config = SettingsConfigDict(
         env_file=[".env", "../.env"],
         env_file_encoding="utf-8",
