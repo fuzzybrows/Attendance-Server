@@ -720,7 +720,7 @@ def export_month_schedule_csv(
     output.seek(0)
     
     headers = {
-        'Content-Disposition': f'attachment; filename="choir_schedule_{year}_{month}.csv"'
+        'Content-Disposition': f'attachment; filename="{settings.app_name.lower().replace(" ", "_")}_schedule_{year}_{month}.csv"'
     }
     return StreamingResponse(output, headers=headers, media_type="text/csv")
 
@@ -848,7 +848,7 @@ def export_month_schedule_pdf(
     title_style.alignment = 1  # Center
 
     month_name = calendar.month_name[month]
-    elements.append(Paragraph(f"Choir Schedule - {month_name} {year}", title_style))
+    elements.append(Paragraph(f"{settings.app_name} Schedule - {month_name} {year}", title_style))
     elements.append(Spacer(1, 0.25*inch))
 
     # Cell style for wrapping text in role columns
@@ -906,7 +906,7 @@ def export_month_schedule_pdf(
     buffer.seek(0)
     
     headers = {
-        'Content-Disposition': f'attachment; filename="choir_schedule_{year}_{month}.pdf"'
+        'Content-Disposition': f'attachment; filename="{settings.app_name.lower().replace(" ", "_")}_schedule_{year}_{month}.pdf"'
     }
     return StreamingResponse(buffer, headers=headers, media_type="application/pdf")
 

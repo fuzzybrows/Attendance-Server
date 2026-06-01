@@ -31,7 +31,8 @@ def test_calendar_export_as_pdf_returns_valid_pdf_response(client, db_session):
     response = client.get("/calendar/schedule/export_pdf?year=2026&month=4")
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/pdf"
-    assert "filename=\"choir_schedule_2026_4.pdf\"" in response.headers["content-disposition"]
+    assert "filename=\"" in response.headers["content-disposition"]
+    assert "_schedule_2026_4.pdf" in response.headers["content-disposition"]
 
 def test_calendar_sync_token_generation_returns_valid_token_and_url(client):
     response = client.post("/calendar/sync/token")

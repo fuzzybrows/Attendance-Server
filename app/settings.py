@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     # Environment
     environment: Environment = Environment.LOCAL
     app_timezone: str = "America/Chicago"
+    app_name: str = "Attendance"
 
     # JWT / Auth
     secret_key: str
