@@ -506,7 +506,7 @@ def generate_schedule(
 
     for session in sessions:
         # Combine per-session opt-outs with day-level unavailability
-        session_date = session.start_time.date()
+        session_date = session.start_time.astimezone(LOCAL_TZ).date()
         unavailable_members = opt_outs_by_session[session.id].union(day_offs_by_date[session_date])
         
         # Keep track of who is already scheduled in THIS session

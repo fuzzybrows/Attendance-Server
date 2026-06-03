@@ -318,6 +318,113 @@ class TestMemberFilteringInScheduling:
 
         assert inactive_member.id not in assigned_ids
 
+    def test_generate_schedule_excludes_members_with_day_off(self, client, db_session):
+        """Members who marked a day as unavailable via DayOff should not be assigned."""
+        role = _create_assignable_role(db_session, name="soprano", display_order=1)
+
+        available_member = Member(
+            first_name="Available", last_name="Singer",
+            email="avail_singer@test.com", is_active=True, roles=[role]
+        )
+        unavailable_member = Member(
+            first_name="DayOff", last_name="Singer",
+            email="dayoff_singer@test.com", is_active=True, roles=[role]
+        )
+        db_session.add_all([available_member, unavailable_member])
+        db_session.commit()
+
+        # Session on June 16, 2026
+        session = SessionModel(
+            title="Day Off Test", type="program",
+            start_time=datetime(2026, 6, 16, 10, 0),
+            end_time=datetime(2026, 6, 16, 12, 0),
+            status="scheduled"
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        # Mark unavailable_member as having the day off
+        day_off = DayOff(
+            member_id=unavailable_member.id,
+            date=date(2026, 6, 16),
+            is_available=False
+        )
+        db_session.add(day_off)
+        db_session.commit()
+
+        response = client.post("/calendar/schedule/generate", json={
+            "year": 2026, "month": 6
+        })
+        assert response.status_code == 200
+        data = response.json()
+
+        assigned_ids = set()
+        for s in data["sessions"]:
+            for a in s["assignments"]:
+                assigned_ids.add(a["member_id"])
+
+        assert unavailable_member.id not in assigned_ids, (
+            "Member with DayOff should not be assigned"
+        )
+        assert available_member.id in assigned_ids
+
+    def test_generate_schedule_day_off_uses_local_timezone(self, client, db_session):
+        """Regression: session_date must use local timezone, not UTC, when
+        looking up DayOff records.  An evening session stored as next-day UTC
+        should still match a local-date DayOff."""
+        from zoneinfo import ZoneInfo
+        role = _create_assignable_role(db_session, name="tenor", display_order=3)
+
+        member = Member(
+            first_name="Evening", last_name="Singer",
+            email="evening_tz@test.com", is_active=True, roles=[role]
+        )
+        db_session.add(member)
+        db_session.commit()
+
+        # June 16 2026 at 11 PM CDT = June 17 2026 04:00 UTC
+        # The session is on June 16 *locally*, but June 17 in UTC.
+        local_tz = ZoneInfo("America/Chicago")
+        session_start = datetime(2026, 6, 16, 23, 0, tzinfo=local_tz)
+        session_end = datetime(2026, 6, 17, 1, 0, tzinfo=local_tz)
+
+        session = SessionModel(
+            title="Late Night Service", type="program",
+            start_time=session_start,
+            end_time=session_end,
+            status="scheduled"
+        )
+        db_session.add(session)
+        db_session.commit()
+
+        # Mark June 16 (local date) as day off
+        day_off = DayOff(
+            member_id=member.id,
+            date=date(2026, 6, 16),
+            is_available=False
+        )
+        db_session.add(day_off)
+        db_session.commit()
+
+        response = client.post("/calendar/schedule/generate", json={
+            "year": 2026, "month": 6
+        })
+        assert response.status_code == 200
+        data = response.json()
+
+        # Find the late-night session
+        session_data = next(
+            (s for s in data["sessions"] if s["id"] == session.id), None
+        )
+        assert session_data is not None
+
+        assigned_ids = [a["member_id"] for a in session_data["assignments"]]
+        assert member.id not in assigned_ids, (
+            "Member with DayOff on June 16 should not be assigned to a "
+            "June 16 local-time session even though UTC date is June 17"
+        )
+
+
     def test_availability_export_csv_excludes_inactive_and_roleless_members(self, client, db_session):
         role = _create_assignable_role(db_session)
 
