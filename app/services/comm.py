@@ -300,22 +300,16 @@ def send_availability_reminder_email(
     month_name = cal_module.month_name[month]
     today = date.today()
 
-    # Build calendar grid data
-    # calendar.monthcalendar returns weeks as lists of day numbers (0 = not in month)
-    weeks = cal_module.monthcalendar(year, month)
+    # Build calendar grid data (Sunday-first layout)
+    sun_first_cal = cal_module.Calendar(firstweekday=6)
+    weeks = sun_first_cal.monthdayscalendar(year, month)
 
     # Header row
     day_headers = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-    # Python's monthcalendar starts weeks on Monday (index 0).
-    # We need Sunday-first, so rotate each week: move last element to front.
-    weeks_sun_first = []
-    for week in weeks:
-        weeks_sun_first.append([week[6]] + week[:6])
-
     # Build HTML table rows
     grid_rows = ""
-    for week in weeks_sun_first:
+    for week in weeks:
         grid_rows += "<tr>"
         for day_num in week:
             if day_num == 0:
@@ -335,18 +329,14 @@ def send_availability_reminder_email(
                 bg = "#1e2533"
                 text_color = "#4a5568"
                 indicator = ""
-            elif is_session_day and is_unavailable:
+            elif is_unavailable:
                 bg = "#742a2a"
                 text_color = "#feb2b2"
                 indicator = '<span style="display:block;font-size:14px;margin-top:2px;">✗</span>'
-            elif is_session_day and not is_unavailable:
+            else:
                 bg = "#22543d"
                 text_color = "#9ae6b4"
                 indicator = '<span style="display:block;font-size:14px;margin-top:2px;">✓</span>'
-            else:
-                bg = "#2d3748"
-                text_color = "#a0aec0"
-                indicator = ""
 
             border = "2px solid #6366f1" if is_today else "1px solid #2d3748"
             font_weight = "700" if is_today else "500"
@@ -425,10 +415,6 @@ def send_availability_reminder_email(
                 <span>
                     <span style="display:inline-block;width:14px;height:14px;background:#742a2a;border-radius:3px;vertical-align:middle;margin-right:4px;"></span>
                     Unavailable
-                </span>
-                <span>
-                    <span style="display:inline-block;width:14px;height:14px;background:#2d3748;border-radius:3px;vertical-align:middle;margin-right:4px;"></span>
-                    No session
                 </span>
             </div>
 
