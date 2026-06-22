@@ -175,7 +175,7 @@ def dispatch_24hr_reminders(session_id: int = None):
     finally:
         db.close()
 
-def dispatch_availability_reminders():
+def dispatch_availability_reminders(member_ids: list[int] | None = None):
     """
     Send monthly availability reminder emails prompting members to mark
     their availability for the upcoming (next) month.  Each email includes
@@ -186,6 +186,10 @@ def dispatch_availability_reminders():
       - External cron (Render): e.g. ``0 8 * * 0`` for every Sunday 8 AM
       - APScheduler fallback: CronTrigger on Sundays at 8 AM
       - Ad-hoc: POST /cron/availability-reminders
+
+    Args:
+        member_ids: If provided, only send reminders to these specific
+                    member IDs instead of all eligible members.
     """
     if not settings.availability_reminders_enabled:
         logger.debug("Availability reminders disabled — skipping")
@@ -195,7 +199,7 @@ def dispatch_availability_reminders():
 
     logger.info(
         "Dispatching availability reminders",
-        extra={"type": "availability_reminder_dispatch"},
+        extra={"type": "availability_reminder_dispatch", "member_ids": member_ids},
     )
 
     # Compute the upcoming (next) month
@@ -234,11 +238,14 @@ def dispatch_availability_reminders():
             session_dates.add(str(local_date))
             session_ids.append(s.id)
 
-        # Get all active members with at least one assignable role
-        members = db.query(Member).filter(
+        # Get active members with at least one assignable role
+        member_query = db.query(Member).filter(
             Member.is_active == True,
             Member.roles.any(Role.display_order.isnot(None)),
-        ).all()
+        )
+        if member_ids:
+            member_query = member_query.filter(Member.id.in_(member_ids))
+        members = member_query.all()
 
         if not members:
             logger.info("No eligible members found — skipping availability reminders")

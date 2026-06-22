@@ -103,6 +103,7 @@ def trigger_update_statuses(
 def trigger_availability_reminders(
     authorization: Optional[str] = Header(None),
     secret: Optional[str] = Query(None),
+    member_ids: Optional[str] = Query(None, description="Comma-separated member IDs to notify (e.g. '1,5,12'). Omit to notify all eligible members."),
 ):
     """
     Send monthly availability reminder emails for the upcoming month.
@@ -110,11 +111,16 @@ def trigger_availability_reminders(
     Sends reminders every time it is called — scheduling is the caller's
     responsibility.  Recommended external cron: ``0 8 * * 0`` (every Sunday
     at 8 AM), adjusted to match desired frequency.
+
+    Pass member_ids to target specific members (e.g. ``?member_ids=1,5,12``).
     """
     _verify_cron_secret(authorization, secret)
-    logger.info("Cron: availability-reminders triggered", extra={"type": "cron_trigger", "job": "availability_reminders"})
-    dispatch_availability_reminders()
-    return {"status": "ok", "job": "availability_reminders"}
+    parsed_ids = None
+    if member_ids:
+        parsed_ids = [int(x.strip()) for x in member_ids.split(",") if x.strip().isdigit()]
+    logger.info("Cron: availability-reminders triggered", extra={"type": "cron_trigger", "job": "availability_reminders", "member_ids": parsed_ids})
+    dispatch_availability_reminders(member_ids=parsed_ids)
+    return {"status": "ok", "job": "availability_reminders", "member_ids": parsed_ids}
 
 
 @router.api_route("/all", methods=["GET", "HEAD", "POST"], operation_id="cron_all")
