@@ -383,7 +383,7 @@ def send_availability_reminder_email(
     <div style="max-width:600px;margin:20px auto;background:#1e293b;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.3);">
 
         <!-- Header -->
-        <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:28px 32px;color:white;">
+        <div style="background-color:#4f46e5;background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:28px 32px;color:white;">
             <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em;">📅 {month_name} {year} — Availability Reminder</h1>
             <p style="margin:6px 0 0;font-size:15px;opacity:0.9;">Please confirm your schedule for the upcoming month</p>
         </div>
@@ -427,7 +427,7 @@ def send_availability_reminder_email(
             <!-- CTA Button -->
             <div style="text-align:center;margin-bottom:8px;">
                 <a href="{calendar_url}"
-                   style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;
+                   style="display:inline-block;background-color:#6366f1;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;
                           padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;
                           font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 14px rgba(99,102,241,0.4);">
                     Update Your Availability →
