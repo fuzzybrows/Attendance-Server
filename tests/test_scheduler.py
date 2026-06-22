@@ -457,3 +457,126 @@ class TestLeaderSummary:
 
         mock_leader_email.assert_not_called()
 
+
+class TestDispatchAvailabilityReminders:
+    """Tests for the monthly availability reminder dispatcher."""
+
+    @patch("app.core.scheduler.send_availability_reminder_email")
+    @patch("app.core.scheduler.SessionLocal")
+    @patch("app.core.scheduler.datetime")
+    @patch("app.core.scheduler.settings")
+    def test_skips_when_disabled(self, mock_settings, mock_dt, mock_session_local, mock_send_email):
+        from app.core.scheduler import dispatch_availability_reminders
+
+        mock_settings.availability_reminders_enabled = False
+
+        dispatch_availability_reminders()
+
+        mock_send_email.assert_not_called()
+        mock_session_local.assert_not_called()
+
+    @patch("app.core.scheduler.send_availability_reminder_email")
+    @patch("app.core.scheduler.SessionLocal")
+    @patch("app.core.scheduler.datetime")
+    @patch("app.core.scheduler.settings")
+    def test_dispatches_when_enabled(self, mock_settings, mock_dt, mock_session_local, mock_send_email):
+        from app.core.scheduler import dispatch_availability_reminders
+
+        mock_settings.availability_reminders_enabled = True
+        mock_settings.default_redirect_url = "http://localhost:5173/calendar"
+
+        fake_now = MagicMock()
+        fake_now.day = 7
+        fake_now.month = 6
+        fake_now.year = 2026
+        mock_dt.now.return_value = fake_now
+
+        mock_db = MagicMock()
+        mock_session_local.return_value = mock_db
+        # No lock, no sessions, no members
+        mock_db.query.return_value.join.return_value.filter.return_value.first.return_value = None
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+
+        dispatch_availability_reminders()
+
+        mock_session_local.assert_called_once()
+        mock_db.close.assert_called_once()
+
+    @patch("app.core.scheduler.send_availability_reminder_email")
+    @patch("app.core.scheduler.SessionLocal")
+    @patch("app.core.scheduler.datetime")
+    @patch("app.core.scheduler.settings")
+    def test_skips_when_month_locked(self, mock_settings, mock_dt, mock_session_local, mock_send_email):
+        from app.core.scheduler import dispatch_availability_reminders
+
+        mock_settings.availability_reminders_enabled = True
+
+        fake_now = MagicMock()
+        fake_now.day = 7
+        fake_now.month = 6
+        fake_now.year = 2026
+        mock_dt.now.return_value = fake_now
+
+        mock_db = MagicMock()
+        mock_session_local.return_value = mock_db
+
+        # Simulate an existing assignment in the target month (locked)
+        mock_db.query.return_value.join.return_value.filter.return_value.first.return_value = MagicMock()
+
+        dispatch_availability_reminders()
+
+        mock_send_email.assert_not_called()
+        mock_db.close.assert_called_once()
+
+    @patch("app.core.scheduler.send_availability_reminder_email")
+    @patch("app.core.scheduler.SessionLocal")
+    @patch("app.core.scheduler.datetime")
+    @patch("app.core.scheduler.settings")
+    def test_computes_next_month_correctly(self, mock_settings, mock_dt, mock_session_local, mock_send_email):
+        """When current month is December, target should be January of next year."""
+        from app.core.scheduler import dispatch_availability_reminders
+
+        mock_settings.availability_reminders_enabled = True
+        mock_settings.default_redirect_url = "http://localhost:5173/calendar"
+
+        fake_now = MagicMock()
+        fake_now.day = 7
+        fake_now.month = 12  # December
+        fake_now.year = 2026
+        mock_dt.now.return_value = fake_now
+
+        mock_db = MagicMock()
+        mock_session_local.return_value = mock_db
+        mock_db.query.return_value.join.return_value.filter.return_value.first.return_value = None
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+
+        dispatch_availability_reminders()
+
+        # Should target January 2027
+        mock_session_local.assert_called_once()
+        mock_db.close.assert_called_once()
+
+    @patch("app.core.scheduler.send_availability_reminder_email")
+    @patch("app.core.scheduler.SessionLocal")
+    @patch("app.core.scheduler.datetime")
+    @patch("app.core.scheduler.settings")
+    def test_closes_db_on_exception(self, mock_settings, mock_dt, mock_session_local, mock_send_email):
+        from app.core.scheduler import dispatch_availability_reminders
+
+        mock_settings.availability_reminders_enabled = True
+
+        fake_now = MagicMock()
+        fake_now.day = 7
+        fake_now.month = 6
+        fake_now.year = 2026
+        mock_dt.now.return_value = fake_now
+
+        mock_db = MagicMock()
+        mock_session_local.return_value = mock_db
+        mock_db.query.side_effect = Exception("DB error")
+
+        # Should not raise
+        dispatch_availability_reminders()
+
+        mock_db.close.assert_called_once()
+

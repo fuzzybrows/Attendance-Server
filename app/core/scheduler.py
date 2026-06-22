@@ -1,7 +1,10 @@
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone, time
+from sqlalchemy import extract
 from zoneinfo import ZoneInfo
 
 from app.core.database import SessionLocal
@@ -11,7 +14,7 @@ from app.models.member import Member, Role
 from app.models.availability import Availability
 from app.models.day_off import DayOff
 from app.models.attendance import Attendance  # noqa: F401 — needed for SQLAlchemy relationship resolution
-from app.services.comm import send_reminder_email, send_reminder_sms, send_push_notification, send_leader_summary_email
+from app.services.comm import send_reminder_email, send_reminder_sms, send_push_notification, send_leader_summary_email, send_availability_reminder_email
 from app.settings import settings
 
 logger = logging.getLogger("scheduler")
@@ -68,7 +71,6 @@ def send_session_reminders(session: Session, db, send_email=True, send_sms=False
 
 def _send_leader_summary(session: Session, db, assignments):
     """Build availability data and send a summary email to each configured leader."""
-    from collections import defaultdict
 
     session_time_str = session.start_time.astimezone(LOCAL_TZ).strftime("%A, %B %d at %I:%M %p")
     session_date = session.start_time.astimezone(LOCAL_TZ).date()
@@ -173,6 +175,154 @@ def dispatch_24hr_reminders(session_id: int = None):
     finally:
         db.close()
 
+def dispatch_availability_reminders():
+    """
+    Send monthly availability reminder emails prompting members to mark
+    their availability for the upcoming (next) month.  Each email includes
+    an HTML calendar grid showing their currently set availability.
+
+    This function contains no scheduling logic — it sends reminders
+    whenever called.  When to call it is the caller's responsibility:
+      - External cron (Render): e.g. ``0 8 * * 0`` for every Sunday 8 AM
+      - APScheduler fallback: CronTrigger on Sundays at 8 AM
+      - Ad-hoc: POST /cron/availability-reminders
+    """
+    if not settings.availability_reminders_enabled:
+        logger.debug("Availability reminders disabled — skipping")
+        return
+
+    now_local = datetime.now(LOCAL_TZ)
+
+    logger.info(
+        "Dispatching availability reminders",
+        extra={"type": "availability_reminder_dispatch"},
+    )
+
+    # Compute the upcoming (next) month
+    if now_local.month == 12:
+        target_year = now_local.year + 1
+        target_month = 1
+    else:
+        target_year = now_local.year
+        target_month = now_local.month + 1
+
+    db = SessionLocal()
+    try:
+
+        # Lock check: skip if the upcoming month already has assignments
+        locked = db.query(Assignment).join(Session).filter(
+            extract('year', Session.start_time) == target_year,
+            extract('month', Session.start_time) == target_month,
+        ).first()
+        if locked:
+            logger.info(
+                f"Upcoming month {target_year}-{target_month:02d} is locked (assignments exist) — skipping reminders",
+                extra={"type": "availability_reminder_skip_locked", "year": target_year, "month": target_month},
+            )
+            return
+
+        # Get all sessions in the target month (for session_dates set)
+        target_sessions = db.query(Session).filter(
+            extract('year', Session.start_time) == target_year,
+            extract('month', Session.start_time) == target_month,
+        ).all()
+
+        session_dates = set()
+        session_ids = []
+        for s in target_sessions:
+            local_date = s.start_time.astimezone(LOCAL_TZ).date()
+            session_dates.add(str(local_date))
+            session_ids.append(s.id)
+
+        # Get all active members with at least one assignable role
+        members = db.query(Member).filter(
+            Member.is_active == True,
+            Member.roles.any(Role.display_order.isnot(None)),
+        ).all()
+
+        if not members:
+            logger.info("No eligible members found — skipping availability reminders")
+            return
+
+        # Batch-load all session-level opt-outs for the target month
+        session_opt_outs_by_member = defaultdict(set)
+        if session_ids:
+            opt_outs = db.query(Availability).filter(
+                Availability.session_id.in_(session_ids),
+                Availability.is_available == False,
+            ).all()
+            for av in opt_outs:
+                # Map session_id → date
+                session_obj = next((s for s in target_sessions if s.id == av.session_id), None)
+                if session_obj:
+                    local_date = session_obj.start_time.astimezone(LOCAL_TZ).date()
+                    session_opt_outs_by_member[av.member_id].add(str(local_date))
+
+        # Batch-load all DayOff records for the target month
+        day_offs = db.query(DayOff).filter(
+            extract('year', DayOff.date) == target_year,
+            extract('month', DayOff.date) == target_month,
+            DayOff.is_available == False,
+        ).all()
+
+        day_offs_by_member = defaultdict(set)
+        for do in day_offs:
+            day_offs_by_member[do.member_id].add(str(do.date))
+
+        # Build the calendar deep-link URL
+        base_url = settings.default_redirect_url.rsplit("/", 1)[0]  # strip trailing "/calendar"
+        calendar_url = f"{base_url}/calendar?month={target_month}&year={target_year}"
+
+        sent_count = 0
+        for member in members:
+            if not member.email:
+                continue
+
+            # Combine session-level and day-level unavailability
+            unavailable_dates = session_opt_outs_by_member[member.id] | day_offs_by_member[member.id]
+
+            logger.info(
+                f"Sending availability reminder to {member.display_first_name} for {target_year}-{target_month:02d}",
+                extra={
+                    "type": "availability_reminder_sent",
+                    "member_id": member.id,
+                    "member_name": member.display_first_name,
+                    "year": target_year,
+                    "month": target_month,
+                    "unavailable_count": len(unavailable_dates),
+                },
+            )
+
+            send_availability_reminder_email(
+                to_email=f"{member.full_name} <{member.email}>",
+                member_first_name=member.display_first_name,
+                year=target_year,
+                month=target_month,
+                unavailable_dates=unavailable_dates,
+                session_dates=session_dates,
+                calendar_url=calendar_url,
+            )
+            sent_count += 1
+
+        logger.info(
+            f"Availability reminders dispatched to {sent_count} member(s) for {target_year}-{target_month:02d}",
+            extra={
+                "type": "availability_reminder_complete",
+                "sent_count": sent_count,
+                "year": target_year,
+                "month": target_month,
+            },
+        )
+    except Exception as e:
+        logger.error(
+            f"Error in dispatch_availability_reminders: {e}",
+            exc_info=True,
+            extra={"type": "availability_reminder_error"},
+        )
+    finally:
+        db.close()
+
+
 def update_session_statuses():
     """
     Job that runs every 5 minutes to sweep all sessions and update their 
@@ -237,6 +387,17 @@ def start_scheduler():
             trigger=IntervalTrigger(minutes=5),
             id="update_statuses_job",
             name="Update session statuses",
+            replace_existing=True
+        )
+
+        # Run on Sundays at 8 AM (local dev fallback).
+        # The function itself skips the 4th/5th Sundays (day > 21).
+        # External cron deployments should use: 0 8 * * 0
+        scheduler.add_job(
+            dispatch_availability_reminders,
+            trigger=CronTrigger(day_of_week='sun', hour=8, timezone=LOCAL_TZ),
+            id="availability_reminders_job",
+            name="Dispatch availability reminders",
             replace_existing=True
         )
         

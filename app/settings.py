@@ -87,23 +87,7 @@ class Settings(BaseSettings):
     # Supports web origins (https://app.com) and mobile schemes (attendanceapp://).
     allowed_redirect_origins: str = "http://localhost:5173"
 
-    @property
-    def allowed_redirect_origins_list(self) -> list:
-        """Parsed list of trusted redirect origins."""
-        return [o.strip() for o in self.allowed_redirect_origins.split(",") if o.strip()]
-
-    @property
-    def default_redirect_url(self) -> str:
-        """First HTTP(S) origin in the allowlist, used as a fallback redirect destination."""
-        first_web = next(
-            (o for o in self.allowed_redirect_origins_list if o.startswith("http")),
-            "http://localhost:5173"
-        )
-        return f"{first_web}/calendar"
-
-    def is_redirect_allowed(self, app_redirect: str) -> bool:
-        """Security check: ensure the redirect target starts with a trusted origin."""
-        return any(app_redirect.startswith(origin) for origin in self.allowed_redirect_origins_list)
+    availability_reminders_enabled: bool = True
     
     # Recaptcha
     recaptcha_secret_key: Optional[str] = None
@@ -124,7 +108,6 @@ class Settings(BaseSettings):
     # and only the primary role (lowest display_order) for weekday programs.
     # When False: all roles are pre-selected for every program.
     enable_sunday_preview_defaults: bool = True
-
     # ── Leader Notification ───────────────────────────────────────────────
     # When True, leader(s) receive a summary email alongside member reminders
     # showing all duty assignments and team availability for the session.
@@ -133,11 +116,30 @@ class Settings(BaseSettings):
     notify_leader_ids: str = ""
 
     @property
+    def allowed_redirect_origins_list(self) -> list:
+        """Parsed list of trusted redirect origins."""
+        return [o.strip() for o in self.allowed_redirect_origins.split(",") if o.strip()]
+
+    @property
+    def default_redirect_url(self) -> str:
+        """First HTTP(S) origin in the allowlist, used as a fallback redirect destination."""
+        first_web = next(
+            (o for o in self.allowed_redirect_origins_list if o.startswith("http")),
+            "http://localhost:5173"
+        )
+        return f"{first_web}/calendar"
+
+    def is_redirect_allowed(self, app_redirect: str) -> bool:
+        """Security check: ensure the redirect target starts with a trusted origin."""
+        return any(app_redirect.startswith(origin) for origin in self.allowed_redirect_origins_list)
+
+    @property
     def notify_leader_ids_list(self) -> list[int]:
         """Parsed list of leader member IDs."""
         if not self.notify_leader_ids.strip():
             return []
         return [int(x.strip()) for x in self.notify_leader_ids.split(",") if x.strip().isdigit()]
+
 
     model_config = SettingsConfigDict(
         env_file=[".env", "../.env"],

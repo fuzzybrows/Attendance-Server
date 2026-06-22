@@ -80,9 +80,18 @@ class TestCronEndpoints:
         mock_dispatch.assert_called_once_with(session_id=42)
 
     @patch("app.routers.cron.settings")
+    @patch("app.routers.cron.dispatch_availability_reminders")
+    def test_availability_reminders_endpoint(self, mock_dispatch, mock_settings, client):
+        mock_settings.cron_secret = CRON_SECRET
+        response = client.get(f"/cron/availability-reminders?secret={CRON_SECRET}")
+        assert response.status_code == 200
+        assert response.json()["job"] == "availability_reminders"
+        mock_dispatch.assert_called_once()
+
+    @patch("app.routers.cron.settings")
     @patch("app.routers.cron.dispatch_24hr_reminders")
     @patch("app.routers.cron.update_session_statuses")
-    def test_all_endpoint_runs_both_jobs(self, mock_update, mock_dispatch, mock_settings, client):
+    def test_all_endpoint_runs_all_jobs(self, mock_update, mock_dispatch, mock_settings, client):
         mock_settings.cron_secret = CRON_SECRET
         response = client.get(f"/cron/all?secret={CRON_SECRET}")
         assert response.status_code == 200
@@ -114,3 +123,4 @@ class TestCronEndpoints:
         )
         assert response.status_code == 200
         mock_update.assert_called_once()
+

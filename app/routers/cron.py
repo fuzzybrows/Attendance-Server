@@ -13,7 +13,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Header, Query, status
 from typing import Optional
 
-from app.core.scheduler import dispatch_24hr_reminders, update_session_statuses
+from app.core.scheduler import dispatch_24hr_reminders, update_session_statuses, dispatch_availability_reminders
 from app.settings import settings
 
 logger = logging.getLogger("cron")
@@ -97,6 +97,23 @@ def trigger_update_statuses(
     logger.info("Cron: update-statuses triggered", extra={"type": "cron_trigger", "job": "update_statuses"})
     update_session_statuses()
     return {"status": "ok", "job": "update_statuses"}
+
+
+@router.api_route("/availability-reminders", methods=["GET", "HEAD", "POST"])
+def trigger_availability_reminders(
+    authorization: Optional[str] = Header(None),
+    secret: Optional[str] = Query(None),
+):
+    """
+    Send monthly availability reminder emails for the upcoming month.
+
+    Scheduling (1st/2nd/3rd Sundays) is the caller's responsibility.
+    Recommended external cron expression: ``0 8 1-21 * 0``
+    """
+    _verify_cron_secret(authorization, secret)
+    logger.info("Cron: availability-reminders triggered", extra={"type": "cron_trigger", "job": "availability_reminders"})
+    dispatch_availability_reminders()
+    return {"status": "ok", "job": "availability_reminders"}
 
 
 @router.api_route("/all", methods=["GET", "HEAD", "POST"])
