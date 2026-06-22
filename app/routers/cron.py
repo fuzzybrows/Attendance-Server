@@ -62,7 +62,7 @@ def _verify_cron_secret(
         )
 
 
-@router.api_route("/reminders", methods=["GET", "HEAD", "POST"])
+@router.api_route("/reminders", methods=["GET", "HEAD", "POST"], operation_id="cron_reminders")
 def trigger_reminders(
     authorization: Optional[str] = Header(None),
     secret: Optional[str] = Query(None),
@@ -82,7 +82,7 @@ def trigger_reminders(
     return {"status": "ok", "job": "reminders", "session_id": session_id}
 
 
-@router.api_route("/update-statuses", methods=["GET", "HEAD", "POST"])
+@router.api_route("/update-statuses", methods=["GET", "HEAD", "POST"], operation_id="cron_update_statuses")
 def trigger_update_statuses(
     authorization: Optional[str] = Header(None),
     secret: Optional[str] = Query(None),
@@ -99,7 +99,7 @@ def trigger_update_statuses(
     return {"status": "ok", "job": "update_statuses"}
 
 
-@router.api_route("/availability-reminders", methods=["GET", "HEAD", "POST"])
+@router.api_route("/availability-reminders", methods=["GET", "HEAD", "POST"], operation_id="cron_availability_reminders")
 def trigger_availability_reminders(
     authorization: Optional[str] = Header(None),
     secret: Optional[str] = Query(None),
@@ -107,8 +107,9 @@ def trigger_availability_reminders(
     """
     Send monthly availability reminder emails for the upcoming month.
 
-    Scheduling (1st/2nd/3rd Sundays) is the caller's responsibility.
-    Recommended external cron expression: ``0 8 1-21 * 0``
+    Sends reminders every time it is called — scheduling is the caller's
+    responsibility.  Recommended external cron: ``0 8 * * 0`` (every Sunday
+    at 8 AM), adjusted to match desired frequency.
     """
     _verify_cron_secret(authorization, secret)
     logger.info("Cron: availability-reminders triggered", extra={"type": "cron_trigger", "job": "availability_reminders"})
@@ -116,7 +117,7 @@ def trigger_availability_reminders(
     return {"status": "ok", "job": "availability_reminders"}
 
 
-@router.api_route("/all", methods=["GET", "HEAD", "POST"])
+@router.api_route("/all", methods=["GET", "HEAD", "POST"], operation_id="cron_all")
 def trigger_all_jobs(
     authorization: Optional[str] = Header(None),
     secret: Optional[str] = Query(None),

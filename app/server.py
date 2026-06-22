@@ -74,7 +74,7 @@ app.include_router(google_auth.router)
 app.include_router(session_templates.router)
 app.include_router(cron.router)
 
-@app.api_route("/health", methods=["GET", "HEAD"], response_class=PlainTextResponse, status_code=200)
+@app.api_route("/health", methods=["GET", "HEAD"], response_class=PlainTextResponse, status_code=200, operation_id="health_check")
 def health_check():
     return "OK"
 
