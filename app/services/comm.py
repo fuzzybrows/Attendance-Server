@@ -397,6 +397,7 @@ def send_availability_reminder_email(
             </p>
 
             <!-- Calendar Grid -->
+            <p style="margin:0 0 10px;font-size:17px;font-weight:700;color:white;text-align:center;">{month_name} {year}</p>
             <table style="width:100%;border-collapse:collapse;margin-bottom:20px;border-radius:8px;overflow:hidden;">
                 <thead>
                     <tr>{header_cells}</tr>
