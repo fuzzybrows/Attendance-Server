@@ -520,8 +520,10 @@ class TestDispatchAvailabilityReminders:
         mock_db = MagicMock()
         mock_session_local.return_value = mock_db
 
-        # Simulate an existing assignment in the target month (locked)
-        mock_db.query.return_value.join.return_value.filter.return_value.first.return_value = MagicMock()
+        # Simulate an existing MonthLock row with is_locked=True
+        mock_lock = MagicMock()
+        mock_lock.is_locked = True
+        mock_db.query.return_value.filter.return_value.first.return_value = mock_lock
 
         dispatch_availability_reminders()
 
@@ -547,7 +549,8 @@ class TestDispatchAvailabilityReminders:
 
         mock_db = MagicMock()
         mock_session_local.return_value = mock_db
-        mock_db.query.return_value.join.return_value.filter.return_value.first.return_value = None
+        # No MonthLock row → not locked, no sessions/members found
+        mock_db.query.return_value.filter.return_value.first.return_value = None
         mock_db.query.return_value.filter.return_value.all.return_value = []
 
         dispatch_availability_reminders()

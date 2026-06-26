@@ -13,6 +13,7 @@ from app.models.assignment import Assignment
 from app.models.member import Member, Role
 from app.models.availability import Availability
 from app.models.day_off import DayOff
+from app.models.month_lock import MonthLock
 from app.models.attendance import Attendance  # noqa: F401 — needed for SQLAlchemy relationship resolution
 from app.services.comm import send_reminder_email, send_reminder_sms, send_push_notification, send_leader_summary_email, send_availability_reminder_email
 from app.settings import settings
@@ -213,14 +214,14 @@ def dispatch_availability_reminders(member_ids: list[int] | None = None):
     db = SessionLocal()
     try:
 
-        # Lock check: skip if the upcoming month already has assignments
-        locked = db.query(Assignment).join(Session).filter(
-            extract('year', Session.start_time) == target_year,
-            extract('month', Session.start_time) == target_month,
+        # Lock check: skip if the upcoming month is explicitly locked
+        lock = db.query(MonthLock).filter(
+            MonthLock.year == target_year,
+            MonthLock.month == target_month,
         ).first()
-        if locked:
+        if lock and lock.is_locked:
             logger.info(
-                f"Upcoming month {target_year}-{target_month:02d} is locked (assignments exist) — skipping reminders",
+                f"Upcoming month {target_year}-{target_month:02d} is locked — skipping reminders",
                 extra={"type": "availability_reminder_skip_locked", "year": target_year, "month": target_month},
             )
             return

@@ -543,3 +543,195 @@ class TestPDFNameFormatting:
         response = client.get("/calendar/schedule/export_pdf?year=2026&month=9")
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/pdf"
+
+
+# ── Month Lock Tests ──
+
+
+def test_save_schedule_auto_creates_month_lock(client, db_session):
+    """Saving a schedule should auto-create a MonthLock row with is_locked=True."""
+    from app.models.month_lock import MonthLock
+
+    session = SessionModel(
+        title="July Service",
+        type="program",
+        start_time=datetime(2026, 7, 12, 10, 0, 0),
+        end_time=datetime(2026, 7, 12, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+
+    save_data = {
+        "sessions": [{
+            "id": session.id,
+            "title": "July Service",
+            "type": "program",
+            "start_time": "2026-07-12T10:00:00Z",
+            "assignments": [{
+                "member_id": admin.id,
+                "member_name": "Test Admin",
+                "role": "soprano"
+            }]
+        }]
+    }
+
+    response = client.post("/calendar/schedule/save", json=save_data)
+    assert response.status_code == 200
+
+    lock = db_session.query(MonthLock).filter(
+        MonthLock.year == 2026, MonthLock.month == 7
+    ).first()
+    assert lock is not None
+    assert lock.is_locked is True
+
+
+def test_schedule_response_includes_month_locked_field(client, db_session):
+    """GET /calendar/schedule/{year}/{month} should include month_locked."""
+    session = SessionModel(
+        title="Aug Service",
+        type="program",
+        start_time=datetime(2026, 8, 9, 10, 0, 0),
+        end_time=datetime(2026, 8, 9, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    # No lock set — should be unlocked
+    response = client.get("/calendar/schedule/2026/8")
+    assert response.status_code == 200
+    data = response.json()
+    assert "month_locked" in data
+    assert data["month_locked"] is False
+
+
+def test_schedule_response_month_locked_true_after_save(client, db_session):
+    """After saving assignments, month_locked should be True in the schedule response."""
+    from app.models.month_lock import MonthLock
+
+    session = SessionModel(
+        title="Sep Service",
+        type="program",
+        start_time=datetime(2026, 9, 6, 10, 0, 0),
+        end_time=datetime(2026, 9, 6, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+
+    save_data = {
+        "sessions": [{
+            "id": session.id,
+            "title": "Sep Service",
+            "type": "program",
+            "start_time": "2026-09-06T10:00:00Z",
+            "assignments": [{"member_id": admin.id, "member_name": "Test Admin", "role": "alto"}]
+        }]
+    }
+    client.post("/calendar/schedule/save", json=save_data)
+
+    response = client.get("/calendar/schedule/2026/9")
+    assert response.json()["month_locked"] is True
+
+
+def test_admin_can_toggle_month_lock(client, db_session):
+    """Admin should be able to lock and unlock a month via PUT /calendar/month-lock."""
+    # Lock
+    response = client.put("/calendar/month-lock?year=2026&month=10&is_locked=true")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["is_locked"] is True
+
+    # Unlock
+    response = client.put("/calendar/month-lock?year=2026&month=10&is_locked=false")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["is_locked"] is False
+
+
+def test_admin_can_unlock_after_save(client, db_session):
+    """Admin should be able to unlock a month that was auto-locked by saving."""
+    from app.models.month_lock import MonthLock
+
+    session = SessionModel(
+        title="Oct Service",
+        type="program",
+        start_time=datetime(2026, 10, 4, 10, 0, 0),
+        end_time=datetime(2026, 10, 4, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    save_data = {
+        "sessions": [{
+            "id": session.id,
+            "title": "Oct Service",
+            "type": "program",
+            "start_time": "2026-10-04T10:00:00Z",
+            "assignments": [{"member_id": admin.id, "member_name": "Test Admin", "role": "tenor"}]
+        }]
+    }
+    client.post("/calendar/schedule/save", json=save_data)
+
+    # Should be locked
+    sched = client.get("/calendar/schedule/2026/10").json()
+    assert sched["month_locked"] is True
+
+    # Admin unlocks
+    client.put("/calendar/month-lock?year=2026&month=10&is_locked=false")
+
+    # Should now be unlocked
+    sched = client.get("/calendar/schedule/2026/10").json()
+    assert sched["month_locked"] is False
+
+
+def test_month_lock_invalid_month_returns_400(client):
+    """PUT with invalid month should return 400."""
+    response = client.put("/calendar/month-lock?year=2026&month=13&is_locked=true")
+    assert response.status_code == 400
+
+
+def test_resaving_schedule_relocks_month(client, db_session):
+    """Re-saving assignments should re-lock a previously unlocked month."""
+    from app.models.month_lock import MonthLock
+
+    session = SessionModel(
+        title="Nov Service",
+        type="program",
+        start_time=datetime(2026, 11, 1, 10, 0, 0),
+        end_time=datetime(2026, 11, 1, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    save_data = {
+        "sessions": [{
+            "id": session.id,
+            "title": "Nov Service",
+            "type": "program",
+            "start_time": "2026-11-01T10:00:00Z",
+            "assignments": [{"member_id": admin.id, "member_name": "Test Admin", "role": "soprano"}]
+        }]
+    }
+
+    # Save → auto-lock
+    client.post("/calendar/schedule/save", json=save_data)
+    assert client.get("/calendar/schedule/2026/11").json()["month_locked"] is True
+
+    # Admin unlocks
+    client.put("/calendar/month-lock?year=2026&month=11&is_locked=false")
+    assert client.get("/calendar/schedule/2026/11").json()["month_locked"] is False
+
+    # Re-save → should re-lock
+    client.post("/calendar/schedule/save", json=save_data)
+    assert client.get("/calendar/schedule/2026/11").json()["month_locked"] is True
+

@@ -28,6 +28,7 @@ from app.models.session import Session as SessionModel
 from app.models.availability import Availability
 from app.models.assignment import Assignment
 from app.models.day_off import DayOff
+from app.models.month_lock import MonthLock
 from app.schemas.availability import AvailabilityUpdate, AvailabilitySchema
 from app.schemas.assignment import AssignmentCreate, AssignmentSchema
 from app.schemas.calendar import (
@@ -46,14 +47,17 @@ LOCAL_TZ = ZoneInfo(settings.app_timezone)
 
 def is_month_locked(db: Session, year: int, month: int) -> bool:
     """
-    Check if any assignments exist for sessions in the given month.
-    If assignments exist, the month is considered 'locked' for availability changes.
+    Check if the given month has an explicit lock set by an admin.
+    Returns True if a MonthLock row exists with is_locked=True.
+    Returns False otherwise (no row, or row with is_locked=False).
     """
-    locked = db.query(Assignment).join(SessionModel).filter(
-        extract('year', SessionModel.start_time) == year,
-        extract('month', SessionModel.start_time) == month
+    lock = db.query(MonthLock).filter(
+        MonthLock.year == year,
+        MonthLock.month == month,
     ).first()
-    return locked is not None
+    if lock is not None:
+        return lock.is_locked
+    return False
 
 
 router = APIRouter(
@@ -79,15 +83,13 @@ def update_availability(
     if not db_session:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    # Lock Check: Non-admins/managers cannot change availability if month is locked
-    is_admin_or_manager = any(p.name in ['admin', 'schedule_read', 'schedule_generate'] for p in current_user.permissions)
-    if not is_admin_or_manager:
-        session_date = db_session.start_time
-        if is_month_locked(db, session_date.year, session_date.month):
-            raise HTTPException(
-                status_code=400, 
-                detail="Availability is locked for this month because the schedule has been finalized."
-            )
+    # Lock Check: No one can change availability if month is locked
+    session_date = db_session.start_time
+    if is_month_locked(db, session_date.year, session_date.month):
+        raise HTTPException(
+            status_code=400, 
+            detail="Availability is locked for this month because the schedule has been finalized."
+        )
     
     # Update the target session's availability
     availability = db.query(Availability).filter(
@@ -168,14 +170,12 @@ def update_day_availability(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
 
-    # Lock Check: Non-admins/managers cannot change availability if month is locked
-    is_admin_or_manager = any(p.name in ['admin', 'schedule_read', 'schedule_generate'] for p in current_user.permissions)
-    if not is_admin_or_manager:
-        if is_month_locked(db, target_date.year, target_date.month):
-            raise HTTPException(
-                status_code=400, 
-                detail="Availability is locked for this month because the schedule has been finalized."
-            )
+    # Lock Check: No one can change availability if month is locked
+    if is_month_locked(db, target_date.year, target_date.month):
+        raise HTTPException(
+            status_code=400, 
+            detail="Availability is locked for this month because the schedule has been finalized."
+        )
 
     # Upsert the DayOff record (day-level, independent of sessions)
     day_off = db.query(DayOff).filter(
@@ -566,8 +566,11 @@ def save_schedule(
 ):
     """
     Save or overwrite assignments for the specific sessions.
+    Auto-locks the month(s) for availability changes.
     (Admin only)
     """
+    affected_months = set()
+
     for session_data in request.sessions:
         # First, delete existing assignments for the specific session
         db.query(Assignment).filter(Assignment.session_id == session_data.id).delete()
@@ -581,9 +584,53 @@ def save_schedule(
             )
             db.add(assignment)
 
+        # Track which months are affected
+        session_obj = db.query(SessionModel).filter(SessionModel.id == session_data.id).first()
+        if session_obj:
+            local_dt = session_obj.start_time.astimezone(LOCAL_TZ)
+            affected_months.add((local_dt.year, local_dt.month))
+
+    # Auto-lock each affected month
+    for year, month in affected_months:
+        lock = db.query(MonthLock).filter(
+            MonthLock.year == year,
+            MonthLock.month == month,
+        ).first()
+        if not lock:
+            db.add(MonthLock(year=year, month=month, is_locked=True))
+        else:
+            lock.is_locked = True
+
     db.commit()
     return {"status": "success", "message": "Schedule saved successfully"}
 
+
+@router.put("/month-lock")
+def set_month_lock(
+    year: int,
+    month: int,
+    is_locked: bool,
+    db: Session = Depends(get_db),
+    admin: Member = Depends(get_admin_member),
+):
+    """
+    Set or clear the availability lock for a given month.
+    (Admin only)
+    """
+    if month < 1 or month > 12:
+        raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
+
+    lock = db.query(MonthLock).filter(
+        MonthLock.year == year,
+        MonthLock.month == month,
+    ).first()
+    if not lock:
+        lock = MonthLock(year=year, month=month, is_locked=is_locked)
+        db.add(lock)
+    else:
+        lock.is_locked = is_locked
+    db.commit()
+    return {"status": "success", "year": year, "month": month, "is_locked": lock.is_locked}
 
 @router.get("/schedule/session/{session_id}", response_model=DraftSessionSchedule)
 def get_session_schedule(
@@ -661,7 +708,10 @@ def get_schedule(
             assignments=session_assignments
         ))
 
-    return DraftScheduleResponse(sessions=draft_sessions)
+    return DraftScheduleResponse(
+        sessions=draft_sessions,
+        month_locked=is_month_locked(db, year, month),
+    )
 
 
 @router.get("/schedule/export_csv", response_class=StreamingResponse)

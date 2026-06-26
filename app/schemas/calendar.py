@@ -30,6 +30,7 @@ class DraftSessionSchedule(BaseModel):
 
 class DraftScheduleResponse(BaseModel):
     sessions: List[DraftSessionSchedule]
+    month_locked: bool = False
 
 
 class SaveScheduleRequest(BaseModel):
