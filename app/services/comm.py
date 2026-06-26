@@ -2,8 +2,9 @@ import calendar as cal_module
 import logging
 import random
 
-import firebase_admin
-from firebase_admin import credentials, messaging
+# Firebase disabled to reduce bundle size — push notifications stubbed out
+# import firebase_admin
+# from firebase_admin import credentials, messaging
 import os
 from datetime import date
 from app.settings import settings
@@ -13,7 +14,7 @@ from app.services.sms_providers import get_sms_provider
 logger = logging.getLogger(__name__)
 
 # API credentials from settings
-FIREBASE_CREDENTIALS_PATH = settings.firebase_credentials_path
+# FIREBASE_CREDENTIALS_PATH = settings.firebase_credentials_path
 ROLE_PREPOSITION = settings.role_preposition
 
 # Module-level provider singletons
@@ -31,20 +32,20 @@ def _send_sms(to_phone: str, body: str) -> bool:
     return _sms_provider.send(to_phone, body)
 
 
-# ── Firebase ────────────────────────────────────────────────────────────────
-
-def init_firebase():
-    if not firebase_admin._apps:
-        if FIREBASE_CREDENTIALS_PATH and FIREBASE_CREDENTIALS_PATH != "placeholder_firebase_path" and os.path.exists(FIREBASE_CREDENTIALS_PATH):
-            try:
-                cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-                firebase_admin.initialize_app(cred)
-            except Exception as e:
-                logger.error(f"Failed to initialize Firebase: {e}", exc_info=True, extra={"type": "firebase_init_error"})
-        else:
-            logger.info("Firebase credentials not configured. Push notifications will be mocked.", extra={"type": "firebase_init_skip"})
-
-init_firebase()
+# ── Firebase (disabled) ─────────────────────────────────────────────────────
+#
+# def init_firebase():
+#     if not firebase_admin._apps:
+#         if FIREBASE_CREDENTIALS_PATH and FIREBASE_CREDENTIALS_PATH != "placeholder_firebase_path" and os.path.exists(FIREBASE_CREDENTIALS_PATH):
+#             try:
+#                 cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+#                 firebase_admin.initialize_app(cred)
+#             except Exception as e:
+#                 logger.error(f"Failed to initialize Firebase: {e}", exc_info=True, extra={"type": "firebase_init_error"})
+#         else:
+#             logger.info("Firebase credentials not configured. Push notifications will be mocked.", extra={"type": "firebase_init_skip"})
+#
+# init_firebase()
 
 
 # ── Public API ──────────────────────────────────────────────────────────────
@@ -251,28 +252,35 @@ def send_leader_summary_email(
 
 def send_push_notification(device_token: str, title: str, body: str):
     """
-    Sends a push notification via Firebase Cloud Messaging (FCM).
+    Push notifications via FCM — currently disabled (Firebase commented out).
+    Logs the notification and returns True as a no-op stub.
     """
     if not device_token:
         return False
-        
-    if not firebase_admin._apps:
-        logger.debug(f"Mocking PUSH NOTIFICATION to device {device_token} -> {title}: {body}", extra={"type": "push_notification_mock", "device_token": device_token, "title": title})
-        return True
-        
-    try:
-        message = messaging.Message(
-            notification=messaging.Notification(
-                title=title,
-                body=body,
-            ),
-            token=device_token,
-        )
-        response = messaging.send(message)
-        return True
-    except Exception as e:
-        logger.error(f"Error sending push notification to {device_token}: {e}", exc_info=True, extra={"type": "push_notification_error", "device_token": device_token, "title": title})
-        return False
+
+    # if not firebase_admin._apps:
+    #     logger.debug(f"Mocking PUSH NOTIFICATION to device {device_token} -> {title}: {body}", extra={"type": "push_notification_mock", "device_token": device_token, "title": title})
+    #     return True
+    #
+    # try:
+    #     message = messaging.Message(
+    #         notification=messaging.Notification(
+    #             title=title,
+    #             body=body,
+    #         ),
+    #         token=device_token,
+    #     )
+    #     response = messaging.send(message)
+    #     return True
+    # except Exception as e:
+    #     logger.error(f"Error sending push notification to {device_token}: {e}", exc_info=True, extra={"type": "push_notification_error", "device_token": device_token, "title": title})
+    #     return False
+
+    logger.debug(
+        f"Mocking PUSH NOTIFICATION to device {device_token} -> {title}: {body}",
+        extra={"type": "push_notification_mock", "device_token": device_token, "title": title},
+    )
+    return True
 
 
 def send_availability_reminder_email(
