@@ -1222,8 +1222,8 @@ def notify_schedule(
             member_assignments[a.member_id].append({
                 'session_title': session.title,
                 'role': a.role,
-                'start_time': session.start_time,
-                'end_time': session.start_time + timedelta(hours=3),
+                'start_time': session.start_time.astimezone(LOCAL_TZ),
+                'end_time': (session.start_time + timedelta(hours=3)).astimezone(LOCAL_TZ),
             })
 
     # Sort each member's assignments by date

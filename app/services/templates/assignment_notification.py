@@ -1,13 +1,18 @@
 """Assignment notification email template with calendar grid and Google Calendar links."""
 
 import calendar as cal_module
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone
 from urllib.parse import quote
 
 
-def _build_google_calendar_url(title: str, start_utc, end_utc, description: str = "") -> str:
-    """Build a Google Calendar event creation URL, HTML-safe for href attributes."""
+def _build_google_calendar_url(title: str, start_dt, end_dt, description: str = "") -> str:
+    """Build a Google Calendar event creation URL, HTML-safe for href attributes.
+
+    Accepts timezone-aware datetimes in any timezone — converts to UTC for the URL.
+    """
     fmt = "%Y%m%dT%H%M%SZ"
+    start_utc = start_dt.astimezone(timezone.utc)
+    end_utc = end_dt.astimezone(timezone.utc)
     # Use &amp; so the URL is valid inside HTML href attributes.
     # Email clients may truncate URLs at unescaped & characters.
     return (

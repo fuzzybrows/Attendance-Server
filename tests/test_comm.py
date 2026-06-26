@@ -6,7 +6,7 @@ Tests validate generated HTML, plain text, subjects, and argument structure.
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 
 from app.services.comm import (
     send_email_otp,
@@ -305,8 +305,8 @@ class TestSendAssignmentNotificationEmail:
         result = send_assignment_notification_email(
             "alice@example.com", "Alice", 2026, 12,
             [{"session_title": "Sunday Service", "role": "soprano",
-              "start_time": datetime(2026, 12, 6, 10, 0, 0),
-              "end_time": datetime(2026, 12, 6, 13, 0, 0)}],
+              "start_time": datetime(2026, 12, 6, 10, 0, 0, tzinfo=timezone.utc),
+              "end_time": datetime(2026, 12, 6, 13, 0, 0, tzinfo=timezone.utc)}],
             "https://example.com/calendar",
             b"BEGIN:VCALENDAR\r\nEND:VCALENDAR",
         )
@@ -325,7 +325,7 @@ class TestSendAssignmentNotificationEmail:
         send_assignment_notification_email(
             "a@b.com", "Alice", 2026, 12,
             [{"session_title": "S", "role": "soprano",
-              "start_time": datetime(2026, 12, 6, 10, 0), "end_time": datetime(2026, 12, 6, 13, 0)}],
+              "start_time": datetime(2026, 12, 6, 10, 0, tzinfo=timezone.utc), "end_time": datetime(2026, 12, 6, 13, 0, tzinfo=timezone.utc)}],
             "https://example.com",
         )
         _, subject, _, _, _ = mock_send.call_args[0]
@@ -344,7 +344,7 @@ class TestSendAssignmentNotificationEmail:
         send_assignment_notification_email(
             "a@b.com", "Alice", 2026, 12,
             [{"session_title": "Service", "role": "soprano",
-              "start_time": datetime(2026, 12, 6, 10, 0), "end_time": datetime(2026, 12, 6, 13, 0)}],
+              "start_time": datetime(2026, 12, 6, 10, 0, tzinfo=timezone.utc), "end_time": datetime(2026, 12, 6, 13, 0, tzinfo=timezone.utc)}],
             "https://example.com",
         )
         _, _, _, html, _ = mock_send.call_args[0]
@@ -357,7 +357,7 @@ class TestSendAssignmentNotificationEmail:
         send_assignment_notification_email(
             "a@b.com", "Alice", 2026, 12,
             [{"session_title": "Sunday Service", "role": "lead_singer",
-              "start_time": datetime(2026, 12, 6, 10, 0), "end_time": datetime(2026, 12, 6, 13, 0)}],
+              "start_time": datetime(2026, 12, 6, 10, 0, tzinfo=timezone.utc), "end_time": datetime(2026, 12, 6, 13, 0, tzinfo=timezone.utc)}],
             "https://example.com",
         )
         _, _, _, html, _ = mock_send.call_args[0]
@@ -369,7 +369,7 @@ class TestSendAssignmentNotificationEmail:
         send_assignment_notification_email(
             "a@b.com", "Alice", 2026, 12,
             [{"session_title": "Service", "role": "soprano",
-              "start_time": datetime(2026, 12, 6, 10, 0), "end_time": datetime(2026, 12, 6, 13, 0)}],
+              "start_time": datetime(2026, 12, 6, 10, 0, tzinfo=timezone.utc), "end_time": datetime(2026, 12, 6, 13, 0, tzinfo=timezone.utc)}],
             "https://example.com",
         )
         _, _, _, html, _ = mock_send.call_args[0]
@@ -381,7 +381,7 @@ class TestSendAssignmentNotificationEmail:
         send_assignment_notification_email(
             "a@b.com", "Alice", 2026, 12,
             [{"session_title": "S", "role": "soprano",
-              "start_time": datetime(2026, 12, 6, 10, 0), "end_time": datetime(2026, 12, 6, 13, 0)}],
+              "start_time": datetime(2026, 12, 6, 10, 0, tzinfo=timezone.utc), "end_time": datetime(2026, 12, 6, 13, 0, tzinfo=timezone.utc)}],
             "https://example.com",
         )
         _, _, _, html, _ = mock_send.call_args[0]
@@ -395,7 +395,7 @@ class TestSendAssignmentNotificationEmail:
         send_assignment_notification_email(
             "a@b.com", "Alice", 2026, 12,
             [{"session_title": "S", "role": "soprano",
-              "start_time": datetime(2026, 12, 6, 10, 0), "end_time": datetime(2026, 12, 6, 13, 0)}],
+              "start_time": datetime(2026, 12, 6, 10, 0, tzinfo=timezone.utc), "end_time": datetime(2026, 12, 6, 13, 0, tzinfo=timezone.utc)}],
             "https://example.com",
             ics_bytes=ics,
         )
@@ -430,7 +430,7 @@ class TestSendAssignmentNotificationEmail:
         send_assignment_notification_email(
             "a@b.com", "Alice", 2026, 12,
             [{"session_title": "S", "role": "soprano",
-              "start_time": datetime(2026, 12, 6, 10, 0), "end_time": datetime(2026, 12, 6, 13, 0)}],
+              "start_time": datetime(2026, 12, 6, 10, 0, tzinfo=timezone.utc), "end_time": datetime(2026, 12, 6, 13, 0, tzinfo=timezone.utc)}],
             "https://example.com",
         )
         _, _, _, html, _ = mock_send.call_args[0]
@@ -442,7 +442,7 @@ class TestSendAssignmentNotificationEmail:
         send_assignment_notification_email(
             "a@b.com", "Alice", 2026, 12,
             [{"session_title": "Sunday Service", "role": "lead_singer",
-              "start_time": datetime(2026, 12, 6, 10, 0), "end_time": datetime(2026, 12, 6, 13, 0)}],
+              "start_time": datetime(2026, 12, 6, 10, 0, tzinfo=timezone.utc), "end_time": datetime(2026, 12, 6, 13, 0, tzinfo=timezone.utc)}],
             "https://example.com",
         )
         _, _, plain_text, _, _ = mock_send.call_args[0]
