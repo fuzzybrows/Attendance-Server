@@ -1,10 +1,16 @@
 import pytest
+import io
 from datetime import datetime, timedelta, date
+from zoneinfo import ZoneInfo
+
 from app.models.session import Session as SessionModel
 from app.models.assignment import Assignment
 from app.models.member import Member, Role
 from app.models.day_off import DayOff
-import io
+from app.models.month_lock import MonthLock
+from app.core.auth import get_current_user
+from app.server import app
+from app.services.comm import send_assignment_notification_email
 
 def test_calendar_export_as_pdf_returns_valid_pdf_response(client, db_session):
     # Setup: Create a session and an assignment
@@ -372,7 +378,7 @@ class TestMemberFilteringInScheduling:
         """Regression: session_date must use local timezone, not UTC, when
         looking up DayOff records.  An evening session stored as next-day UTC
         should still match a local-date DayOff."""
-        from zoneinfo import ZoneInfo
+
         role = _create_assignable_role(db_session, name="tenor", display_order=3)
 
         member = Member(
@@ -550,7 +556,6 @@ class TestPDFNameFormatting:
 
 def test_save_schedule_auto_creates_month_lock(client, db_session):
     """Saving a schedule should auto-create a MonthLock row with is_locked=True."""
-    from app.models.month_lock import MonthLock
 
     session = SessionModel(
         title="July Service",
@@ -610,7 +615,6 @@ def test_schedule_response_includes_month_locked_field(client, db_session):
 
 def test_schedule_response_month_locked_true_after_save(client, db_session):
     """After saving assignments, month_locked should be True in the schedule response."""
-    from app.models.month_lock import MonthLock
 
     session = SessionModel(
         title="Sep Service",
@@ -656,7 +660,6 @@ def test_admin_can_toggle_month_lock(client, db_session):
 
 def test_admin_can_unlock_after_save(client, db_session):
     """Admin should be able to unlock a month that was auto-locked by saving."""
-    from app.models.month_lock import MonthLock
 
     session = SessionModel(
         title="Oct Service",
@@ -700,7 +703,6 @@ def test_month_lock_invalid_month_returns_400(client):
 
 def test_resaving_schedule_relocks_month(client, db_session):
     """Re-saving assignments should re-lock a previously unlocked month."""
-    from app.models.month_lock import MonthLock
 
     session = SessionModel(
         title="Nov Service",
@@ -735,3 +737,239 @@ def test_resaving_schedule_relocks_month(client, db_session):
     client.post("/calendar/schedule/save", json=save_data)
     assert client.get("/calendar/schedule/2026/11").json()["month_locked"] is True
 
+
+# ─── Assignment Notification Tests ─────────────────────────────────────────
+
+def test_notify_schedule_sends_to_members_with_assignments(client, db_session):
+    """POST /calendar/schedule/notify sends emails to eligible members."""
+    # Create an assignable role and give it to the admin
+    role = Role(name="soprano", display_order=1)
+    db_session.add(role)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    admin.roles.append(role)
+    db_session.commit()
+
+    # Create a session with assignment
+    session = SessionModel(
+        title="Dec Service",
+        type="program",
+        start_time=datetime(2026, 12, 6, 10, 0, 0),
+        end_time=datetime(2026, 12, 6, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    assignment = Assignment(session_id=session.id, member_id=admin.id, role="soprano")
+    db_session.add(assignment)
+    db_session.commit()
+
+    resp = client.post("/calendar/schedule/notify?year=2026&month=12")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["sent"] >= 1
+    assert data["total_eligible"] >= 1
+    assert "December 2026" in data["message"]
+
+
+def test_notify_schedule_includes_members_without_assignments(client, db_session):
+    """Members with assignable roles but no assignments still get notified."""
+    role = Role(name="alto", display_order=2)
+    db_session.add(role)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    admin.roles.append(role)
+
+    # Add a second member with the role but no assignments
+    member2 = Member(first_name="Jane", last_name="Doe", email="jane@example.com")
+    member2.roles.append(role)
+    db_session.add(member2)
+    db_session.commit()
+
+    # No sessions/assignments at all for this month
+    resp = client.post("/calendar/schedule/notify?year=2026&month=12")
+    assert resp.status_code == 200
+    data = resp.json()
+    # Both members should be eligible
+    assert data["total_eligible"] >= 2
+    assert data["sent"] >= 2
+
+
+def test_notify_schedule_response_has_correct_structure(client, db_session):
+    """Notify response must have message, sent, failed, total_eligible keys."""
+    role = Role(name="bass", display_order=3)
+    db_session.add(role)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    admin.roles.append(role)
+    db_session.commit()
+
+    resp = client.post("/calendar/schedule/notify?year=2026&month=7")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "message" in data
+    assert "sent" in data
+    assert "failed" in data
+    assert "total_eligible" in data
+    assert data["failed"] == 0
+
+
+def test_notify_schedule_excludes_inactive_members(client, db_session):
+    """Inactive members should not receive notifications."""
+    role = Role(name="tenor", display_order=4)
+    db_session.add(role)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    admin.roles.append(role)
+
+    # Add an inactive member with the role
+    inactive = Member(first_name="Gone", last_name="User", email="gone@example.com", is_active=False)
+    inactive.roles.append(role)
+    db_session.add(inactive)
+    db_session.commit()
+
+    resp = client.post("/calendar/schedule/notify?year=2026&month=10")
+    assert resp.status_code == 200
+    data = resp.json()
+    # Only the admin should be eligible (inactive excluded)
+    assert data["total_eligible"] == 1
+
+
+def test_notify_schedule_excludes_members_without_assignable_roles(client, db_session):
+    """Members without any assignable roles should not receive notifications."""
+    role = Role(name="admin_role")  # No display_order → not assignable
+    db_session.add(role)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    admin.roles.append(role)
+    db_session.commit()
+
+    resp = client.post("/calendar/schedule/notify?year=2026&month=9")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total_eligible"] == 0
+    assert data["sent"] == 0
+
+
+def test_notify_schedule_requires_schedule_generate_permission(client, db_session):
+    """Users without schedule_generate permission cannot call the notify endpoint."""
+
+
+    # Create a non-admin member without schedule_generate permission
+    member = Member(first_name="Regular", last_name="User", email="regular@example.com")
+    db_session.add(member)
+    db_session.commit()
+
+    def _fake_regular_user():
+        return "regular@example.com"
+
+    app.dependency_overrides[get_current_user] = _fake_regular_user
+    resp = client.post("/calendar/schedule/notify?year=2026&month=12")
+    # Should be 403 (no schedule_generate permission)
+    assert resp.status_code == 403
+
+    # Restore admin override
+    def _fake_admin():
+        return "test@example.com"
+    app.dependency_overrides[get_current_user] = _fake_admin
+
+
+# ─── Lock Enforcement on Availability ──────────────────────────────────────
+
+def test_locked_month_blocks_session_availability_for_admin(client, db_session):
+    """Admin users should also be blocked from changing session availability when locked."""
+
+    session = SessionModel(
+        title="Locked Session",
+        type="program",
+        start_time=datetime(2026, 8, 15, 10, 0, 0),
+        end_time=datetime(2026, 8, 15, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    # Lock August 2026
+    lock = MonthLock(year=2026, month=8, is_locked=True)
+    db_session.add(lock)
+    db_session.commit()
+
+    # Admin should be blocked
+    resp = client.put(f"/calendar/availability?session_id={session.id}", json={"is_available": False})
+    assert resp.status_code == 400
+    assert "locked" in resp.json()["detail"].lower()
+
+
+def test_locked_month_blocks_day_availability_for_admin(client, db_session):
+    """Admin users should also be blocked from changing day-level availability when locked."""
+
+    lock = MonthLock(year=2026, month=9, is_locked=True)
+    db_session.add(lock)
+    db_session.commit()
+
+    resp = client.post(
+        "/calendar/availability/day",
+        json={"date": "2026-09-15", "is_available": False}
+    )
+    assert resp.status_code == 400
+    assert "locked" in resp.json()["detail"].lower()
+
+
+def test_unlocked_month_allows_availability_change(client, db_session):
+    """Availability changes should succeed when the month is not locked."""
+    session = SessionModel(
+        title="Open Session",
+        type="program",
+        start_time=datetime(2026, 10, 10, 10, 0, 0),
+        end_time=datetime(2026, 10, 10, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    resp = client.put(f"/calendar/availability?session_id={session.id}", json={"is_available": False})
+    assert resp.status_code == 200
+
+
+# ─── Email Attachment Support (Unit) ───────────────────────────────────────
+
+def test_send_assignment_notification_email_with_ics():
+    """send_assignment_notification_email should succeed with .ics attachment bytes."""
+
+    ics_content = b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR"
+
+    result = send_assignment_notification_email(
+        to_email="test@example.com",
+        member_first_name="John",
+        year=2026,
+        month=12,
+        assignments=[{
+            "session_title": "Sunday Service",
+            "role": "lead_singer",
+            "start_time": datetime(2026, 12, 6, 10, 0, 0),
+            "end_time": datetime(2026, 12, 6, 13, 0, 0),
+        }],
+        calendar_url="https://example.com/calendar?month=12&year=2026",
+        ics_bytes=ics_content,
+    )
+    assert result is True
+
+
+def test_send_assignment_notification_email_without_assignments():
+    """send_assignment_notification_email should succeed with no assignments (no .ics)."""
+
+    result = send_assignment_notification_email(
+        to_email="test@example.com",
+        member_first_name="Jane",
+        year=2026,
+        month=12,
+        assignments=[],
+        calendar_url="https://example.com/calendar?month=12&year=2026",
+    )
+    assert result is True

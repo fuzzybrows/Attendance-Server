@@ -1,8 +1,9 @@
 """SendGrid email provider."""
+import base64
 import logging
 
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 from app.settings import settings
 from app.services.email_providers import EmailProvider, MockEmailProvider
 
@@ -19,9 +20,9 @@ class SendGridProvider(EmailProvider):
     def is_configured(self) -> bool:
         return self.api_key and self.api_key != "placeholder_sendgrid_key"
 
-    def send(self, to_email: str, subject: str, plain_text: str, html: str) -> bool:
+    def send(self, to_email: str, subject: str, plain_text: str, html: str, attachments: list = None) -> bool:
         if not self.is_configured():
-            return MockEmailProvider().send(to_email, subject, plain_text, html)
+            return MockEmailProvider().send(to_email, subject, plain_text, html, attachments)
         try:
             message = Mail(
                 from_email=self.from_email,
@@ -30,9 +31,19 @@ class SendGridProvider(EmailProvider):
                 plain_text_content=plain_text,
                 html_content=html,
             )
+            if attachments:
+                for att in attachments:
+                    sg_attachment = Attachment(
+                        FileContent(base64.b64encode(att['content']).decode()),
+                        FileName(att['filename']),
+                        FileType(att.get('mime_type', 'application/octet-stream')),
+                        Disposition('attachment'),
+                    )
+                    message.add_attachment(sg_attachment)
             sg = SendGridAPIClient(self.api_key)
             sg.send(message)
             return True
         except Exception as e:
             logger.error(f"SendGrid error sending to {to_email}: {e}", exc_info=True, extra={"type": "email_sendgrid_error", "to_email": to_email, "subject": subject})
             return False
+

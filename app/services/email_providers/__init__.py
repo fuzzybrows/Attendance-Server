@@ -18,8 +18,15 @@ class EmailProvider(ABC):
     """Abstract base class for email providers."""
 
     @abstractmethod
-    def send(self, to_email: str, subject: str, plain_text: str, html: str) -> bool:
-        """Send an email. Returns True on success, False on failure."""
+    def send(self, to_email: str, subject: str, plain_text: str, html: str, attachments: list = None) -> bool:
+        """Send an email. Returns True on success, False on failure.
+
+        Args:
+            attachments: Optional list of dicts with keys:
+                - filename (str): e.g. 'schedule.ics'
+                - content (bytes): file content
+                - mime_type (str): e.g. 'text/calendar'
+        """
         ...
 
     @abstractmethod
@@ -31,8 +38,9 @@ class EmailProvider(ABC):
 class MockEmailProvider(EmailProvider):
     """Logs emails instead of sending. Used when no provider is configured."""
 
-    def send(self, to_email: str, subject: str, plain_text: str, html: str) -> bool:
-        logger.debug(f"Would send email to {to_email}: {subject}", extra={"type": "email_mock", "to_email": to_email, "subject": subject})
+    def send(self, to_email: str, subject: str, plain_text: str, html: str, attachments: list = None) -> bool:
+        attachment_info = f" with {len(attachments)} attachment(s)" if attachments else ""
+        logger.debug(f"Would send email to {to_email}: {subject}{attachment_info}", extra={"type": "email_mock", "to_email": to_email, "subject": subject})
         return True
 
     def is_configured(self) -> bool:

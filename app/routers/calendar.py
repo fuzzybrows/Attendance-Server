@@ -1144,10 +1144,10 @@ def sync_member_calendar(
     ).all()
 
     cal = Calendar()
-    cal.add('prodid', '-//Choir Attendance//Calendar Sync//EN')
+    cal.add('prodid', '-//Attendance//Calendar Sync//EN')
     cal.add('version', '2.0')
-    cal.add('name', f"{member.display_first_name}'s Choir Schedule")
-    cal.add('x-wr-calname', f"{member.display_first_name}'s Choir Schedule")
+    cal.add('name', f"{member.display_first_name}'s Schedule")
+    cal.add('x-wr-calname', f"{member.display_first_name}'s Schedule")
 
     for assignment in assignments:
         session = assignment.session
@@ -1163,7 +1163,7 @@ def sync_member_calendar(
         event.add('dtstart', start_utc)
         event.add('dtend', end_utc)
         event.add('dtstamp', datetime.now(timezone.utc))
-        event.add('uid', f"session_{session.id}_member_{member_id}@choirattendance.com")
+        event.add('uid', f"session_{session.id}_member_{member_id}@attendance.app")
         event.add('description', f"You are scheduled to serve as {assignment.role.replace('_', ' ').title()} for {session.title}.")
         
         # Add color coding based on session type
@@ -1184,3 +1184,121 @@ def sync_member_calendar(
         media_type="text/calendar",
         headers={"Content-Disposition": f"attachment; filename=member_{member_id}_schedule.ics"}
     )
+
+
+@router.post("/schedule/notify")
+def notify_schedule(
+    year: int,
+    month: int,
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_schedule_generate_manager),
+):
+    """
+    Send assignment notification emails to all active members with assignable roles.
+    Members with assignments get a personalized email with calendar grid, assignment
+    table, Google Calendar links, and .ics attachment.
+    Members without assignments are notified that the schedule is published.
+    """
+    from app.services.comm import send_assignment_notification_email
+
+    # Fetch all sessions for this month
+    sessions = db.query(SessionModel).filter(
+        extract('year', SessionModel.start_time) == year,
+        extract('month', SessionModel.start_time) == month,
+        SessionModel.status.in_(['active', 'scheduled']),
+    ).order_by(SessionModel.start_time).all()
+
+    # Fetch all assignments for these sessions
+    session_ids = [s.id for s in sessions]
+    assignments = db.query(Assignment).filter(
+        Assignment.session_id.in_(session_ids)
+    ).all() if session_ids else []
+
+    # Group assignments by member
+    member_assignments = defaultdict(list)
+    for a in assignments:
+        session = next((s for s in sessions if s.id == a.session_id), None)
+        if session:
+            member_assignments[a.member_id].append({
+                'session_title': session.title,
+                'role': a.role,
+                'start_time': session.start_time,
+                'end_time': session.start_time + timedelta(hours=3),
+            })
+
+    # Sort each member's assignments by date
+    for mid in member_assignments:
+        member_assignments[mid].sort(key=lambda x: x['start_time'])
+
+    # Get all active members with assignable roles
+    assignable_roles = db.query(Role).filter(Role.display_order.isnot(None)).all()
+    assignable_role_ids = {r.id for r in assignable_roles}
+
+    all_members = db.query(Member).filter(Member.is_active == True).all()
+    eligible_members = [
+        m for m in all_members
+        if any(r.id in assignable_role_ids for r in m.roles)
+    ]
+
+    # Build calendar URL
+    base_url = settings.default_redirect_url.rsplit("/", 1)[0]
+    calendar_url = f"{base_url}/calendar?month={month}&year={year}"
+
+    month_name = calendar.month_name[month]
+    sent_count = 0
+    failed_count = 0
+
+    for member in eligible_members:
+        if not member.email:
+            continue
+
+        member_name = member.display_first_name
+        member_assigns = member_assignments.get(member.id, [])
+        to_email = f"{member.full_name} <{member.email}>"
+
+        # Generate personalized .ics for this member
+        ics_bytes = None
+        if member_assigns:
+            cal_obj = Calendar()
+            cal_obj.add('prodid', '-//Attendance//Schedule Notification//EN')
+            cal_obj.add('version', '2.0')
+            cal_obj.add('name', f"{member_name}'s {month_name} {year} Schedule")
+            cal_obj.add('x-wr-calname', f"{member_name}'s {month_name} {year} Schedule")
+
+            for a in member_assigns:
+                event = Event()
+                start = a['start_time']
+                end = a['end_time']
+                role_display = a['role'].replace('_', ' ').title()
+
+                event.add('summary', f"Serving as {role_display} - {a['session_title']}")
+                event.add('dtstart', start)
+                event.add('dtend', end)
+                event.add('dtstamp', datetime.now(timezone.utc))
+                event.add('uid', f"notify_{year}_{month}_{member.id}_{a['session_title']}_{start.isoformat()}@attendance.app")
+                event.add('description', f"You are scheduled to serve as {role_display} for {a['session_title']}.")
+                cal_obj.add_component(event)
+
+            ics_bytes = cal_obj.to_ical()
+
+        success = send_assignment_notification_email(
+            to_email=to_email,
+            member_first_name=member_name,
+            year=year,
+            month=month,
+            assignments=member_assigns,
+            calendar_url=calendar_url,
+            ics_bytes=ics_bytes,
+        )
+
+        if success:
+            sent_count += 1
+        else:
+            failed_count += 1
+
+    return {
+        "message": f"Notifications sent for {month_name} {year}",
+        "sent": sent_count,
+        "failed": failed_count,
+        "total_eligible": len(eligible_members),
+    }

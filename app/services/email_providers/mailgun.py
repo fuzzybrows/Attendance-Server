@@ -19,10 +19,16 @@ class MailgunProvider(EmailProvider):
     def is_configured(self) -> bool:
         return self.api_key and self.api_key != "placeholder_mailgun_key" and bool(self.domain)
 
-    def send(self, to_email: str, subject: str, plain_text: str, html: str) -> bool:
+    def send(self, to_email: str, subject: str, plain_text: str, html: str, attachments: list = None) -> bool:
         if not self.is_configured():
-            return MockEmailProvider().send(to_email, subject, plain_text, html)
+            return MockEmailProvider().send(to_email, subject, plain_text, html, attachments)
         try:
+            files = []
+            if attachments:
+                for att in attachments:
+                    files.append(
+                        ("attachment", (att['filename'], att['content'], att.get('mime_type', 'application/octet-stream')))
+                    )
             response = http_requests.post(
                 f"https://api.mailgun.net/v3/{self.domain}/messages",
                 auth=("api", self.api_key),
@@ -33,6 +39,7 @@ class MailgunProvider(EmailProvider):
                     "text": plain_text,
                     "html": html,
                 },
+                files=files or None,
                 timeout=10,
             )
             response.raise_for_status()

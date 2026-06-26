@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
         logger.info("Shutting down APScheduler...", extra={"type": "app_lifecycle", "action": "shutdown"})
         stop_scheduler()
 
-app = FastAPI(title="Choir Attendance Server", lifespan=lifespan)
+app = FastAPI(title="Attendance Server", lifespan=lifespan)
 
 origins = [
     "http://localhost",
