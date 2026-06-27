@@ -44,10 +44,6 @@ def _make_assignment(member, role="soprano", session_id=1):
     return assignment
 
 
-def _clear_reminded_sessions():
-    """Clear the in-memory deduplication set between tests."""
-    import app.core.scheduler as sched
-    sched._reminded_sessions.clear()
 
 
 class TestSendSessionReminders:
@@ -156,8 +152,7 @@ class TestDispatch24hrReminders:
     """Tests for the dispatch_24hr_reminders entry point."""
 
     def setup_method(self):
-        """Clear deduplication set before each test."""
-        _clear_reminded_sessions()
+        pass
 
     @patch("app.core.scheduler.send_session_reminders")
     @patch("app.core.scheduler.SessionLocal")
@@ -238,20 +233,24 @@ class TestDispatch24hrReminders:
     @patch("app.core.scheduler.send_session_reminders")
     @patch("app.core.scheduler.SessionLocal")
     def test_deduplicates_sessions_across_calls(self, mock_session_local, mock_send):
-        """Sessions already reminded should be skipped on subsequent calls."""
+        """Sessions with reminder_sent_at already set should be filtered out by the query."""
         from app.core.scheduler import dispatch_24hr_reminders
 
         session_a = _make_session(id=10, title="Morning Service")
+        session_a.reminder_sent_at = None  # first call: not yet reminded
 
         mock_db = MagicMock()
+        # First call returns the session (reminder_sent_at IS NULL in query)
         mock_db.query.return_value.filter.return_value.all.return_value = [session_a]
         mock_session_local.return_value = mock_db
 
-        # First call — should send
         dispatch_24hr_reminders()
         assert mock_send.call_count == 1
+        # After sending, reminder_sent_at should be set
+        assert session_a.reminder_sent_at is not None
 
-        # Second call — same session should be skipped
+        # Second call: query filters out already-reminded sessions
+        mock_db.query.return_value.filter.return_value.all.return_value = []
         dispatch_24hr_reminders()
         assert mock_send.call_count == 1  # still 1, not 2
 
@@ -259,15 +258,13 @@ class TestDispatch24hrReminders:
     @patch("app.core.scheduler.SessionLocal")
     def test_targeted_session_id_bypasses_deduplication(self, mock_session_local, mock_send):
         """Manual session_id calls should always send, even if previously reminded."""
-        from app.core.scheduler import dispatch_24hr_reminders, _reminded_sessions
+        from app.core.scheduler import dispatch_24hr_reminders
 
         mock_session = _make_session(id=10)
+        mock_session.reminder_sent_at = datetime.now(timezone.utc)  # already reminded
         mock_db = MagicMock()
         mock_db.query.return_value.filter.return_value.first.return_value = mock_session
         mock_session_local.return_value = mock_db
-
-        # Pre-populate as "already reminded"
-        _reminded_sessions.add(10)
 
         # Targeted call should still send
         dispatch_24hr_reminders(session_id=10)

@@ -11,7 +11,7 @@ import io
 import csv
 import calendar
 from collections import defaultdict
-from icalendar import Calendar, Event
+
 
 from app.core.database import get_db
 from app.settings import settings
@@ -1122,11 +1122,17 @@ def generate_sync_token(
 def sync_member_calendar(
     member_id: int,
     key: str,
+    year: int = None,
+    month: int = None,
     db: Session = Depends(get_db)
 ):
     """
     Generate an iCalendar (.ics) feed of assignments for a specific member.
     Authenticated via per-user sync token (query param) so calendar apps can poll it.
+
+    Optional query params:
+        year & month — if both provided, exports only that month's assignments.
+                       Otherwise, exports all future assignments.
     """
     member = db.query(Member).filter(Member.id == member_id).first()
     if not member:
@@ -1135,54 +1141,56 @@ def sync_member_calendar(
     if not member.sync_token or member.sync_token != key:
         raise HTTPException(status_code=403, detail="Invalid sync token")
 
-    # Fetch all future assignments for this member
-    now = datetime.now(timezone.utc)
-    assignments = db.query(Assignment).join(SessionModel).filter(
+    # Build base query
+    query = db.query(Assignment).join(SessionModel).filter(
         Assignment.member_id == member_id,
-        SessionModel.start_time >= now,
         SessionModel.status.in_(['active', 'scheduled'])
-    ).all()
+    )
 
-    cal = Calendar()
-    cal.add('prodid', '-//Attendance//Calendar Sync//EN')
-    cal.add('version', '2.0')
-    cal.add('name', f"{member.display_first_name}'s Schedule")
-    cal.add('x-wr-calname', f"{member.display_first_name}'s Schedule")
+    # Filter by month or default to all future assignments
+    if year and month:
+        query = query.filter(
+            extract('year', SessionModel.start_time) == year,
+            extract('month', SessionModel.start_time) == month,
+        )
+        month_name = calendar.month_name[month]
+        cal_title = f"{member.display_first_name}'s {month_name} {year} Schedule"
+        filename = f"schedule_{month_name.lower()}_{year}_member_{member_id}.ics"
+    else:
+        now = datetime.now(timezone.utc)
+        query = query.filter(SessionModel.start_time >= now)
+        cal_title = f"{member.display_first_name}'s Schedule"
+        filename = f"member_{member_id}_schedule.ics"
 
+    assignments = query.all()
+
+    # Build assignment dicts for the shared ICS builder
+    ics_assignments = []
     for assignment in assignments:
         session = assignment.session
-        event = Event()
-        
-        # Assume sessions are ~3 hours long for calendar blocking
-        duration = timedelta(hours=3)
-        # Session start_time is now aware
         start_utc = session.start_time
-        end_utc = start_utc + duration
-        
-        event.add('summary', f"Serving as {assignment.role.replace('_', ' ').title()} - {session.title}")
-        event.add('dtstart', start_utc)
-        event.add('dtend', end_utc)
-        event.add('dtstamp', datetime.now(timezone.utc))
-        event.add('uid', f"session_{session.id}_member_{member_id}@attendance.app")
-        event.add('description', f"You are scheduled to serve as {assignment.role.replace('_', ' ').title()} for {session.title}.")
-        
-        # Add color coding based on session type
-        if session.type.lower() == 'event':
-            event.add('color', '#9C27B0') # Purple
-            event.add('categories', 'Event')
-        elif session.type.lower() == 'rehearsal':
-            event.add('color', '#FF9800') # Orange
-            event.add('categories', 'Rehearsal')
-        else:
-            event.add('color', '#2196F3') # Blue
-            event.add('categories', 'Service')
-        
-        cal.add_component(event)
+        end_utc = start_utc + timedelta(hours=3)
+        ics_assignments.append({
+            'session_title': session.title,
+            'role': assignment.role,
+            'start_time': start_utc,
+            'end_time': end_utc,
+            'uid': f"session_{session.id}_member_{member_id}@attendance.app",
+            'session_type': session.type,
+        })
+
+    from app.services.ics_builder import build_member_ics
+    ics_bytes = build_member_ics(
+        member_name=member.display_first_name,
+        calendar_title=cal_title,
+        assignments=ics_assignments,
+        prodid="-//Attendance//Calendar Sync//EN",
+    )
 
     return Response(
-        content=cal.to_ical(),
+        content=ics_bytes,
         media_type="text/calendar",
-        headers={"Content-Disposition": f"attachment; filename=member_{member_id}_schedule.ics"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
 
@@ -1224,6 +1232,8 @@ def notify_schedule(
                 'role': a.role,
                 'start_time': session.start_time.astimezone(LOCAL_TZ),
                 'end_time': (session.start_time + timedelta(hours=3)).astimezone(LOCAL_TZ),
+                'session_type': session.type,
+                'uid': f"notify_{year}_{month}_{a.member_id}_{session.id}@attendance.app",
             })
 
     # Sort each member's assignments by date
@@ -1259,27 +1269,13 @@ def notify_schedule(
         # Generate personalized .ics for this member
         ics_bytes = None
         if member_assigns:
-            cal_obj = Calendar()
-            cal_obj.add('prodid', '-//Attendance//Schedule Notification//EN')
-            cal_obj.add('version', '2.0')
-            cal_obj.add('name', f"{member_name}'s {month_name} {year} Schedule")
-            cal_obj.add('x-wr-calname', f"{member_name}'s {month_name} {year} Schedule")
-
-            for a in member_assigns:
-                event = Event()
-                start = a['start_time']
-                end = a['end_time']
-                role_display = a['role'].replace('_', ' ').title()
-
-                event.add('summary', f"Serving as {role_display} - {a['session_title']}")
-                event.add('dtstart', start)
-                event.add('dtend', end)
-                event.add('dtstamp', datetime.now(timezone.utc))
-                event.add('uid', f"notify_{year}_{month}_{member.id}_{a['session_title']}_{start.isoformat()}@attendance.app")
-                event.add('description', f"You are scheduled to serve as {role_display} for {a['session_title']}.")
-                cal_obj.add_component(event)
-
-            ics_bytes = cal_obj.to_ical()
+            from app.services.ics_builder import build_member_ics
+            ics_bytes = build_member_ics(
+                member_name=member_name,
+                calendar_title=f"{member_name}'s {month_name} {year} Schedule",
+                assignments=member_assigns,
+                prodid="-//Attendance//Schedule Notification//EN",
+            )
 
         success = send_assignment_notification_email(
             to_email=to_email,

@@ -17,6 +17,10 @@ class Session(Base):
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
+    # Reminder dedup: set when 24h reminders + leader summary are sent for this session.
+    # Prevents duplicate sends across serverless cold starts.
+    reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
+
     # Location Geofencing
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)

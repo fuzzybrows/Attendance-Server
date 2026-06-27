@@ -131,8 +131,6 @@ def _send_leader_summary(session: Session, db, assignments):
             unavailable_members=unavailable_members,
         )
 
-_reminded_sessions: set = set()  # Track session IDs that already got reminders
-
 def dispatch_24hr_reminders(session_id: int = None):
     """
     Send reminders to assigned members.
@@ -140,8 +138,8 @@ def dispatch_24hr_reminders(session_id: int = None):
     If session_id is provided, sends reminders for that specific session.
     Otherwise, finds all sessions starting in ~24 hours (scheduled job mode).
 
-    Uses an in-memory set to skip sessions that already received reminders,
-    so it's safe to call from a 5-minute cron without duplicate sends.
+    Uses the session.reminder_sent_at column for persistent deduplication,
+    so it's safe to call from a frequent cron even across serverless cold starts.
     """
     db = SessionLocal()
     try:
@@ -152,7 +150,7 @@ def dispatch_24hr_reminders(session_id: int = None):
                 return
             send_session_reminders(session, db)
         else:
-            # Scan a wider window (24h to 24h30m) since we deduplicate by session ID
+            # Scan a wider window (24h to 24h30m) to catch sessions between cron runs
             now = datetime.now(timezone.utc)
             target_start = now + timedelta(hours=24)
             target_end = target_start + timedelta(minutes=30)
@@ -162,16 +160,17 @@ def dispatch_24hr_reminders(session_id: int = None):
             upcoming_sessions = db.query(Session).filter(
                 Session.start_time >= target_start,
                 Session.start_time < target_end,
-                Session.status == SessionStatus.SCHEDULED.value
+                Session.status == SessionStatus.SCHEDULED.value,
+                Session.reminder_sent_at.is_(None),  # Only sessions not yet reminded
             ).all()
 
             for session in upcoming_sessions:
-                if session.id in _reminded_sessions:
-                    logger.debug(f"Skipping session {session.id} — already reminded")
-                    continue
                 send_session_reminders(session, db)
-                _reminded_sessions.add(session.id)
+                # Mark as reminded so subsequent cron invocations skip it
+                session.reminder_sent_at = now
+                db.commit()
     except Exception as e:
+        db.rollback()
         logger.error(f"Error in dispatch_24hr_reminders: {e}", exc_info=True, extra={"type": "reminder_dispatch_error", "session_id": session_id})
     finally:
         db.close()
