@@ -799,7 +799,7 @@ def test_notify_schedule_includes_members_without_assignments(client, db_session
 
 
 def test_notify_schedule_response_has_correct_structure(client, db_session):
-    """Notify response must have message, sent, failed, total_eligible keys."""
+    """Notify response must have message, sent, failed, total_eligible, notified_at keys."""
     role = Role(name="bass", display_order=3)
     db_session.add(role)
     db_session.commit()
@@ -815,7 +815,12 @@ def test_notify_schedule_response_has_correct_structure(client, db_session):
     assert "sent" in data
     assert "failed" in data
     assert "total_eligible" in data
+    assert "notified_at" in data
+    assert "previously_notified_at" in data
     assert data["failed"] == 0
+    # First notification — no previous
+    assert data["previously_notified_at"] is None
+    assert data["notified_at"] is not None
 
 
 def test_notify_schedule_excludes_inactive_members(client, db_session):
@@ -880,6 +885,110 @@ def test_notify_schedule_requires_schedule_generate_permission(client, db_sessio
     app.dependency_overrides[get_current_user] = _fake_admin
 
 
+def test_notify_schedule_persists_notified_at_on_month_lock(client, db_session):
+    """POST /calendar/schedule/notify should record notified_at on the MonthLock row."""
+    role = Role(name="soprano", display_order=1)
+    db_session.add(role)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    admin.roles.append(role)
+    db_session.commit()
+
+    # Before notify: no MonthLock for this month
+    lock = db_session.query(MonthLock).filter(
+        MonthLock.year == 2026, MonthLock.month == 11
+    ).first()
+    assert lock is None
+
+    resp = client.post("/calendar/schedule/notify?year=2026&month=11")
+    assert resp.status_code == 200
+
+    db_session.expire_all()
+    lock = db_session.query(MonthLock).filter(
+        MonthLock.year == 2026, MonthLock.month == 11
+    ).first()
+    assert lock is not None
+    assert lock.notified_at is not None
+
+
+def test_notify_schedule_re_notify_returns_previous_timestamp(client, db_session):
+    """Calling notify twice should return previously_notified_at on the second call."""
+    role = Role(name="alto", display_order=2)
+    db_session.add(role)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    admin.roles.append(role)
+    db_session.commit()
+
+    # First call
+    resp1 = client.post("/calendar/schedule/notify?year=2026&month=3")
+    assert resp1.status_code == 200
+    first_notified = resp1.json()["notified_at"]
+    assert resp1.json()["previously_notified_at"] is None
+
+    # Second call — should report previous
+    resp2 = client.post("/calendar/schedule/notify?year=2026&month=3")
+    assert resp2.status_code == 200
+    data2 = resp2.json()
+    # Compare as parsed datetimes to handle timezone offset differences (UTC vs local)
+    from datetime import datetime as dt
+    prev_ts = dt.fromisoformat(data2["previously_notified_at"])
+    first_ts = dt.fromisoformat(first_notified)
+    assert prev_ts == first_ts
+    assert data2["notified_at"] != first_notified
+
+
+def test_schedule_response_includes_schedule_notified_at(client, db_session):
+    """GET /calendar/schedule should include schedule_notified_at field."""
+    session = SessionModel(
+        title="Nov Service",
+        type="program",
+        start_time=datetime(2026, 11, 7, 10, 0, 0),
+        end_time=datetime(2026, 11, 7, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    # Before any notification — should be None
+    resp = client.get("/calendar/schedule/2026/11")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "schedule_notified_at" in data
+    assert data["schedule_notified_at"] is None
+
+
+def test_schedule_response_notified_at_populated_after_notify(client, db_session):
+    """After calling notify, schedule_notified_at should be populated."""
+    role = Role(name="tenor", display_order=4)
+    db_session.add(role)
+    db_session.commit()
+
+    admin = db_session.query(Member).filter(Member.email == "test@example.com").first()
+    admin.roles.append(role)
+    db_session.commit()
+
+    session = SessionModel(
+        title="Feb Service",
+        type="program",
+        start_time=datetime(2026, 2, 14, 10, 0, 0),
+        end_time=datetime(2026, 2, 14, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    # Send notification
+    client.post("/calendar/schedule/notify?year=2026&month=2")
+
+    # Check schedule response
+    resp = client.get("/calendar/schedule/2026/2")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["schedule_notified_at"] is not None
+
 # ─── Lock Enforcement on Availability ──────────────────────────────────────
 
 def test_locked_month_blocks_session_availability_for_admin(client, db_session):
@@ -935,3 +1044,67 @@ def test_unlocked_month_allows_availability_change(client, db_session):
 
     resp = client.put(f"/calendar/availability?session_id={session.id}", json={"is_available": False})
     assert resp.status_code == 200
+
+
+# ─── Past Month Implicit Locking ───────────────────────────────────────────
+
+def test_past_month_implicitly_locked_blocks_session_availability(client, db_session):
+    """Sessions in past months should be blocked even without an explicit MonthLock row."""
+    session = SessionModel(
+        title="Old Session",
+        type="program",
+        start_time=datetime(2024, 3, 10, 10, 0, 0),
+        end_time=datetime(2024, 3, 10, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    # No MonthLock row for March 2024, but it's in the past
+    resp = client.put(f"/calendar/availability?session_id={session.id}", json={"is_available": False})
+    assert resp.status_code == 400
+    assert "locked" in resp.json()["detail"].lower()
+
+
+def test_past_month_implicitly_locked_blocks_day_availability(client, db_session):
+    """Day-level availability changes in past months should be blocked."""
+    resp = client.post(
+        "/calendar/availability/day",
+        json={"date": "2024-06-15", "is_available": False}
+    )
+    assert resp.status_code == 400
+    assert "locked" in resp.json()["detail"].lower()
+
+
+def test_past_month_schedule_response_shows_locked(client, db_session):
+    """GET /calendar/schedule for a past month should report month_locked=True."""
+    session = SessionModel(
+        title="Past Service",
+        type="program",
+        start_time=datetime(2025, 1, 12, 10, 0, 0),
+        end_time=datetime(2025, 1, 12, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    resp = client.get("/calendar/schedule/2025/1")
+    assert resp.status_code == 200
+    assert resp.json()["month_locked"] is True
+
+
+def test_future_month_not_implicitly_locked(client, db_session):
+    """Future months without a MonthLock row should not be locked."""
+    session = SessionModel(
+        title="Future Session",
+        type="program",
+        start_time=datetime(2027, 6, 10, 10, 0, 0),
+        end_time=datetime(2027, 6, 10, 12, 0, 0),
+        status="scheduled"
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    resp = client.get("/calendar/schedule/2027/6")
+    assert resp.status_code == 200
+    assert resp.json()["month_locked"] is False

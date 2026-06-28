@@ -47,10 +47,16 @@ LOCAL_TZ = ZoneInfo(settings.app_timezone)
 
 def is_month_locked(db: Session, year: int, month: int) -> bool:
     """
-    Check if the given month has an explicit lock set by an admin.
-    Returns True if a MonthLock row exists with is_locked=True.
-    Returns False otherwise (no row, or row with is_locked=False).
+    Check if the given month is locked.
+    Past months are always considered locked.
+    For current/future months, returns True only if a MonthLock row
+    exists with is_locked=True.
     """
+    # Past months are implicitly locked
+    now = datetime.now(timezone.utc).astimezone(LOCAL_TZ)
+    if year < now.year or (year == now.year and month < now.month):
+        return True
+
     lock = db.query(MonthLock).filter(
         MonthLock.year == year,
         MonthLock.month == month,
@@ -708,9 +714,17 @@ def get_schedule(
             assignments=session_assignments
         ))
 
+    # Check if notifications have been sent for this month
+    month_lock = db.query(MonthLock).filter(
+        MonthLock.year == year,
+        MonthLock.month == month,
+    ).first()
+    notified_at = month_lock.notified_at.isoformat() if month_lock and month_lock.notified_at else None
+
     return DraftScheduleResponse(
         sessions=draft_sessions,
         month_locked=is_month_locked(db, year, month),
+        schedule_notified_at=notified_at,
     )
 
 
@@ -1258,6 +1272,13 @@ def notify_schedule(
     sent_count = 0
     failed_count = 0
 
+    # Check if notifications were previously sent for this month
+    month_lock = db.query(MonthLock).filter(
+        MonthLock.year == year,
+        MonthLock.month == month,
+    ).first()
+    previously_notified_at = month_lock.notified_at.isoformat() if month_lock and month_lock.notified_at else None
+
     for member in eligible_members:
         if not member.email:
             continue
@@ -1292,9 +1313,20 @@ def notify_schedule(
         else:
             failed_count += 1
 
+    # Record that notifications were sent for this month
+    now = datetime.now(timezone.utc)
+    if month_lock:
+        month_lock.notified_at = now
+    else:
+        month_lock = MonthLock(year=year, month=month, is_locked=False, notified_at=now)
+        db.add(month_lock)
+    db.commit()
+
     return {
         "message": f"Notifications sent for {month_name} {year}",
         "sent": sent_count,
         "failed": failed_count,
         "total_eligible": len(eligible_members),
+        "previously_notified_at": previously_notified_at,
+        "notified_at": now.isoformat(),
     }

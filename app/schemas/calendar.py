@@ -31,6 +31,7 @@ class DraftSessionSchedule(BaseModel):
 class DraftScheduleResponse(BaseModel):
     sessions: List[DraftSessionSchedule]
     month_locked: bool = False
+    schedule_notified_at: str | None = None
 
 
 class SaveScheduleRequest(BaseModel):
